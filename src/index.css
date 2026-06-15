@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   margin: 0;
@@ -8,7 +6,25 @@
   box-sizing: border-box;
 }
 
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Evita zoom automático do iOS em inputs */
+input, select, textarea {
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input, select, textarea {
+    font-size: 14px;
+  }
+}
+
 body {
+  background-color: #0f1117;
+  color: #e2e8f0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
@@ -16,6 +32,81 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html {
-  scroll-behavior: smooth;
+/* ── Responsive layout helpers ── */
+
+/* Largura máxima do conteúdo — cresce em telas grandes (TV box / 4K) */
+.r-maxw { max-width: 1400px !important; margin-left: auto; margin-right: auto; }
+@media (min-width: 1800px) { .r-maxw { max-width: 1640px !important; } }
+@media (min-width: 2400px) { .r-maxw { max-width: 2000px !important; } }
+
+/* Header não quebra em telas pequenas; permite encolher os grupos */
+.r-header-inner { gap: 8px; }
+.r-header-grp { display: flex; align-items: center; gap: 4px; min-width: 0; }
+
+/* Padding de página */
+.r-page-pad { padding: 12px; }
+@media (min-width: 640px)  { .r-page-pad { padding: 20px; } }
+@media (min-width: 1024px) { .r-page-pad { padding: 24px; } }
+
+/* Grid de métricas: 2 col → 4 col */
+.r-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 1024px) { .r-metrics { grid-template-columns: repeat(4,1fr); gap: 16px; } }
+
+/* Grid de filtros: 1 col → 2 col */
+.r-filters { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 640px) { .r-filters { grid-template-columns: 1fr 1fr; } }
+
+/* Grid filtro início/fim/técnico: empilha em mobile */
+.r-filter-grid { display: grid; grid-template-columns: 1fr !important; gap: 12px; }
+@media (min-width: 640px) { .r-filter-grid { grid-template-columns: 1fr 1fr !important; } }
+@media (min-width: 1024px) { .r-filter-grid { grid-template-columns: 1fr 1fr 1fr !important; } }
+
+/* Grid principal do Admin: 1 col → 2 col */
+.r-admin-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 1024px) { .r-admin-grid { grid-template-columns: minmax(0,1fr) 340px; align-items: start; gap: 24px; } }
+
+/* Linha data + qtd no formulário */
+.r-form-row { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 500px) { .r-form-row { grid-template-columns: 1fr 1fr; } }
+
+/* Botões do header do Dashboard */
+.r-dash-header-btns    { display: none; }
+.r-dash-header-btns-sm { display: flex; gap: 6px; align-items: center; }
+@media (min-width: 640px) {
+  .r-dash-header-btns    { display: flex; gap: 8px; align-items: center; }
+  .r-dash-header-btns-sm { display: none; }
 }
+
+/* Painel de histórico lateral */
+.r-history-panel { width: 100vw; max-width: 100vw; }
+@media (min-width: 640px) { .r-history-panel { width: 420px; max-width: 420px; } }
+
+/* Labels da topbar */
+.r-topbar-label { display: none; }
+@media (min-width: 480px) { .r-topbar-label { display: inline; } }
+
+/* Valor das métricas */
+.r-metric-value { font-size: 22px; font-weight: 900; line-height: 1; }
+@media (min-width: 640px)  { .r-metric-value { font-size: 26px; } }
+@media (min-width: 1024px) { .r-metric-value { font-size: 30px; } }
+
+/* Texto truncado nos cards de relatório mobile */
+.r-report-name { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+@media (min-width: 640px) { .r-report-name { max-width: 300px; font-size: 15px; } }
+@media (min-width: 1024px) { .r-report-name { max-width: none; } }
+
+/* Badges no card de relatório: esconde em mobile pequeno */
+.r-badge-os { display: none; }
+@media (min-width: 480px) { .r-badge-os { display: flex; } }
+
+/* Datas do modal Excel: empilha em telas bem estreitas */
+.r-excel-dates { grid-template-columns: 1fr; }
+@media (min-width: 360px) { .r-excel-dates { grid-template-columns: 1fr 1fr; } }
+
+/* Top 3 — empilha em mobile, 3 colunas no desktop */
+.r-top3-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+@media (min-width: 560px) { .r-top3-grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+/* Campo textarea e input padding mobile */
+.r-input { padding: 11px 14px !important; font-size: 16px !important; }
+@media (min-width: 640px) { .r-input { padding: 12px 16px !important; font-size: 14px !important; } }
