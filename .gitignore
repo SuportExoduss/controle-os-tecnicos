@@ -12,6 +12,16 @@ dist
 dist-ssr
 *.local
 
+# Segredos e ambiente (nunca versionar)
+.env
+.env.*
+
+# Artefatos / ferramentas locais e dumps de dados
+.firebase/
+.claude/
+scripts/
+backup-daily_reports-*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
