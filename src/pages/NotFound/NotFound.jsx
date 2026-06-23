@@ -7,7 +7,7 @@ export const NotFound = () => {
       <div className="text-center">
         <h1 className="text-6xl font-bold text-white mb-4">404</h1>
         <p className="text-xl text-blue-100 mb-8">Página não encontrada</p>
-        <Link to="/dashboard">
+        <Link to="/fibra/dashboard">
           <Button variant="primary" size="lg">
             Voltar ao Dashboard
           </Button>

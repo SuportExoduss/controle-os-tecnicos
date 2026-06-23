@@ -1,33 +1,31 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getReportsByDateRange, updateReport } from '../../services/database/reportService';
-import { generateIndividualPDF, generateGeneralPDF } from '../../services/reports/pdfService';
-import { generateExcel } from '../../services/reports/excelService';
-import { syncReportToSheet } from '../../services/integrations/sheetSync';
-import { TextReportModal } from '../../components/modals/TextReportModal';
-import { Spinner } from '../../components/common/Spinner';
-import { ProgressOverlay } from '../../components/common/ProgressOverlay';
+import { getCameraReportsByDateRange, updateCameraReport } from '../../../services/database/cameraReportService';
+import { generateIndividualPDF, generateGeneralPDF } from '../../../services/reports/pdfService';
+import { generateCameraExcel } from '../../../services/reports/cameraExcelService';
+import { syncCameraReportToSheet } from '../../../services/integrations/cameraSheetSync';
+import { TextReportModal } from '../../../components/modals/TextReportModal';
+import { Spinner } from '../../../components/common/Spinner';
+import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { toast } from 'react-hot-toast';
-import { formatDate } from '../../utils/formatDate';
-import { AuthContext } from '../../context/AuthContext';
-import { ThemeContext } from '../../context/ThemeContext';
-import { loginUser, logoutUser } from '../../services/auth/authService';
-import { getUserProfile } from '../../services/database/userProfileService';
+import { formatDate } from '../../../utils/formatDate';
+import { AuthContext } from '../../../context/AuthContext';
+import { ThemeContext } from '../../../context/ThemeContext';
+import { loginUser, logoutUser } from '../../../services/auth/authService';
+import { getUserProfile } from '../../../services/database/userProfileService';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
 import {
   ChevronDown, ChevronUp, FileText, Download, Users, ClipboardList,
   CalendarClock, TrendingUp, SearchX, Calendar, Search, Edit2, X,
   Check, BarChart3, FileSpreadsheet, History, Copy, CheckCheck, PieChart as PieIcon,
-  Info, Lock, LogIn, LogOut, Sun, Moon, ClipboardEdit, RotateCcw,
+  Info, Lock, LogIn, LogOut, Sun, Moon, ClipboardEdit, RotateCcw, Video, Gauge, MapPin,
 } from 'lucide-react';
 
 const TYPE_COLORS = {
-  'INSTALAÇÃO FIBRA': '#60a5fa', 'MANUTENÇÃO FIBRA': '#2dd4bf', 'MUDANÇA DE ENDEREÇO': '#86efac',
-  'MUDANÇA DE PONTO': '#7dd3fc', 'INSTALAÇÃO WI-BINET': '#818cf8', 'REPARO WI-BINET': '#67e8f9',
-  'INSTALAÇÃO TV': '#38bdf8', 'REPARO TV': '#e879f9', 'OS AMPLIAÇÃO': '#fde68a',
-  'VISTORIA': '#fbbf24', 'FONTE QUEIMADA': '#fb923c', 'TROCA DE EQUIPAMENTO': '#c084fc',
-  'SINAL ALTO': '#4ade80', 'REINCIDÊNCIA': '#fca5a5', 'IMPRODUTIVA': '#94a3b8',
+  'INSTALAÇÃO WI-BICAM': '#818cf8', 'REPARO': '#2dd4bf',
+  'TROCA ROTEADOR/VISTORIA/REPARO TV': '#e879f9', 'MUDANÇA DE ENDEREÇO': '#86efac',
+  'MUDANÇA DE PONTO': '#7dd3fc', 'VISTORIA TÉCNICA': '#fbbf24', 'RETIRADA': '#fca5a5',
 };
 
 // Usa hora LOCAL para evitar problema de fuso horário
@@ -40,13 +38,11 @@ const localDate = (d = new Date()) => {
 
 
 const SERVICE_TYPES = [
-  'INSTALAÇÃO FIBRA','MANUTENÇÃO FIBRA','MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO',
-  'INSTALAÇÃO WI-BINET','REPARO WI-BINET','INSTALAÇÃO TV','REPARO TV',
-  'OS AMPLIAÇÃO','VISTORIA','FONTE QUEIMADA','TROCA DE EQUIPAMENTO',
-  'SINAL ALTO','REINCIDÊNCIA','IMPRODUTIVA',
+  'INSTALAÇÃO WI-BICAM','REPARO','TROCA ROTEADOR/VISTORIA/REPARO TV',
+  'MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO','VISTORIA TÉCNICA','RETIRADA',
 ];
 
-export const Dashboard = () => {
+export const CameraDashboard = () => {
   const navigate = useNavigate();
   const { S, mode, toggleTheme } = useContext(ThemeContext);
   const [reports, setReports] = useState([]);
@@ -125,7 +121,7 @@ export const Dashboard = () => {
       const today = localDate();
       const start = from || `${today.slice(0, 7)}-01`;
       const end   = to   || today;
-      const arr = await getReportsByDateRange(start, end, { force });
+      const arr = await getCameraReportsByDateRange(start, end, { force });
       setReports(arr);
       filterReports(arr, from, to, tech);
     } catch (err) { toast.error('Erro ao carregar relatórios'); console.error(err); }
@@ -153,10 +149,13 @@ export const Dashboard = () => {
     f.forEach(r => {
       const name = r.technicianName || 'Sem nome';
       if (!map[name]) {
-        map[name] = { ...r, totalOrders: 0, rescheduledCount: 0, serviceTypes: [], observations: '', _dias: 0, _records: [] };
+        map[name] = { ...r, totalOrders: 0, rescheduledCount: 0, kmRodado: 0, pontosInstalados: 0, pontosCancelados: 0, serviceTypes: [], observations: '', _dias: 0, _records: [] };
       }
       map[name].totalOrders      += r.totalOrders || 0;
       map[name].rescheduledCount += r.rescheduledCount || 0;
+      map[name].kmRodado         += Number(r.kmRodado) || 0;
+      map[name].pontosInstalados += Number(r.pontosInstalados) || 0;
+      map[name].pontosCancelados += Number(r.pontosCancelados) || 0;
       map[name].serviceTypes      = [...map[name].serviceTypes, ...(r.serviceTypes || [])];
       // só conta como "dia registrado" se houve O.S nesse dia
       if ((r.totalOrders || 0) > 0) {
@@ -220,6 +219,8 @@ export const Dashboard = () => {
     totalTechnicians: new Set(filteredReports.map(r => r.technicianName)).size,
     totalOrders: filteredReports.reduce((acc, r) => acc + (r.totalOrders || 0), 0),
     totalRescheduled: filteredReports.reduce((acc, r) => acc + (r.rescheduledCount || 0), 0),
+    totalKm: Math.round(filteredReports.reduce((acc, r) => acc + (Number(r.kmRodado) || 0), 0) * 10) / 10,
+    totalPontosInstalados: filteredReports.reduce((acc, r) => acc + (Number(r.pontosInstalados) || 0), 0),
     mostCommonService: getMostCommonService(),
   };
 
@@ -296,7 +297,7 @@ export const Dashboard = () => {
       title: 'Gerando Excel…',
       subtitle: report.technicianName || '',
       successMsg: 'Excel gerado!',
-      fn: (onProgress) => generateExcel(records, `relatorio-${(report.technicianName || 'tecnico').split(' ')[0]}`, onProgress),
+      fn: (onProgress) => generateCameraExcel(records, `relatorio-${(report.technicianName || 'tecnico').split(' ')[0]}`, onProgress),
     });
   };
 
@@ -321,7 +322,7 @@ export const Dashboard = () => {
     setShowExcelModal(false);
     // Busca exatamente o período pedido (pode ser maior que o mês carregado)
     let data;
-    try { data = await getReportsByDateRange(excelFrom, excelTo); }
+    try { data = await getCameraReportsByDateRange(excelFrom, excelTo); }
     catch (err) { toast.error('Erro ao buscar dados do período'); console.error(err); return; }
     // registros brutos (todos os dias com O.S no período) sem agrupar
     const records = data
@@ -332,7 +333,7 @@ export const Dashboard = () => {
       title: 'Gerando Excel…',
       subtitle: `${records.length} registro(s)`,
       successMsg: `Excel gerado! ${records.length} registros`,
-      fn: (onProgress) => generateExcel(records, `relatorio-${excelFrom}_a_${excelTo}`, onProgress),
+      fn: (onProgress) => generateCameraExcel(records, `relatorio-${excelFrom}_a_${excelTo}`, onProgress),
     });
   };
 
@@ -359,7 +360,7 @@ export const Dashboard = () => {
     try {
       const { id, ...data } = editReport;
       const types = data.serviceTypes || [];
-      await updateReport(id, {
+      await updateCameraReport(id, {
         totalOrders: types.length, // sempre = nº de tipos (quantidade e tipos sempre batem)
         rescheduled: data.rescheduled,
         rescheduledCount: data.rescheduled ? parseInt(data.rescheduledCount || 0) : 0,
@@ -370,7 +371,7 @@ export const Dashboard = () => {
         editedAt: new Date().toISOString(),
       });
       // Espelha a edição na planilha do Google (não bloqueia se falhar)
-      syncReportToSheet({ technicianName: editReport.technicianName, date: editReport.date, rescheduledCount: data.rescheduled ? parseInt(data.rescheduledCount || 0) : 0, observations: data.observations || '', serviceTypes: types });
+      syncCameraReportToSheet({ technicianName: editReport.technicianName, date: editReport.date, rescheduledCount: data.rescheduled ? parseInt(data.rescheduledCount || 0) : 0, kmInicial: editReport.kmInicial, kmFinal: editReport.kmFinal, kmRodado: editReport.kmRodado, pontosInstalados: editReport.pontosInstalados, pontosCancelados: editReport.pontosCancelados, observations: data.observations || '', serviceTypes: types });
       toast.success('Dia atualizado!');
       setEditReport(null);
       await loadRange(dateFrom, dateTo, searchTechnician, { force: true });
@@ -382,7 +383,7 @@ export const Dashboard = () => {
   const buildGeneralText = () => {
     const lines = [];
     lines.push('╔══════════════════════════════════════════╗');
-    lines.push('║       RELATÓRIO GERAL DE O.S — IBIUNET       ║');
+    lines.push('║   RELATÓRIO GERAL DE O.S — WIBICAM (CÂMERAS)   ║');
     lines.push('╚══════════════════════════════════════════╝');
     const _today = localDate();
     const _first = `${_today.slice(0, 7)}-01`;
@@ -391,10 +392,12 @@ export const Dashboard = () => {
     const fmt = d => new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
     lines.push(`Período: ${fmt(f)} a ${fmt(t)}`);
     lines.push(`Total de técnicos: ${summary.totalTechnicians} | Total O.S: ${summary.totalOrders} | Reagendamentos: ${summary.totalRescheduled}`);
+    lines.push(`Pontos instalados: ${summary.totalPontosInstalados} | KM rodado: ${summary.totalKm} km`);
     lines.push('─'.repeat(48));
     filteredReports.forEach((r, i) => {
       lines.push(`\n[${i + 1}] ${r.technicianName}`);
       lines.push(`    O.S: ${r.totalOrders}  |  Horário: ${r.submissionTime || '—'}  |  Reagend.: ${r.rescheduledCount || 0}`);
+      lines.push(`    Pontos instalados: ${r.pontosInstalados || 0}  |  Cancelados: ${r.pontosCancelados || 0}  |  KM: ${r.kmRodado || 0} km`);
       lines.push(`    Serviços: ${(r.serviceTypes || []).join(', ') || '—'}`);
       if (r.observations) lines.push(`    Obs: ${r.observations}`);
     });
@@ -425,6 +428,8 @@ export const Dashboard = () => {
   const metrics = [
     { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, bg: '#0f1d35', glow: 'rgba(96,165,250,0.12)' },
     { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
+    { icon: MapPin, label: 'Pontos Instalados', value: summary.totalPontosInstalados, color: '#34d399', bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)' },
+    { icon: Gauge, label: 'KM Rodado', value: `${summary.totalKm} km`, color: '#38bdf8', bg: '#0f1d35', glow: 'rgba(56,189,248,0.12)', small: true },
     { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, bg: '#1c1200', glow: 'rgba(251,191,36,0.12)' },
     { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, bg: '#140f26', glow: 'rgba(167,139,250,0.12)', small: true },
   ];
@@ -438,6 +443,10 @@ export const Dashboard = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
               <img src="/logo.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'auto' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <Video size={10} color="#a78bfa" />
+                <span style={{ fontSize: '10px', fontWeight: 700, color: '#a78bfa', letterSpacing: '1px', textTransform: 'uppercase' }}>WIBICAM</span>
+              </div>
               {isLogged && (
                 <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Check size={10}/>{profile.nickname}
@@ -450,7 +459,7 @@ export const Dashboard = () => {
               {mode === 'light' ? <Moon size={15}/> : <Sun size={15}/>}
             </button>
             {/* Botão ADM */}
-            <button onClick={() => { if (isLogged) navigate('/fibra/admin'); else { setRedirectAfterLogin('/fibra/admin'); setShowLoginModal(true); } }} title="Ir para o painel Admin"
+            <button onClick={() => { if (isLogged) navigate('/cameras/admin'); else { setRedirectAfterLogin('/cameras/admin'); setShowLoginModal(true); } }} title="Ir para o painel Admin"
               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
@@ -704,15 +713,15 @@ export const Dashboard = () => {
                     if (isSelected) handleSearch('', '', searchTechnician);
                     else handleSearch(date, date, searchTechnician);
                   }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '6px 4px', borderRadius: '10px', border: `1px solid ${isSelected ? '#6366f1' : inRange ? '#1e3a5f' : 'transparent'}`, background: isSelected ? '#1a1d3a' : inRange ? '#0d1220' : 'transparent', cursor: 'pointer', minWidth: '36px', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#0d1220'; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = inRange ? '#0d1220' : 'transparent'; }}>
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '6px 4px', borderRadius: '10px', border: `1px solid ${isSelected ? S.accent : inRange ? S.border : 'transparent'}`, background: isSelected ? S.accentSoft : inRange ? S.card : 'transparent', cursor: 'pointer', minWidth: '36px', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = S.card; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = inRange ? S.card : 'transparent'; }}>
                     {/* Barra */}
                     <div style={{ width: '20px', height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                      <div style={{ width: '100%', height: `${barH}px`, borderRadius: '4px 4px 0 0', background: isSelected ? '#6366f1' : inRange ? '#3b82f6' : total > 0 ? '#1e3a5f' : '#0f1624', transition: 'all 0.2s' }} />
+                      <div style={{ width: '100%', height: `${barH}px`, borderRadius: '4px 4px 0 0', background: isSelected ? S.accent : inRange ? S.accentDeep : total > 0 ? S.accentSoft : S.input, transition: 'all 0.2s' }} />
                     </div>
                     {/* Total */}
-                    {total > 0 && <span style={{ fontSize: '9px', fontWeight: 700, color: isSelected ? '#818cf8' : S.muted, lineHeight: 1 }}>{total}</span>}
+                    {total > 0 && <span style={{ fontSize: '9px', fontWeight: 700, color: isSelected ? S.accent : S.muted, lineHeight: 1 }}>{total}</span>}
                     {/* Dia */}
                     <span style={{ fontSize: '11px', fontWeight: isToday ? 800 : 600, color: isToday ? S.blue : isSelected ? S.text : S.muted2, lineHeight: 1 }}>{String(day).padStart(2,'0')}</span>
                     {/* Semana */}
@@ -737,7 +746,7 @@ export const Dashboard = () => {
                 Não há O.S registradas neste período.
               </p>
               <button onClick={goToPrevMonth}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
                 ← Ver mês anterior
               </button>
             </div>
@@ -747,7 +756,7 @@ export const Dashboard = () => {
               <div onClick={() => setExpandedId(expandedId === report.id ? null : report.id)}
                 style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: 0 }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '16px', flexShrink: 0 }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: S.onAccent, fontWeight: 900, fontSize: '16px', flexShrink: 0 }}>
                     {(report.technicianName || '?').charAt(0)}
                   </div>
                   <div style={{ minWidth: 0 }}>
@@ -762,9 +771,9 @@ export const Dashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   <span className="r-badge-os" onClick={(e) => { e.stopPropagation(); setPersonalModal(report); }}
                     title="Ver tipos de O.S deste técnico"
-                    style={{ background: '#0f1d35', color: S.blue, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #3a2f12', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#13243f'; e.currentTarget.style.borderColor = '#574517'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#0f1d35'; e.currentTarget.style.borderColor = '#3a2f12'; }}>
+                    style={{ background: S.accentSoft, color: S.accent, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}`, alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = S.card2; e.currentTarget.style.borderColor = S.accent; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = S.accentSoft; e.currentTarget.style.borderColor = S.accent; }}>
                     <ClipboardList size={11}/>{report.totalOrders} O.S
                   </span>
                   {report.rescheduledCount > 0 && (
@@ -803,7 +812,7 @@ export const Dashboard = () => {
                                   {rec.submissionTime && <span style={{ color: S.muted, fontSize: '11px' }}>{rec.submissionTime}</span>}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                                  <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: '1px solid #1e3a5f' }}>
+                                  <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}` }}>
                                     {rec.totalOrders} O.S
                                   </span>
                                   {rec.rescheduledCount > 0 && (
@@ -885,7 +894,7 @@ export const Dashboard = () => {
             <div style={{ width: '100%', maxWidth: '500px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', maxHeight: '90vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Edit2 size={17} color={S.blue} />
                   </div>
                   <div>
@@ -910,7 +919,7 @@ export const Dashboard = () => {
                       const qty = editTypeCount(svc);
                       const color = TYPE_COLORS[svc] || S.muted2;
                       return (
-                        <div key={svc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '7px 10px 7px 12px', borderRadius: '10px', background: qty > 0 ? '#0f1d35' : S.input, border: `1px solid ${qty > 0 ? '#1e3a5f' : S.border}`, transition: 'all 0.15s' }}>
+                        <div key={svc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '7px 10px 7px 12px', borderRadius: '10px', background: qty > 0 ? S.accentSoft : S.input, border: `1px solid ${qty > 0 ? S.accent : S.border}`, transition: 'all 0.15s' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                             <span style={{ width: '9px', height: '9px', borderRadius: '3px', background: color, flexShrink: 0 }} />
                             <span style={{ color: qty > 0 ? S.text : S.muted2, fontSize: '13px', fontWeight: qty > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{svc}</span>
@@ -964,7 +973,7 @@ export const Dashboard = () => {
                     Cancelar
                   </button>
                   <button onClick={handleSaveEdit} disabled={editLoading}
-                    style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: editLoading ? 0.7 : 1 }}>
+                    style={{ flex: 1, padding: '12px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: editLoading ? 0.7 : 1 }}>
                     {editLoading ? <Spinner /> : <><Check size={16}/>Salvar dia</>}
                   </button>
                 </div>
@@ -998,7 +1007,7 @@ export const Dashboard = () => {
                 <div key={r.id} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '14px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>{formatDate(r.date)}</span>
-                    <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>{r.totalOrders} O.S</span>
+                    <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>{r.totalOrders} O.S</span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: r.observations ? '8px' : 0 }}>
                     {(r.serviceTypes || []).map((s, j) => (
@@ -1036,7 +1045,7 @@ export const Dashboard = () => {
                 {buildGeneralText()}
               </pre>
               <button onClick={handleCopyGeneral}
-                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: copied ? 'linear-gradient(135deg, #059669, #10b981)' : 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: copied ? 'linear-gradient(135deg, #059669, #10b981)' : S.gradient, border: 'none', color: copied ? '#fff' : S.onAccent, fontSize: '14px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s' }}>
                 {copied ? <><CheckCheck size={16}/>Copiado!</> : <><Copy size={16}/>Copiar Texto</>}
               </button>
             </div>
@@ -1064,7 +1073,7 @@ export const Dashboard = () => {
                   {/* Header */}
                   <div style={{ padding: '20px 24px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '16px', flexShrink: 0 }}>
+                      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: S.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: S.onAccent, fontWeight: 900, fontSize: '16px', flexShrink: 0 }}>
                         {(personalModal.technicianName || '?').charAt(0)}
                       </div>
                       <div style={{ minWidth: 0 }}>
@@ -1123,28 +1132,28 @@ export const Dashboard = () => {
               style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 49 }} />
             <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
               style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
-              <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: '1px solid #3b82f6', borderRadius: '20px', boxShadow: '0 0 50px rgba(59,130,246,0.25)', padding: 'clamp(22px, 5vw, 32px)' }}>
+              <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.accent}`, borderRadius: '20px', boxShadow: `0 0 50px ${S.glow}`, padding: 'clamp(22px, 5vw, 32px)' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '22px' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', boxShadow: '0 0 24px rgba(59,130,246,0.4)' }}>
-                    <LogIn size={26} color="#fff" />
+                  <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: S.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px', boxShadow: `0 0 24px ${S.glow}` }}>
+                    <LogIn size={26} color={S.onAccent} />
                   </div>
-                  <div style={{ color: '#f1f5f9', fontWeight: 800, fontSize: '18px' }}>Modo Edição</div>
-                  <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>Entre para corrigir ordens de serviço</div>
+                  <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Modo Edição</div>
+                  <div style={{ color: S.muted2, fontSize: '13px', marginTop: '4px' }}>Entre para corrigir ordens de serviço</div>
                 </div>
                 <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="Email"
-                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: '#0f1624', border: '1px solid #1a2540', color: '#e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#1a2540'} />
+                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
+                  onFocus={e => e.target.style.borderColor = S.accent} onBlur={e => e.target.style.borderColor = S.border} />
                 <input type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="Senha"
                   onKeyDown={e => { if (e.key === 'Enter') handleDashLogin(); }}
-                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: '#0f1624', border: '1px solid #1a2540', color: '#e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '20px' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#1a2540'} />
+                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '20px' }}
+                  onFocus={e => e.target.style.borderColor = S.accent} onBlur={e => e.target.style.borderColor = S.border} />
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={() => setShowLoginModal(false)}
-                    style={{ flex: 1, padding: '13px', borderRadius: '12px', background: 'transparent', border: '1px solid #1a2540', color: '#94a3b8', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                    style={{ flex: 1, padding: '13px', borderRadius: '12px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                     Cancelar
                   </button>
                   <button onClick={handleDashLogin} disabled={loginLoading}
-                    style={{ flex: 2, padding: '13px', borderRadius: '12px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: loginLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loginLoading ? 0.7 : 1 }}>
+                    style={{ flex: 2, padding: '13px', borderRadius: '12px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '14px', fontWeight: 700, cursor: loginLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loginLoading ? 0.7 : 1 }}>
                     {loginLoading ? <Spinner /> : <><LogIn size={16}/>Entrar</>}
                   </button>
                 </div>
@@ -1165,7 +1174,7 @@ export const Dashboard = () => {
               <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', padding: 'clamp(20px, 5vw, 28px)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0f1d35', border: '1px solid #1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, border: `1px solid ${S.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Info size={20} color={S.blue} />
                     </div>
                     <div>
@@ -1360,7 +1369,7 @@ export const Dashboard = () => {
                               {rec.submissionTime && <span style={{ color: S.muted, fontSize: '11px' }}>{rec.submissionTime}</span>}
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                              <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: '1px solid #1e3a5f' }}>{rec.totalOrders} O.S</span>
+                              <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}` }}>{rec.totalOrders} O.S</span>
                               {rec.rescheduledCount > 0 && <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>{rec.rescheduledCount} reagend.</span>}
                             </div>
                           </div>

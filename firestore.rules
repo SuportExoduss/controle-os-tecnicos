@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Regras de segurança do Firestore — IBIUNET Controle de O.S
+// Leitura pública (o Dashboard é público); escrita só para usuários autenticados.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Relatórios diários: leitura pública (dashboard), escrita só autenticado
+    match /daily_reports/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Colaboradores (técnicos): leitura pública, escrita só autenticado
+    match /collaborators/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Perfis de usuário (apelido): leitura pública; escrita só do próprio usuário
+    match /userProfiles/{uid} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // Ordens de serviço — Equipe de Redes: leitura pública, escrita só autenticado
+    match /network_orders/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Técnicos da equipe de Redes: leitura pública, escrita só autenticado
+    match /network_collaborators/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Relatórios diários — Equipe de Câmeras (WIBICAM): leitura pública, escrita só autenticado
+    match /camera_reports/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Técnicos da equipe de Câmeras (WIBICAM): leitura pública, escrita só autenticado
+    match /camera_collaborators/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Qualquer outra coleção: bloqueada por padrão (deny)
+  }
+}

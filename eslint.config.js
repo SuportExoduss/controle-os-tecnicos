@@ -17,5 +17,12 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Regras novas do React Compiler (eslint-plugin-react-hooks v7) que sinalizam
+      // padrões válidos deste projeto (buscar dados no useEffect, ordem de funções).
+      // Não pegam bugs reais aqui — desligadas para evitar falsos-positivos.
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
+    },
   },
 ])

@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth';
+import { getAuth, setPersistence, indexedDBLocalPersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -13,7 +13,9 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-// Mantém a sessão salva no navegador (sobrevive a F5/navegação).
-// Assim o usuário só é deslogado por inatividade (1h) ou logout manual.
-setPersistence(auth, browserLocalPersistence).catch(() => { /* fallback silencioso */ });
+// Persistência via IndexedDB (padrão do Firebase): sobrevive a F5/navegação E
+// sincroniza entre abas SEM os "storage events" do localStorage — evita que abrir
+// uma aba (ex: Dashboard) deslogue outra já aberta (ex: Admin).
+// O usuário só é deslogado por inatividade (1h) ou logout manual.
+setPersistence(auth, indexedDBLocalPersistence).catch(() => { /* fallback silencioso */ });
 export const db = getFirestore(app);

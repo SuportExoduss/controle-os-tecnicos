@@ -1,0 +1,15 @@
+{
+  "name": "IBIUNET — Controle de O.S",
+  "short_name": "IBIUNET O.S",
+  "description": "Controle diário de O.S dos técnicos da IBIUNET",
+  "start_url": "/fibra/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#080b14",
+  "theme_color": "#0d1220",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/app-icon.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -2,9 +2,10 @@ import { collection, addDoc, query, where, getDocs, updateDoc, doc, orderBy, del
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
 
-const COLLECTION_NAME = 'daily_reports';
+// Relatórios diários da equipe de câmeras (WIBICAM).
+const COLLECTION_NAME = 'camera_reports';
 
-export const saveDailyReport = async (reportData) => {
+export const saveCameraReport = async (reportData) => {
   const ref = await addDoc(collection(db, COLLECTION_NAME), {
     ...reportData,
     createdAt: new Date().toISOString(),
@@ -13,10 +14,8 @@ export const saveDailyReport = async (reportData) => {
   return ref;
 };
 
-// Busca SÓ o período pedido (ex.: mês visível) — corta drasticamente as
-// leituras vs. baixar todo o histórico. `date` é 'YYYY-MM-DD' (ordena certo).
-// Resultado fica em cache por alguns minutos; gravações invalidam.
-export const getReportsByDateRange = async (start, end, { force = false } = {}) => {
+// Busca SÓ o período pedido (mês visível) — evita reler todo o histórico.
+export const getCameraReportsByDateRange = async (start, end, { force = false } = {}) => {
   const key = `${COLLECTION_NAME}:${start}|${end}`;
   if (!force) { const cached = readCache(key); if (cached) return cached; }
   const q = query(
@@ -32,8 +31,8 @@ export const getReportsByDateRange = async (start, end, { force = false } = {}) 
 
 // Cria OU atualiza o relatório de um técnico+data (evita duplicar).
 // Se houver duplicatas, mantém uma e remove as extras. Retorna 'created' | 'updated'.
-export const upsertDailyReport = async (reportData) => {
-  const snap = await getReportsByTechnician(reportData.technicianName, reportData.date);
+export const upsertCameraReport = async (reportData) => {
+  const snap = await getCameraReportsByTechnician(reportData.technicianName, reportData.date);
   if (snap.empty) {
     await addDoc(collection(db, COLLECTION_NAME), { ...reportData, createdAt: new Date().toISOString() });
     clearCache(COLLECTION_NAME);
@@ -46,7 +45,7 @@ export const upsertDailyReport = async (reportData) => {
   return 'updated';
 };
 
-export const getReportsByDate = (date) => {
+export const getCameraReportsByDate = (date) => {
   const q = query(
     collection(db, COLLECTION_NAME),
     where('date', '==', date),
@@ -55,16 +54,16 @@ export const getReportsByDate = (date) => {
   return getDocs(q);
 };
 
-export const getAllReports = () => {
+export const getAllCameraReports = () => {
   const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
   return getDocs(q);
 };
 
 // Relatórios de uma data, sem orderBy (evita índice composto). Usado no status do Admin.
-export const getReportsByDateRaw = (date) =>
+export const getCameraReportsByDateRaw = (date) =>
   getDocs(query(collection(db, COLLECTION_NAME), where('date', '==', date)));
 
-export const getReportsByTechnician = (technicianName, date) => {
+export const getCameraReportsByTechnician = (technicianName, date) => {
   const q = query(
     collection(db, COLLECTION_NAME),
     where('technicianName', '==', technicianName),
@@ -73,13 +72,13 @@ export const getReportsByTechnician = (technicianName, date) => {
   return getDocs(q);
 };
 
-export const updateReport = async (reportId, updateData) => {
+export const updateCameraReport = async (reportId, updateData) => {
   const res = await updateDoc(doc(db, COLLECTION_NAME, reportId), updateData);
   clearCache(COLLECTION_NAME);
   return res;
 };
 
-export const deleteAllReportsByTechnician = async (technicianName) => {
+export const deleteAllCameraReportsByTechnician = async (technicianName) => {
   const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName));
   const snap = await getDocs(q);
   const deletes = snap.docs.map(d => deleteDoc(doc(db, COLLECTION_NAME, d.id)));
@@ -89,7 +88,7 @@ export const deleteAllReportsByTechnician = async (technicianName) => {
 };
 
 // Apaga TODOS os relatórios de uma data (todos os técnicos). Requer login.
-export const deleteAllReportsByDate = async (date) => {
+export const deleteAllCameraReportsByDate = async (date) => {
   const q = query(collection(db, COLLECTION_NAME), where('date', '==', date));
   const snap = await getDocs(q);
   await Promise.all(snap.docs.map(d => deleteDoc(doc(db, COLLECTION_NAME, d.id))));

@@ -1,18 +1,18 @@
 import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { logoutUser } from '../../services/auth/authService';
-import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw } from '../../services/database/reportService';
-import { getCollaborators, addCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
-import { Spinner } from '../../components/common/Spinner';
-import { ProgressOverlay } from '../../components/common/ProgressOverlay';
+import { logoutUser } from '../../../services/auth/authService';
+import { getCameraReportsByTechnician, deleteAllCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw } from '../../../services/database/cameraReportService';
+import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators } from '../../../services/database/cameraCollaboratorService';
+import { Spinner } from '../../../components/common/Spinner';
+import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { toast } from 'react-hot-toast';
-import { AuthContext } from '../../context/AuthContext';
-import { getCurrentTime } from '../../utils/formatTime';
-import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon } from 'lucide-react';
-import { ThemeContext } from '../../context/ThemeContext';
-import { parseExcelFile } from '../../services/reports/importService';
-import { syncReportToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
+import { AuthContext } from '../../../context/AuthContext';
+import { getCurrentTime } from '../../../utils/formatTime';
+import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon, Video, Gauge, MapPin } from 'lucide-react';
+import { ThemeContext } from '../../../context/ThemeContext';
+import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
+import { syncCameraReportToSheet, zeroCameraDayInSheet, zeroCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -22,27 +22,17 @@ const localDate = (d = new Date()) => {
 };
 
 const SERVICE_TYPES = [
-  'INSTALAÇÃO FIBRA','MANUTENÇÃO FIBRA','MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO',
-  'INSTALAÇÃO WI-BINET','REPARO WI-BINET','INSTALAÇÃO TV','REPARO TV',
-  'OS AMPLIAÇÃO','VISTORIA','FONTE QUEIMADA','TROCA DE EQUIPAMENTO',
-  'SINAL ALTO','REINCIDÊNCIA','IMPRODUTIVA',
+  'INSTALAÇÃO WI-BICAM','REPARO','TROCA ROTEADOR/VISTORIA/REPARO TV',
+  'MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO','VISTORIA TÉCNICA','RETIRADA',
 ];
 const SVC_STYLE = {
-  'INSTALAÇÃO FIBRA':     { bg:'#0f1d2d', color:'#60a5fa', border:'#1e3a5f' },
-  'MANUTENÇÃO FIBRA':     { bg:'#0f2320', color:'#2dd4bf', border:'#134e4a' },
-  'MUDANÇA DE ENDEREÇO':  { bg:'#1a2010', color:'#86efac', border:'#166534' },
-  'MUDANÇA DE PONTO':     { bg:'#0f1f2a', color:'#7dd3fc', border:'#0c4a6e' },
-  'INSTALAÇÃO WI-BINET':  { bg:'#12103a', color:'#818cf8', border:'#312e81' },
-  'REPARO WI-BINET':      { bg:'#101828', color:'#67e8f9', border:'#164e63' },
-  'INSTALAÇÃO TV':        { bg:'#0f1a2e', color:'#38bdf8', border:'#0c4a6e' },
-  'REPARO TV':            { bg:'#1a1020', color:'#e879f9', border:'#701a75' },
-  'OS AMPLIAÇÃO':         { bg:'#1a1500', color:'#fde68a', border:'#92400e' },
-  'VISTORIA':             { bg:'#2a1f00', color:'#fbbf24', border:'#78350f' },
-  'FONTE QUEIMADA':       { bg:'#2a1000', color:'#fb923c', border:'#7c2d12' },
-  'TROCA DE EQUIPAMENTO': { bg:'#1a0f2e', color:'#c084fc', border:'#4c1d95' },
-  'SINAL ALTO':           { bg:'#1a2010', color:'#4ade80', border:'#166534' },
-  'REINCIDÊNCIA':         { bg:'#2d1010', color:'#fca5a5', border:'#991b1b' },
-  'IMPRODUTIVA':          { bg:'#111827', color:'#6b7280', border:'#374151' },
+  'INSTALAÇÃO WI-BICAM':               { bg:'#12103a', color:'#818cf8', border:'#312e81' },
+  'REPARO':                            { bg:'#0f2320', color:'#2dd4bf', border:'#134e4a' },
+  'TROCA ROTEADOR/VISTORIA/REPARO TV': { bg:'#1a1020', color:'#e879f9', border:'#701a75' },
+  'MUDANÇA DE ENDEREÇO':               { bg:'#1a2010', color:'#86efac', border:'#166534' },
+  'MUDANÇA DE PONTO':                  { bg:'#0f1f2a', color:'#7dd3fc', border:'#0c4a6e' },
+  'VISTORIA TÉCNICA':                  { bg:'#2a1f00', color:'#fbbf24', border:'#78350f' },
+  'RETIRADA':                          { bg:'#2d1010', color:'#fca5a5', border:'#991b1b' },
 };
 
 const Glass = ({ S, children, style = {}, ...props }) => (
@@ -62,10 +52,10 @@ const DarkInput = ({ S, style = {}, ...props }) => (
     {...props} />
 );
 
-export const Admin = () => {
+export const CameraAdmin = () => {
   const { S, mode, toggleTheme } = useContext(ThemeContext);
 
-  const [formData, setFormData] = useState({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: localDate() });
+  const [formData, setFormData] = useState({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: localDate() });
   const [collaborators, setCollaborators] = useState([]);
   const [loadingCollabs, setLoadingCollabs] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -99,7 +89,7 @@ export const Admin = () => {
   const fetchStatus = async (refDate) => {
     setStatusLoading(true);
     try {
-      const snap = await getReportsByDateRaw(refDate);
+      const snap = await getCameraReportsByDateRaw(refDate);
       const done = new Set(snap.docs.filter(d => (d.data().totalOrders || 0) > 0).map(d => d.data().technicianName));
       setTodayDone(done);
     } catch (err) { console.error('status', err); }
@@ -121,7 +111,10 @@ export const Admin = () => {
   }, []);
 
   const fetchCollaborators = async () => {
-    try { const s = await getCollaborators(); setCollaborators(s.docs.map(d => ({ id: d.id, ...d.data() }))); }
+    try {
+      await seedCameraCollaborators();
+      const s = await getCameraCollaborators(); setCollaborators(s.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
     catch { toast.error('Erro ao carregar colaboradores'); }
     finally { setLoadingCollabs(false); }
   };
@@ -134,10 +127,10 @@ export const Admin = () => {
     if (!window.confirm(`Remover "${name}" e todos os relatórios dele?`)) return;
     try {
       await Promise.all([
-        deleteCollaborator(id),
-        deleteAllReportsByTechnician(name),
+        deleteCameraCollaborator(id),
+        deleteAllCameraReportsByTechnician(name),
       ]);
-      zeroTechnicianInSheet(name); // zera linhas na planilha (best-effort)
+      zeroCameraTechnicianInSheet(name); // zera linhas na planilha (best-effort)
       if (formData.technicianName === name) setFormData(p => ({ ...p, technicianName: '' }));
       await fetchCollaborators();
       toast.success('Colaborador e relatórios removidos');
@@ -148,7 +141,7 @@ export const Admin = () => {
     if (!newCollabName.trim()) return;
     setSavingCollab(true);
     try {
-      await addCollaborator(newCollabName);
+      await addCameraCollaborator(newCollabName);
       toast.success('Colaborador adicionado!');
       setNewCollabName(''); setShowAddCollab(false);
       await fetchCollaborators();
@@ -156,7 +149,7 @@ export const Admin = () => {
     finally { setSavingCollab(false); }
   };
 
-  const handleLogout = async () => { try { await logoutUser(); navigate('/fibra/login'); } catch { toast.error('Erro ao sair'); } };
+  const handleLogout = async () => { try { await logoutUser(); navigate('/cameras/login'); } catch { toast.error('Erro ao sair'); } };
   const handleChange = (e) => { const { name, value, type, checked } = e.target; setFormData(p => ({ ...p, [name]: type === 'checkbox' ? checked : value })); };
   const handleOpenWizard = () => {
     if (!formData.technicianName) { toast.error('Selecione um técnico'); return; }
@@ -175,7 +168,7 @@ export const Admin = () => {
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      const existing = await getReportsByTechnician(formData.technicianName, formData.date);
+      const existing = await getCameraReportsByTechnician(formData.technicianName, formData.date);
       if (existing.docs.length > 0) {
         const existingRecord = existing.docs[0].data();
         const hasData = (existingRecord.totalOrders || 0) > 0 || (existingRecord.serviceTypes || []).length > 0;
@@ -184,11 +177,20 @@ export const Admin = () => {
         }
         // Se existente tem 0 O.S → atualiza silenciosamente
       }
+      // KM rodado = leitura do fim do dia − leitura do início do dia
+      const kmInicial = formData.kmInicial !== '' ? parseFloat(formData.kmInicial) : null;
+      const kmFinal   = formData.kmFinal   !== '' ? parseFloat(formData.kmFinal)   : null;
+      const kmRodado  = (kmInicial != null && kmFinal != null) ? Math.max(0, Math.round((kmFinal - kmInicial) * 10) / 10) : null;
+      const pontosInstalados = formData.pontosInstalados !== '' ? parseInt(formData.pontosInstalados) : null;
+      const pontosCancelados = formData.pontosCancelados !== '' ? parseInt(formData.pontosCancelados) : null;
+
       // upsert: substitui o registro do mesmo técnico+data (não duplica)
-      await upsertDailyReport({
+      await upsertCameraReport({
         technicianName: formData.technicianName, totalOrders: parseInt(formData.totalOrders),
         rescheduled: formData.rescheduled,
         rescheduledCount: formData.rescheduled ? parseInt(formData.rescheduledCount || 0) : 0,
+        kmInicial, kmFinal, kmRodado,
+        pontosInstalados, pontosCancelados,
         observations: formData.observations, serviceTypes: tempServices,
         date: formData.date, submissionTime: getCurrentTime(),
         createdByNickname: profile?.nickname || 'Desconhecido',
@@ -196,10 +198,12 @@ export const Admin = () => {
         createdByUid: user?.uid || '',
       });
       // Envia para a planilha do Google (não bloqueia se falhar)
-      syncReportToSheet({
+      syncCameraReportToSheet({
         technicianName: formData.technicianName,
         date: formData.date,
         rescheduledCount: formData.rescheduled ? parseInt(formData.rescheduledCount || 0) : 0,
+        kmInicial, kmFinal, kmRodado,
+        pontosInstalados, pontosCancelados,
         observations: formData.observations,
         serviceTypes: tempServices,
       });
@@ -210,7 +214,7 @@ export const Admin = () => {
       const savedDate = formData.date;
       // Mantém a data escolhida para lançar vários relatórios do mesmo dia em sequência.
       // Só volta para "hoje" quando o usuário trocar manualmente ou recarregar (F5).
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
+      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: savedDate });
       setTempServices([]); setWizardStep(0); setShowConfirmation(false);
       fetchStatus(savedDate);
     } catch (err) { toast.error('Erro ao salvar relatório'); console.error(err); }
@@ -222,7 +226,7 @@ const handleFileUpload = async (e) => {
     if (!file) return;
     setImportLoading(true);
     try {
-      const result = await parseExcelFile(file);
+      const result = await parseCameraExcelFile(file);
       setImportData(result);
       setShowImport(true);
     } catch (err) {
@@ -244,7 +248,7 @@ const handleFileUpload = async (e) => {
     try {
       for (let i = 0; i < total; i++) {
         try {
-          const res = await upsertDailyReport(importData.records[i]);
+          const res = await upsertCameraReport(importData.records[i]);
           if (res === 'created') created++; else updated++;
         } catch { skipped++; }
         setImportProgress(Math.round(((i + 1) / total) * 100));
@@ -264,8 +268,8 @@ const handleFileUpload = async (e) => {
   const handleDeleteDay = async () => {
     setDeletingDay(true);
     try {
-      const n = await deleteAllReportsByDate(formData.date);
-      zeroDayInSheet(formData.date); // zera linhas na planilha (best-effort)
+      const n = await deleteAllCameraReportsByDate(formData.date);
+      zeroCameraDayInSheet(formData.date); // zera linhas na planilha (best-effort)
       toast.success(`${n} relatório(s) de ${new Date(formData.date + 'T00:00:00').toLocaleDateString('pt-BR')} apagados`);
       setShowDeleteDay(false);
       fetchStatus(formData.date);
@@ -279,6 +283,11 @@ const handleFileUpload = async (e) => {
 
   const totalQty = parseInt(formData.totalOrders) || 0;
   const canConfigure = formData.technicianName && totalQty >= 1;
+  // Pré-visualização do KM rodado (fim − início)
+  const _kmIni = formData.kmInicial !== '' ? parseFloat(formData.kmInicial) : null;
+  const _kmFim = formData.kmFinal   !== '' ? parseFloat(formData.kmFinal)   : null;
+  const kmRodadoPreview = (_kmIni != null && _kmFim != null && _kmFim >= _kmIni) ? Math.round((_kmFim - _kmIni) * 10) / 10 : null;
+  const kmInvalido = (_kmIni != null && _kmFim != null && _kmFim < _kmIni);
   // Modo "folga/ausência" — quantidade digitada explicitamente como 0
   const isZeroMode = formData.technicianName && formData.totalOrders !== '' && totalQty === 0;
 
@@ -306,13 +315,18 @@ const handleFileUpload = async (e) => {
                 {profile?.nickname ? <><Check size={10}/>{profile.nickname}</> : <span className="r-topbar-label" style={{ textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{today}</span>}
               </div>
             </div>
+            {/* Badge WIBICAM */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '8px', background: S.accentSoft, border: `1px solid ${S.accent}`, flexShrink: 0 }}>
+              <Video size={12} color={S.accent} />
+              <span style={{ fontSize: '12px', fontWeight: 800, color: S.accent, letterSpacing: '1.5px', textTransform: 'uppercase' }}>WIBICAM</span>
+            </div>
             {/* Toggle tema */}
             <button onClick={toggleTheme} title="Alternar tema"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}>
               {mode === 'light' ? <Moon size={15}/> : <Sun size={15}/>}
             </button>
             {/* Botão Dashboard */}
-            <button onClick={() => navigate('/fibra/dashboard')} title="Ir para o Dashboard"
+            <button onClick={() => navigate('/cameras/dashboard')} title="Ir para o Dashboard"
               style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
@@ -328,8 +342,8 @@ const handleFileUpload = async (e) => {
           </div>
           {/* Importar Excel à direita */}
           <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: `1px solid #1e3a5f`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: importLoading ? 'wait' : 'pointer', transition: 'all 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = mode === 'light' ? '#dbeafe' : '#0d1d3a'}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: `1px solid ${S.border}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: importLoading ? 'wait' : 'pointer', transition: 'all 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.background = mode === 'light' ? '#dbeafe' : S.accentSoft}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               {importLoading ? <Spinner /> : <><Upload size={14}/><span className="r-topbar-label">Importar Excel</span></>}
               <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ display: 'none' }} />
@@ -386,8 +400,8 @@ const handleFileUpload = async (e) => {
                     <ClipboardList size={18} color={S.blue} />
                   </div>
                   <div>
-                    <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia</div>
-                    <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
+                    <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia — WIBICAM</div>
+                    <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Lançamento da produção diária da equipe de câmeras</div>
                   </div>
                 </div>
               </div>
@@ -424,7 +438,7 @@ const handleFileUpload = async (e) => {
                           ) : collaborators.length === 0 ? (
                             <button type="button" onClick={() => { setDropdownOpen(false); setShowAddCollab(true); }}
                               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '14px 16px', background: 'none', border: 'none', color: S.blue, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}
-                              onMouseEnter={e => e.currentTarget.style.background = '#0d1d3a'}
+                              onMouseEnter={e => e.currentTarget.style.background = S.accentSoft}
                               onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                               <UserPlus size={16} />Criar primeiro colaborador
                             </button>
@@ -445,12 +459,12 @@ const handleFileUpload = async (e) => {
                                 const st = techStatus(c.name);
                                 return (
                                 <button key={c.id} type="button" onClick={() => { setFormData(p => ({ ...p, technicianName: c.name })); setDropdownOpen(false); setTechSearch(''); }}
-                                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: formData.technicianName === c.name ? '#0d1d3a' : 'none', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
-                                  onMouseEnter={e => e.currentTarget.style.background = '#0d1d3a'}
-                                  onMouseLeave={e => e.currentTarget.style.background = formData.technicianName === c.name ? '#0d1d3a' : 'none'}>
+                                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: formData.technicianName === c.name ? S.accentSoft : 'none', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+                                  onMouseEnter={e => e.currentTarget.style.background = S.accentSoft}
+                                  onMouseLeave={e => e.currentTarget.style.background = formData.technicianName === c.name ? S.accentSoft : 'none'}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: st.color, flexShrink: 0, boxShadow: `0 0 6px ${st.color}` }} title={st.label} />
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0)}</div>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0)}</div>
                                     <span style={{ color: formData.technicianName === c.name ? S.blue : S.text, fontSize: '14px', fontWeight: formData.technicianName === c.name ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                                   </div>
                                   {formData.technicianName === c.name && <Check size={14} color={S.blue} style={{ flexShrink: 0 }} />}
@@ -463,7 +477,7 @@ const handleFileUpload = async (e) => {
                             <div style={{ borderTop: `1px solid ${S.border}` }}>
                               <button type="button" onClick={() => { setDropdownOpen(false); setShowAddCollab(true); }}
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'none', border: 'none', color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#0d1d3a'}
+                                onMouseEnter={e => e.currentTarget.style.background = S.accentSoft}
                                 onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                                 <Plus size={14} />Adicionar colaborador
                               </button>
@@ -517,6 +531,41 @@ const handleFileUpload = async (e) => {
                   )}
                 </AnimatePresence>
 
+                {/* KM rodado — leitura do início e do fim do dia */}
+                <div>
+                  <FieldLabel S={S}><span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><Gauge size={11}/>KM do veículo (início e fim do dia)</span></FieldLabel>
+                  <div className="r-form-row">
+                    <div>
+                      <DarkInput S={S} type="number" name="kmInicial" value={formData.kmInicial} onChange={handleChange} min="0" step="0.1" placeholder="KM no início (cedo)" />
+                    </div>
+                    <div>
+                      <DarkInput S={S} type="number" name="kmFinal" value={formData.kmFinal} onChange={handleChange} min="0" step="0.1" placeholder="KM no fim" />
+                    </div>
+                  </div>
+                  {kmRodadoPreview != null && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', fontWeight: 700, color: S.green }}>
+                      <Gauge size={12}/>KM rodado: {kmRodadoPreview} km
+                    </div>
+                  )}
+                  {kmInvalido && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '12px', fontWeight: 600, color: S.red }}>
+                      <AlertCircle size={12}/>KM final menor que o inicial — verifique os valores.
+                    </div>
+                  )}
+                </div>
+
+                {/* Pontos (câmeras instaladas / canceladas no dia) */}
+                <div className="r-form-row">
+                  <div>
+                    <FieldLabel S={S}><span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={11}/>Pontos instalados</span></FieldLabel>
+                    <DarkInput S={S} type="number" name="pontosInstalados" value={formData.pontosInstalados} onChange={handleChange} min="0" placeholder="Câmeras instaladas no dia" />
+                  </div>
+                  <div>
+                    <FieldLabel S={S}><span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={11}/>Pontos cancelados</span></FieldLabel>
+                    <DarkInput S={S} type="number" name="pontosCancelados" value={formData.pontosCancelados} onChange={handleChange} min="0" placeholder="Câmeras canceladas no dia" />
+                  </div>
+                </div>
+
                 {/* Observações */}
                 <div>
                   <FieldLabel S={S}>{isZeroMode ? 'Motivo das 0 ordens *' : 'Observações'}</FieldLabel>
@@ -531,7 +580,7 @@ const handleFileUpload = async (e) => {
                 <AnimatePresence>
                   {tempServices.length > 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      style={{ padding: '16px', borderRadius: '10px', background: S.input, border: `1px solid #1e3a5f` }}>
+                      style={{ padding: '16px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <span style={{ color: S.blue, fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
                           <ListChecks size={13} style={{ display: 'inline', marginRight: '5px' }} />
@@ -554,9 +603,9 @@ const handleFileUpload = async (e) => {
                   onClick={tempServices.length > 0 ? () => setShowConfirmation(true) : isZeroMode ? handleZeroSubmit : handleOpenWizard}
                   disabled={!canConfigure && !isZeroMode}
                   style={{ width: '100%', padding: '14px', borderRadius: '12px', border: 'none', color: '#fff', fontSize: '15px', fontWeight: 700, cursor: (canConfigure || isZeroMode) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: 'all 0.2s',
-                    background: (!canConfigure && !isZeroMode) ? S.card2 : tempServices.length > 0 ? 'linear-gradient(135deg, #059669, #10b981)' : isZeroMode ? 'linear-gradient(135deg, #b45309, #f59e0b)' : 'linear-gradient(135deg, #3b82f6, #6366f1)',
+                    background: (!canConfigure && !isZeroMode) ? S.card2 : tempServices.length > 0 ? 'linear-gradient(135deg, #059669, #10b981)' : isZeroMode ? 'linear-gradient(135deg, #b45309, #f59e0b)' : S.gradient,
                     opacity: (!canConfigure && !isZeroMode) ? 0.4 : 1,
-                    boxShadow: (canConfigure || isZeroMode) ? (tempServices.length > 0 ? '0 0 24px rgba(16,185,129,0.25)' : isZeroMode ? '0 0 24px rgba(245,158,11,0.25)' : '0 0 24px rgba(99,102,241,0.25)') : 'none',
+                    boxShadow: (canConfigure || isZeroMode) ? (tempServices.length > 0 ? '0 0 24px rgba(16,185,129,0.25)' : isZeroMode ? '0 0 24px rgba(245,158,11,0.25)' : `0 0 24px ${S.glow}`) : 'none',
                   }}>
                   {tempServices.length > 0
                     ? <><CheckCircle2 size={17}/>Revisar e Salvar</>
@@ -597,7 +646,7 @@ const handleFileUpload = async (e) => {
                     <span style={{ color: S.text, fontWeight: 700 }}>{tempServices.length}/{totalQty}</span>
                   </div>
                   <div style={{ height: '4px', borderRadius: '4px', background: S.card2, overflow: 'hidden' }}>
-                    <motion.div style={{ height: '100%', borderRadius: '4px', background: progress === 100 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #3b82f6, #818cf8)' }}
+                    <motion.div style={{ height: '100%', borderRadius: '4px', background: progress === 100 ? 'linear-gradient(90deg, #10b981, #34d399)' : S.gradient }}
                       animate={{ width: `${progress}%` }} />
                   </div>
                 </div>
@@ -610,7 +659,7 @@ const handleFileUpload = async (e) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
                   <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Colaboradores</span>
-                  <span style={{ background: '#1e3a5f', color: S.blue, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
+                  <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
                 </div>
               </div>
 
@@ -621,7 +670,7 @@ const handleFileUpload = async (e) => {
                   {collaborators.map(c => (
                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '8px', background: S.input, border: `1px solid ${S.border}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
                       </div>
                       <button onClick={() => handleDeleteCollab(c.id, c.name)}
@@ -636,8 +685,8 @@ const handleFileUpload = async (e) => {
               )}
 
 <button onClick={() => setShowAddCollab(true)}
-                style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'transparent', border: `1px dashed #1e3a5f`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.15s', marginBottom: '6px' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#0d1d3a'; e.currentTarget.style.borderStyle = 'solid'; }}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'transparent', border: `1px dashed ${S.accent}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.15s', marginBottom: '6px' }}
+                onMouseEnter={e => { e.currentTarget.style.background = S.accentSoft; e.currentTarget.style.borderStyle = 'solid'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed'; }}>
                 <Plus size={14} />Adicionar colaborador
               </button>
@@ -659,7 +708,7 @@ const handleFileUpload = async (e) => {
             <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <UserPlus size={20} color={S.blue} />
                   </div>
                   <div>
@@ -678,7 +727,7 @@ const handleFileUpload = async (e) => {
                   Cancelar
                 </button>
                 <button onClick={handleSaveCollab} disabled={savingCollab || !newCollabName.trim()}
-                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: savingCollab || !newCollabName.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: savingCollab || !newCollabName.trim() ? 0.5 : 1 }}>
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '14px', fontWeight: 700, cursor: savingCollab || !newCollabName.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: savingCollab || !newCollabName.trim() ? 0.5 : 1 }}>
                   {savingCollab ? <Spinner /> : <><Plus size={15}/>Adicionar</>}
                 </button>
               </div>
@@ -696,11 +745,11 @@ const handleFileUpload = async (e) => {
               {/* Wizard header — fixo */}
               <div style={{ padding: '24px 28px', background: 'linear-gradient(135deg, #0d1e3d, #080b14)', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ color: '#3b82f660', fontSize: '12px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>Selecionando serviços</span>
+                  <span style={{ color: S.accent, fontSize: '12px', fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase' }}>Selecionando serviços</span>
                   <span style={{ background: 'rgba(59,130,246,0.15)', color: S.blue, fontSize: '12px', fontWeight: 800, padding: '3px 10px', borderRadius: '999px', border: '1px solid rgba(59,130,246,0.2)' }}>{wizardStep + 1} / {totalQty}</span>
                 </div>
                 <div style={{ height: '3px', borderRadius: '3px', background: 'rgba(255,255,255,0.06)', marginBottom: '16px' }}>
-                  <motion.div style={{ height: '100%', borderRadius: '3px', background: 'linear-gradient(90deg, #3b82f6, #818cf8)' }} animate={{ width: `${(wizardStep / totalQty) * 100}%` }} />
+                  <motion.div style={{ height: '100%', borderRadius: '3px', background: S.gradient }} animate={{ width: `${(wizardStep / totalQty) * 100}%` }} />
                 </div>
                 <div style={{ color: S.text, fontWeight: 800, fontSize: '22px' }}>O.S {wizardStep + 1}</div>
                 <div style={{ color: S.muted, fontSize: '13px', marginTop: '2px' }}>
@@ -763,6 +812,9 @@ const handleFileUpload = async (e) => {
                     { label:'Data', value: new Date(formData.date+'T00:00:00').toLocaleDateString('pt-BR') },
                     { label:'Total de O.S', value: formData.totalOrders, big: true },
                     { label:'Reagendamentos', value: formData.rescheduled ? (formData.rescheduledCount || 0) : '—', orange: formData.rescheduled && parseInt(formData.rescheduledCount) > 0 },
+                    { label:'KM rodado', value: kmRodadoPreview != null ? `${kmRodadoPreview} km` : '—' },
+                    { label:'Pontos instalados', value: formData.pontosInstalados !== '' ? formData.pontosInstalados : '—' },
+                    { label:'Pontos cancelados', value: formData.pontosCancelados !== '' ? formData.pontosCancelados : '—' },
                   ].map(({ label, value, big, orange }) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: `1px solid ${S.border}` }}>
                       <span style={{ color: S.muted, fontSize: '13px' }}>{label}</span>
@@ -865,7 +917,7 @@ const handleFileUpload = async (e) => {
                     {importData.records.slice(0, 20).map((r, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>
                             {(r.technicianName || '?').charAt(0)}
                           </div>
                           <div>
@@ -874,7 +926,7 @@ const handleFileUpload = async (e) => {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <span style={{ background: '#1e3a5f', color: S.blue, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                          <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
                             {r.totalOrders} O.S
                           </span>
                           {r.rescheduledCount > 0 && (

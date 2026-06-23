@@ -1,23 +1,35 @@
 import { createContext, useState, useEffect } from 'react';
-import { getPalette } from '../theme/palette';
+import { useLocation } from 'react-router-dom';
+import { getPalette, getBrandMeta } from '../theme/palette';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext();
+
+// Deriva a área (identidade visual) a partir da URL
+const brandFromPath = (pathname) => {
+  if (pathname.startsWith('/redes')) return 'redes';
+  if (pathname.startsWith('/cameras')) return 'cameras';
+  return 'fibra';
+};
 
 export const ThemeProvider = ({ children }) => {
   const [mode, setMode] = useState(() => localStorage.getItem('theme') || 'dark');
+  const { pathname } = useLocation();
+  const brand = brandFromPath(pathname);
+
+  const S = getPalette(mode, brand);
 
   useEffect(() => {
     localStorage.setItem('theme', mode);
     document.documentElement.style.colorScheme = mode;
-    document.body.style.backgroundColor = mode === 'light' ? '#dfe3ec' : '#0f1117';
-    document.body.style.color = mode === 'light' ? '#1a2236' : '#e2e8f0';
-  }, [mode]);
+    document.body.style.backgroundColor = S.bg;
+    document.body.style.color = S.text;
+  }, [mode, brand, S.bg, S.text]);
 
   const toggleTheme = () => setMode(m => (m === 'light' ? 'dark' : 'light'));
-  const S = getPalette(mode);
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme, S }}>
+    <ThemeContext.Provider value={{ mode, toggleTheme, S, brand, brandMeta: getBrandMeta(brand) }}>
       {children}
     </ThemeContext.Provider>
   );

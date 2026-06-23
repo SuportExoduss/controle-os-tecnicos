@@ -25,9 +25,9 @@ export const ProgressOverlay = ({ open, progress = null, title = 'Processando…
             transition={{ type: 'spring', stiffness: 280, damping: 26 }}
             style={{ width: '100%', maxWidth: '380px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: '32px 28px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', textAlign: 'center' }}>
 
-            <div style={{ width: '56px', height: '56px', margin: '0 auto 18px', borderRadius: '16px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 28px rgba(99,102,241,0.4)' }}>
+            <div style={{ width: '56px', height: '56px', margin: '0 auto 18px', borderRadius: '16px', background: S.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 28px ${S.glow}` }}>
               <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} style={{ display: 'flex' }}>
-                <Loader2 size={28} color="#fff" strokeWidth={2.5} />
+                <Loader2 size={28} color={S.onAccent} strokeWidth={2.5} />
               </motion.div>
             </div>
 
@@ -38,10 +38,10 @@ export const ProgressOverlay = ({ open, progress = null, title = 'Processando…
             <div style={{ marginTop: '20px', height: '10px', borderRadius: '999px', background: S.input, overflow: 'hidden', position: 'relative' }}>
               {determinate ? (
                 <motion.div animate={{ width: `${pct}%` }} transition={{ ease: 'easeOut', duration: 0.25 }}
-                  style={{ height: '100%', borderRadius: '999px', background: 'linear-gradient(90deg, #3b82f6, #818cf8)' }} />
+                  style={{ height: '100%', borderRadius: '999px', background: S.gradient }} />
               ) : (
                 <motion.div animate={{ x: ['-40%', '140%'] }} transition={{ repeat: Infinity, duration: 1.1, ease: 'easeInOut' }}
-                  style={{ position: 'absolute', top: 0, height: '100%', width: '40%', borderRadius: '999px', background: 'linear-gradient(90deg, #3b82f6, #818cf8)' }} />
+                  style={{ position: 'absolute', top: 0, height: '100%', width: '40%', borderRadius: '999px', background: S.gradient }} />
               )}
             </div>
 

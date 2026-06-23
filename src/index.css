@@ -52,6 +52,14 @@ body {
 .r-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 1024px) { .r-metrics { grid-template-columns: repeat(4,1fr); gap: 16px; } }
 
+.r-month-nav { display: flex; gap: 10px; }
+@media (min-width: 1024px) { .r-month-nav { gap: 16px; } }
+
+/* Logo no topo (wordmark IbiúNET Multiplay) */
+.r-logo { height: 24px; }
+@media (min-width: 480px) { .r-logo { height: 28px; } }
+@media (min-width: 768px) { .r-logo { height: 32px; } }
+
 /* Grid de filtros: 1 col → 2 col */
 .r-filters { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .r-filters { grid-template-columns: 1fr 1fr; } }
@@ -95,9 +103,8 @@ body {
 @media (min-width: 640px) { .r-report-name { max-width: 300px; font-size: 15px; } }
 @media (min-width: 1024px) { .r-report-name { max-width: none; } }
 
-/* Badges no card de relatório: esconde em mobile pequeno */
-.r-badge-os { display: none; }
-@media (min-width: 480px) { .r-badge-os { display: flex; } }
+/* Badge "X O.S" do card de relatório: sempre visível (inclusive mobile) */
+.r-badge-os { display: inline-flex; }
 
 /* Datas do modal Excel: empilha em telas bem estreitas */
 .r-excel-dates { grid-template-columns: 1fr; }
@@ -110,3 +117,36 @@ body {
 /* Campo textarea e input padding mobile */
 .r-input { padding: 11px 14px !important; font-size: 16px !important; }
 @media (min-width: 640px) { .r-input { padding: 12px 16px !important; font-size: 14px !important; } }
+
+/* ── Dashboard Redes: conteúdo + sidebar de assuntos (à direita) ── */
+.r-redes-grid { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+@media (min-width: 900px) { .r-redes-grid { grid-template-columns: minmax(0,1fr) 250px; } }
+
+/* Lista de assuntos: chips em linha no mobile, coluna no desktop */
+.r-redes-side-list { display: flex; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+@media (min-width: 900px) { .r-redes-side-list { flex-direction: column; flex-wrap: nowrap; } }
+
+/* Sidebar fica fixa (sticky) no desktop */
+@media (min-width: 900px) { .r-redes-side { position: sticky; top: 76px; } }
+
+/* Layout geral: coluna esquerda (métricas+nav+pizza) | coluna direita (assuntos) */
+.r-redes-outer { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; }
+@media (min-width: 1000px) { .r-redes-outer { grid-template-columns: minmax(0,2.4fr) minmax(0,1fr); } }
+.r-redes-left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+/* Métricas em 3 colunas (dentro da coluna esquerda) */
+.r-metrics3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 1024px) { .r-metrics3 { grid-template-columns: repeat(3,1fr); gap: 16px; } }
+
+/* Painel da pizza: padding e gap menores no mobile */
+.r-pizza-panel { padding: 14px; }
+@media (min-width: 640px) { .r-pizza-panel { padding: 20px 24px; } }
+.r-pizza-flex { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: center; }
+@media (min-width: 560px) { .r-pizza-flex { gap: 20px; } }
+.r-pizza-chart { width: 200px; height: 200px; flex-shrink: 0; }
+@media (min-width: 400px) { .r-pizza-chart { width: 220px; height: 220px; } }
+.r-pizza-legend { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+
+/* Grade de info de O.S: 1 coluna no mobile, 2 em telas maiores */
+.r-os-info { display: grid; grid-template-columns: 1fr; gap: 4px 12px; font-size: 11px; }
+@media (min-width: 420px) { .r-os-info { grid-template-columns: 1fr 1fr; } }

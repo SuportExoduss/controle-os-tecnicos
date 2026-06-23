@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+// jsPDF é carregado sob demanda (dynamic import) para não pesar o bundle inicial.
 
 // Cede a thread para o navegador repintar o overlay de progresso entre etapas.
 const yieldToBrowser = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -143,6 +143,7 @@ export const generateIndividualPDF = async (technicianName, report, onProgress) 
   const total = records.length;
 
   onProgress?.(5);
+  const { jsPDF } = await import('jspdf');
   await yieldToBrowser();
 
   const pdf = new jsPDF('p', 'mm', 'a4');
@@ -160,6 +161,7 @@ export const generateIndividualPDF = async (technicianName, report, onProgress) 
 };
 
 export const generateGeneralPDF = async (reports, onProgress) => {
+  const { jsPDF } = await import('jspdf');
   const pdf = new jsPDF('p', 'mm', 'a4');
   const W = pdf.internal.pageSize.getWidth();
   const H = pdf.internal.pageSize.getHeight();

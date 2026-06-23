@@ -1,3 +1,4 @@
+// Importação da aba "Lancamentos Equipe Cameras" (WIBICAM).
 // xlsx é carregado sob demanda (dynamic import) para não pesar o bundle inicial.
 
 // Converte serial date do Excel para YYYY-MM-DD
@@ -21,39 +22,39 @@ const parseDate = (val) => {
   return null;
 };
 
-// Remove acentos sem caracteres combinantes (copia segura)
 const ACCENTS = { 'á':'a','à':'a','ã':'a','â':'a','ä':'a','é':'e','ê':'e','è':'e','ë':'e','í':'i','ì':'i','î':'i','ï':'i','ó':'o','ô':'o','õ':'o','ò':'o','ö':'o','ú':'u','ù':'u','û':'u','ü':'u','ç':'c','ñ':'n' };
 const norm = (s) => String(s == null ? '' : s).trim().toLowerCase()
   .replace(/[áàãâäéêèëíìîïóôõòöúùûüçñ]/g, (c) => ACCENTS[c] || c);
 
+const numOrNull = (v) => {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return isNaN(n) ? null : n;
+};
+
 // Aliases dos campos fixos (normalizados)
 const FIELD_ALIASES = {
   date:       ['data'],
-  technician: ['nome_tecnico', 'nome do tecnico', 'nome tecnico', 'tecnico', 'colaborador', 'nome'],
+  technician: ['tecnico', 'nome_tecnico', 'nome do tecnico', 'nome tecnico', 'colaborador', 'nome'],
   reagend:    ['reagendamentos', 'reagendamento', 'reagend'],
+  km:         ['km rodado', 'km'],
+  pontosIn:   ['pontos instalados'],
+  pontosCanc: ['pontos cancelados'],
   obs:        ['observacoes', 'obs', 'observacao'],
 };
 
 // Tipos de serviço -> nomes possíveis de coluna (chave = nome EXATO usado no app, com acento)
 const TYPE_ALIASES = {
-  'INSTALAÇÃO FIBRA':     ['instalacao fibra'],
-  'MANUTENÇÃO FIBRA':     ['manutencao fibra'],
-  'MUDANÇA DE ENDEREÇO':  ['mudanca de endereco'],
-  'MUDANÇA DE PONTO':     ['mudanca de ponto'],
-  'INSTALAÇÃO WI-BINET':  ['instalacao wi-binet', 'instalacao wibinet', 'wi-binet'],
-  'REPARO WI-BINET':      ['reparo wi-binet', 'reparo wibinet'],
-  'INSTALAÇÃO TV':        ['instalacao tv'],
-  'REPARO TV':            ['reparo tv'],
-  'OS AMPLIAÇÃO':         ['os ampliacao', 'ampliacao'],
-  'VISTORIA':             ['vistoria'],
-  'FONTE QUEIMADA':       ['fonte queimada'],
-  'TROCA DE EQUIPAMENTO': ['troca de equipamento'],
-  'SINAL ALTO':           ['sinal alto'],
-  'REINCIDÊNCIA':         ['reincidencia'],
-  'IMPRODUTIVA':          ['improdutiva'],
+  'INSTALAÇÃO WI-BICAM':              ['instalacao wi-bicam', 'instalacao wibicam', 'instalacao wi-binet'],
+  'REPARO':                          ['reparo'],
+  'TROCA ROTEADOR/VISTORIA/REPARO TV':['troca de roteador/vistoria fibra/reparo tv', 'troca de roteador/vistoria/reparo tv'],
+  'MUDANÇA DE ENDEREÇO':             ['mudanca de endereco c/wi-bicam', 'mudanca de endereco'],
+  'MUDANÇA DE PONTO':                ['mudanca de ponto c/wi-bicam', 'mudanca de ponto'],
+  'VISTORIA TÉCNICA':                ['vistoria tecnica wi-bicam', 'vistoria tecnica'],
+  'RETIRADA':                        ['retirada'],
 };
 
-export const parseExcelFile = (file) => {
+export const parseCameraExcelFile = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -63,8 +64,8 @@ export const parseExcelFile = (file) => {
         const wb = XLSX.read(data, { type: 'array' });
 
         const sheetName = wb.SheetNames.find(n =>
-          /fibra|equipe|lancamento/i.test(n)
-        ) || wb.SheetNames[0];
+          /camera|câmera|cameras/i.test(n)
+        ) || wb.SheetNames.find(n => /equipe|lancamento/i.test(n)) || wb.SheetNames[0];
 
         const ws = wb.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
@@ -76,10 +77,13 @@ export const parseExcelFile = (file) => {
           return -1;
         };
 
-        const colDate    = findCol(FIELD_ALIASES.date);
-        const colTech     = findCol(FIELD_ALIASES.technician);
-        const colReagend  = findCol(FIELD_ALIASES.reagend);
-        const colObs      = findCol(FIELD_ALIASES.obs);
+        const colDate      = findCol(FIELD_ALIASES.date);
+        const colTech      = findCol(FIELD_ALIASES.technician);
+        const colReagend   = findCol(FIELD_ALIASES.reagend);
+        const colKm        = findCol(FIELD_ALIASES.km);
+        const colPontosIn  = findCol(FIELD_ALIASES.pontosIn);
+        const colPontosCanc= findCol(FIELD_ALIASES.pontosCanc);
+        const colObs       = findCol(FIELD_ALIASES.obs);
         const typeCols = {};
         Object.keys(TYPE_ALIASES).forEach(t => { typeCols[t] = findCol(TYPE_ALIASES[t]); });
 
@@ -95,6 +99,9 @@ export const parseExcelFile = (file) => {
           if (!date) continue;
 
           const rescheduledCount = parseInt(colReagend >= 0 ? row[colReagend] : 0) || 0;
+          const kmRodado         = colKm >= 0 ? numOrNull(row[colKm]) : null;
+          const pontosInstalados = colPontosIn >= 0 ? numOrNull(row[colPontosIn]) : null;
+          const pontosCancelados = colPontosCanc >= 0 ? numOrNull(row[colPontosCanc]) : null;
           const observations = String((colObs >= 0 ? row[colObs] : '') || '').trim();
 
           const serviceTypes = [];
@@ -111,6 +118,11 @@ export const parseExcelFile = (file) => {
             totalOrders: serviceTypes.length,
             rescheduledCount,
             rescheduled: rescheduledCount > 0,
+            kmInicial: null,
+            kmFinal: null,
+            kmRodado,
+            pontosInstalados,
+            pontosCancelados,
             serviceTypes,
             observations,
             submissionTime: '00:00:00',

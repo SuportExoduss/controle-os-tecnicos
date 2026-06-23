@@ -1,20 +1,27 @@
-import * as XLSX from 'xlsx';
+// xlsx é carregado sob demanda (dynamic import) para não pesar o bundle inicial.
 
-// Colunas exatamente como na planilha "Lancamentos Equipe Fibra"
+// Colunas — agora com TODOS os 15 tipos de serviço (mesma ordem do sistema)
 const EXCEL_COLS = [
   { label: 'Data',                   key: 'INSTALAÇÃO FIBRA',    isDate: true },
   { label: 'Nome_Tecnico',           key: 'technicianName',      isName: true },
-  { label: 'Instalação Fibra',       key: 'INSTALAÇÃO FIBRA'    },
-  { label: 'Manutenção Fibra',       key: 'MANUTENÇÃO FIBRA'    },
-  { label: 'Mudança de endereço',    key: 'MUDANÇA DE ENDEREÇO' },
-  { label: 'Instalação Wi-biNET',    key: 'INSTALAÇÃO WI-BINET' },
-  { label: 'Reparo Wi-biNET',        key: 'REPARO WI-BINET'     },
-  { label: 'Instalação TV',          key: 'INSTALAÇÃO TV'       },
-  { label: 'Reparo TV',              key: 'REPARO TV'           },
-  { label: 'OS Ampliacao',           key: 'OS AMPLIAÇÃO'        },
-  { label: 'Reagendamentos',         key: 'reagendamentos'       },
-  { label: 'Total OS',               key: 'totalOrders',         isTotal: true },
-  { label: 'Observacoes',            key: 'observations',        isObs: true   },
+  { label: 'Instalação Fibra',       key: 'INSTALAÇÃO FIBRA'      },
+  { label: 'Manutenção Fibra',       key: 'MANUTENÇÃO FIBRA'      },
+  { label: 'Mudança de endereço',    key: 'MUDANÇA DE ENDEREÇO'   },
+  { label: 'Mudança de ponto',       key: 'MUDANÇA DE PONTO'      },
+  { label: 'Instalação Wi-biNET',    key: 'INSTALAÇÃO WI-BINET'   },
+  { label: 'Reparo Wi-biNET',        key: 'REPARO WI-BINET'       },
+  { label: 'Instalação TV',          key: 'INSTALAÇÃO TV'         },
+  { label: 'Reparo TV',              key: 'REPARO TV'             },
+  { label: 'OS Ampliacao',           key: 'OS AMPLIAÇÃO'          },
+  { label: 'Vistoria',               key: 'VISTORIA'              },
+  { label: 'Fonte Queimada',         key: 'FONTE QUEIMADA'        },
+  { label: 'Troca de Equipamento',   key: 'TROCA DE EQUIPAMENTO'  },
+  { label: 'Sinal Alto',             key: 'SINAL ALTO'            },
+  { label: 'Reincidência',           key: 'REINCIDÊNCIA'          },
+  { label: 'Improdutiva',            key: 'IMPRODUTIVA'           },
+  { label: 'Reagendamentos',         key: 'reagendamentos'        },
+  { label: 'Total OS',               key: 'totalOrders',          isTotal: true },
+  { label: 'Observacoes',            key: 'observations',         isObs: true   },
 ];
 
 // Conta quantas vezes um tipo aparece no array serviceTypes
@@ -25,6 +32,7 @@ const countType = (serviceTypes = [], typeName) =>
 const yieldToBrowser = () => new Promise(resolve => setTimeout(resolve, 0));
 
 export const generateExcel = async (reports, filename = 'relatorio-os', onProgress) => {
+  const XLSX = await import('xlsx');
   const header = EXCEL_COLS.map(c => c.label);
 
   onProgress?.(5);
@@ -51,12 +59,15 @@ export const generateExcel = async (reports, filename = 'relatorio-os', onProgre
 
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
 
-  // Larguras das colunas
-  ws['!cols'] = [
-    { wch: 12 }, { wch: 32 }, { wch: 18 }, { wch: 18 },
-    { wch: 22 }, { wch: 20 }, { wch: 18 }, { wch: 16 },
-    { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 10 }, { wch: 30 },
-  ];
+  // Larguras das colunas (derivadas das colunas, sempre em sincronia)
+  ws['!cols'] = EXCEL_COLS.map(col => {
+    if (col.isDate) return { wch: 12 };
+    if (col.isName) return { wch: 32 };
+    if (col.isObs) return { wch: 30 };
+    if (col.isTotal) return { wch: 10 };
+    if (col.key === 'reagendamentos') return { wch: 14 };
+    return { wch: 18 };
+  });
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Lancamentos Equipe Fibra');
