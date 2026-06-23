@@ -299,6 +299,45 @@ const handleFileUpload = async (e) => {
     setTempServices([]);
     setShowConfirmation(true);
   };
+
+  // Atalho: marca o técnico selecionado como FOLGA (zerado + obs "Folga"), KM/pontos vazios.
+  // Grava no Firestore e espelha na planilha. Não passa pelo wizard.
+  const handleFolga = async () => {
+    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar folga'); return; }
+    setLoading(true);
+    try {
+      const existing = await getCameraReportsByTechnician(formData.technicianName, formData.date);
+      if (existing.docs.length > 0) {
+        const ex = existing.docs[0].data();
+        const hasData = (ex.totalOrders || 0) > 0 || (ex.serviceTypes || []).length > 0;
+        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar folga vai zerar. Continuar?`)) { setLoading(false); return; }
+      }
+      await upsertCameraReport({
+        technicianName: formData.technicianName, totalOrders: 0,
+        rescheduled: false, rescheduledCount: 0,
+        kmInicial: null, kmFinal: null, kmRodado: null,
+        pontosInstalados: null, pontosCancelados: null,
+        observations: 'Folga', serviceTypes: [],
+        date: formData.date, submissionTime: getCurrentTime(),
+        createdByNickname: profile?.nickname || 'Desconhecido',
+        createdByEmail: user?.email || '', createdByUid: user?.uid || '',
+      });
+      syncCameraReportToSheet({
+        technicianName: formData.technicianName, date: formData.date,
+        rescheduledCount: 0, kmInicial: null, kmFinal: null, kmRodado: null,
+        pontosInstalados: null, pontosCancelados: null,
+        observations: 'Folga', serviceTypes: [],
+      });
+      toast.success(`Folga registrada para ${formData.technicianName}`);
+      setSavedName(formData.technicianName); setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2200);
+      const savedDate = formData.date;
+      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: savedDate });
+      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+      fetchStatus(savedDate);
+    } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
+    finally { setLoading(false); }
+  };
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -612,6 +651,14 @@ const handleFileUpload = async (e) => {
                     : isZeroMode
                       ? <><ListChecks size={17}/>Explicar Motivo <ArrowRight size={14}/></>
                       : <><ListChecks size={17}/>Configurar Tipos de Serviço <ArrowRight size={14}/></>}
+                </button>
+
+                {/* Atalho: Técnico de folga (zerado + obs "Folga") */}
+                <button type="button" onClick={handleFolga}
+                  disabled={!formData.technicianName || loading}
+                  title="Cria um registro zerado com observação Folga (grava no Firebase e na planilha)"
+                  style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '12px', border: `1px solid ${S.border}`, background: 'transparent', color: formData.technicianName ? S.purple : S.muted, fontSize: '14px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: formData.technicianName ? 1 : 0.5, transition: 'all 0.2s' }}>
+                  <CalendarDays size={16}/>Técnico de folga
                 </button>
               </div>
             </Glass>
