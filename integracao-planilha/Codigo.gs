@@ -112,20 +112,25 @@ function sortSheet(sheet, map) {
   ]);
 }
 
-// ZERA as linhas que batem (apagar = zera, mantem a linha para refazer depois)
+// ZERA as linhas que batem (apagar = zera, mantem a linha para refazer depois).
+// Zera TODAS as colunas (menos Data e Tecnico; Observacoes vira vazio), assim
+// nenhuma coluna fica preenchida por engano. Tambem zera linhas SEM tecnico
+// quando a exclusao e por data.
 function zeroRows(sheet, map, date, technician) {
   var data = sheet.getDataRange().getValues();
   var count = 0;
   for (var i = 1; i < data.length; i++) {
-    if (!data[i][map.technician]) continue;
+    var hasDate = data[i][map.date] !== '' && data[i][map.date] != null;
+    var hasTech = data[i][map.technician] !== '' && data[i][map.technician] != null;
+    if (!hasDate && !hasTech) continue; // linha totalmente vazia
     var dStr = cellToISO(data[i][map.date]);
     if (date && dStr !== date) continue;
     if (technician && norm(data[i][map.technician]) !== norm(technician)) continue;
     var row = data[i].slice();
-    for (var t in map.types) if (map.types[t] >= 0) row[map.types[t]] = 0;
-    if (map.reagend >= 0) row[map.reagend] = 0;
-    if (map.total >= 0) row[map.total] = 0;
-    if (map.obs >= 0) row[map.obs] = '';
+    for (var c = 0; c < row.length; c++) {
+      if (c === map.date || c === map.technician) continue; // preserva Data e Tecnico
+      row[c] = (c === map.obs) ? '' : 0;                    // demais colunas zeradas
+    }
     sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
     count++;
   }
@@ -531,23 +536,25 @@ function buildCamerasColMap(sheet) {
   return { map: map, headers: headers, lastCol: lastCol };
 }
 
-// ZERA as linhas que batem (apagar = zera, mantem a linha para refazer depois)
+// ZERA as linhas que batem (apagar = zera, mantem a linha para refazer depois).
+// Zera TODAS as colunas (menos Data e Tecnico; Observacoes vira vazio), assim
+// nenhuma coluna fica preenchida por engano, mesmo as que o script nao conhece.
+// Tambem zera linhas SEM tecnico quando a exclusao e por data.
 function zeroCamerasRows(sheet, map, date, technician) {
   var data = sheet.getDataRange().getValues();
   var count = 0;
   for (var i = 1; i < data.length; i++) {
-    if (!data[i][map.technician]) continue;
+    var hasDate = data[i][map.date] !== '' && data[i][map.date] != null;
+    var hasTech = data[i][map.technician] !== '' && data[i][map.technician] != null;
+    if (!hasDate && !hasTech) continue; // linha totalmente vazia
     var dStr = cellToISO(data[i][map.date]);
     if (date && dStr !== date) continue;
     if (technician && norm(data[i][map.technician]) !== norm(technician)) continue;
     var row = data[i].slice();
-    for (var t in map.types) if (map.types[t] >= 0) row[map.types[t]] = 0;
-    if (map.reagend >= 0) row[map.reagend] = 0;
-    if (map.km >= 0) row[map.km] = '';
-    if (map.pontosIn >= 0) row[map.pontosIn] = '';
-    if (map.pontosCanc >= 0) row[map.pontosCanc] = '';
-    if (map.total >= 0) row[map.total] = 0;
-    if (map.obs >= 0) row[map.obs] = '';
+    for (var c = 0; c < row.length; c++) {
+      if (c === map.date || c === map.technician) continue; // preserva Data e Tecnico
+      row[c] = (c === map.obs) ? '' : 0;                    // demais colunas zeradas
+    }
     sheet.getRange(i + 1, 1, 1, row.length).setValues([row]);
     count++;
   }
