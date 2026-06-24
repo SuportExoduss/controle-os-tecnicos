@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../services/auth/authService';
-import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, getReportsByDateRange, saveDailyReport } from '../../services/database/reportService';
+import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw } from '../../services/database/reportService';
 import { getCollaborators, addCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
@@ -12,7 +12,7 @@ import { getCurrentTime } from '../../utils/formatTime';
 import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
-import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
+import { syncReportToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -77,7 +77,6 @@ export const Admin = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [corrigindo, setCorrigindo] = useState(false); // TEMP: correção de faltas Jun/2026
 
   const [showImport, setShowImport] = useState(false);
   const [importData, setImportData] = useState(null);
@@ -326,39 +325,6 @@ const handleFileUpload = async (e) => {
     } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
     finally { setLoading(false); }
   };
-  // ── TEMPORÁRIO ── Correção: cria registros ZERADOS (sem obs) para os dias úteis
-  // de junho/2026 em que técnicos do cadastro não têm registro (domingos ignorados).
-  // Idempotente: rodar de novo não duplica (relê e só cria o que falta). APAGAR depois de usar.
-  const handleCorrigirFaltasJunho = async () => {
-    if (!window.confirm('Criar registros ZERADOS (sem observação) para todos os técnicos do cadastro nos dias úteis de junho/2026 sem registro?\n\n(Domingos são ignorados. Pode rodar com segurança — não duplica.)')) return;
-    setCorrigindo(true);
-    try {
-      const arr = await getReportsByDateRange('2026-06-01', '2026-06-30', { force: true });
-      const roster = collaborators.map(c => (c.name || '').trim()).filter(Boolean);
-      const isSunday = (d) => new Date(d + 'T12:00:00').getDay() === 0;
-      const dias = [...new Set(arr.map(r => r.date))].filter(d => !isSunday(d)).sort();
-      const presentByDay = {};
-      for (const r of arr) { const t = (r.technicianName || '').trim(); (presentByDay[r.date] = presentByDay[r.date] || new Set()).add(t); }
-      const toCreate = [];
-      for (const d of dias) for (const t of roster) if (!presentByDay[d].has(t)) toCreate.push({ technicianName: t, date: d });
-      if (!toCreate.length) { toast.success('Nenhuma falta a criar — junho já está completo!'); setCorrigindo(false); return; }
-      let ok = 0;
-      for (const x of toCreate) {
-        await saveDailyReport({
-          technicianName: x.technicianName, totalOrders: 0, rescheduled: false, rescheduledCount: 0,
-          serviceTypes: [], observations: '', date: x.date, submissionTime: '00:00:00',
-          createdByNickname: profile?.nickname || 'Correção', createdByEmail: user?.email || '', faltaCorrecao: true,
-        });
-        ok++;
-      }
-      // espelha na planilha em um único envio (best-effort)
-      syncReportsToSheet(toCreate.map(x => ({ technicianName: x.technicianName, date: x.date, rescheduledCount: 0, observations: '', serviceTypes: [] })));
-      toast.success(`${ok} falta(s) de junho criada(s).`);
-      if (formData.date) fetchStatus(formData.date);
-    } catch (err) { toast.error('Erro ao corrigir faltas de junho'); console.error(err); }
-    finally { setCorrigindo(false); }
-  };
-
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -640,13 +606,6 @@ const handleFileUpload = async (e) => {
                   title="Cria um registro zerado com observação Folga (grava no Firebase e na planilha)"
                   style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '12px', border: `1px solid ${S.border}`, background: 'transparent', color: formData.technicianName ? S.purple : S.muted, fontSize: '14px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: formData.technicianName ? 1 : 0.5, transition: 'all 0.2s' }}>
                   <CalendarDays size={16}/>Técnico de folga
-                </button>
-
-                {/* ⚠ TEMPORÁRIO — correção de faltas Jun/2026. APAGAR depois de usar. */}
-                <button type="button" onClick={handleCorrigirFaltasJunho} disabled={corrigindo}
-                  title="Cria registros zerados (sem obs) para os dias úteis de junho sem registro. Uso único."
-                  style={{ width: '100%', marginTop: '10px', padding: '11px', borderRadius: '12px', border: `1px dashed ${S.orange}`, background: 'transparent', color: S.orange, fontSize: '13px', fontWeight: 700, cursor: corrigindo ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: corrigindo ? 0.6 : 1 }}>
-                  <AlertCircle size={15}/>{corrigindo ? 'Corrigindo…' : '⚠ Corrigir faltas Jun/2026 (uso único)'}
                 </button>
               </div>
             </Glass>
