@@ -1,0 +1,37 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "daily_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "totalOrders", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "daily_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "totalOrders", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "camera_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "date", "order": "ASCENDING" },
+        { "fieldPath": "totalOrders", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "camera_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "totalOrders", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

@@ -13,18 +13,33 @@ export const saveDailyReport = async (reportData) => {
   return ref;
 };
 
-// Busca SÓ o período pedido (ex.: mês visível) — corta drasticamente as
-// leituras vs. baixar todo o histórico. `date` é 'YYYY-MM-DD' (ordena certo).
-// Resultado fica em cache por alguns minutos; gravações invalidam.
+// Busca SÓ o período pedido (ex.: mês visível) e SÓ registros com O.S > 0.
+// Folgas/faltas (zerados) não são lidos → não contam na cota de leitura.
+// O dashboard já descarta zerados na exibição, então o resultado é idêntico.
+// `date` é 'YYYY-MM-DD' (ordena certo). Cache de alguns minutos; gravações invalidam.
+// Fallback: sem o índice composto (date + totalOrders), lê o período completo.
 export const getReportsByDateRange = async (start, end, { force = false } = {}) => {
   const key = `${COLLECTION_NAME}:${start}|${end}`;
   if (!force) { const cached = readCache(key); if (cached) return cached; }
-  const q = query(
-    collection(db, COLLECTION_NAME),
-    where('date', '>=', start),
-    where('date', '<=', end)
-  );
-  const snap = await getDocs(q);
+  const base = [where('date', '>=', start), where('date', '<=', end)];
+  let snap;
+  try {
+    snap = await getDocs(query(collection(db, COLLECTION_NAME), ...base, where('totalOrders', '>', 0)));
+  } catch (e) {
+    console.warn('[getReportsByDateRange] filtro >0 indisponível (índice?), lendo período completo:', e.code || e.message);
+    snap = await getDocs(query(collection(db, COLLECTION_NAME), ...base));
+  }
+  const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  writeCache(key, arr);
+  return arr;
+};
+
+// Histórico COMPLETO de um técnico (inclui folgas/faltas zeradas) — sob demanda,
+// só quando o usuário abre o histórico. Cacheado; gravações invalidam.
+export const getReportsByTechnicianAll = async (technicianName, { force = false } = {}) => {
+  const key = `${COLLECTION_NAME}:tech:${technicianName}`;
+  if (!force) { const cached = readCache(key); if (cached) return cached; }
+  const snap = await getDocs(query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName)));
   const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   writeCache(key, arr);
   return arr;

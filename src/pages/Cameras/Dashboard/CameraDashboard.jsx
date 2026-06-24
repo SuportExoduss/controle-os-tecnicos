@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCameraReportsByDateRange, updateCameraReport } from '../../../services/database/cameraReportService';
+import { getCameraReportsByDateRange, getCameraReportsByTechnicianAll, updateCameraReport } from '../../../services/database/cameraReportService';
 import { generateIndividualPDF, generateGeneralPDF } from '../../../services/reports/pdfService';
 import { generateCameraExcel } from '../../../services/reports/cameraExcelService';
 import { syncCameraReportToSheet } from '../../../services/integrations/cameraSheetSync';
@@ -414,10 +414,20 @@ export const CameraDashboard = () => {
     } catch { toast.error('Erro ao copiar'); }
   };
 
-  // Feature 2 — History
-  const techHistory = historyTech
-    ? [...reports].filter(r => r.technicianName === historyTech).sort((a, b) => b.date.localeCompare(a.date))
-    : [];
+  // Feature 2 — History (busca COMPLETA sob demanda, inclui folgas/faltas zeradas,
+  // pois o dashboard agora lê só os > 0 e o cache não tem os zerados).
+  const [techHistory, setTechHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  useEffect(() => {
+    if (!historyTech) { setTechHistory([]); return; }
+    let cancelled = false;
+    setHistoryLoading(true);
+    getCameraReportsByTechnicianAll(historyTech)
+      .then(arr => { if (!cancelled) setTechHistory(arr.sort((a, b) => b.date.localeCompare(a.date))); })
+      .catch(() => { if (!cancelled) setTechHistory([]); })
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [historyTech]);
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1001,7 +1011,9 @@ export const CameraDashboard = () => {
               <button onClick={() => setHistoryTech(null)} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {techHistory.length === 0 ? (
+              {historyLoading ? (
+                <p style={{ color: S.muted, fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>Carregando histórico…</p>
+              ) : techHistory.length === 0 ? (
                 <p style={{ color: S.muted, fontSize: '13px', textAlign: 'center', marginTop: '40px' }}>Nenhum registro encontrado</p>
               ) : techHistory.map((r) => (
                 <div key={r.id} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '14px 16px' }}>
