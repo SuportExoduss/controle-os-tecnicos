@@ -416,14 +416,27 @@ const handleFileUpload = async (e) => {
             <Glass S={S} style={{ overflow: 'hidden' }}>
               {/* Card header */}
               <div style={{ padding: '24px 28px', background: mode === 'light' ? 'linear-gradient(135deg, #dbeafe 0%, #eceef4 100%)' : 'linear-gradient(135deg, #0d1e3d 0%, #0f1117 100%)', borderBottom: `1px solid ${S.border}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <ClipboardList size={18} color={S.blue} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <ClipboardList size={18} color={S.blue} />
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia</div>
+                      <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
+                    </div>
                   </div>
-                  <div>
-                    <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia</div>
-                    <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
-                  </div>
+                  {/* Atalho Folga — fica notável após escolher o técnico */}
+                  <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
+                    title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                      border: `1px solid ${formData.technicianName ? S.purple : S.border}`,
+                      background: formData.technicianName ? 'rgba(167,139,250,0.15)' : 'transparent',
+                      color: formData.technicianName ? S.purple : S.muted,
+                      boxShadow: formData.technicianName ? '0 0 14px rgba(167,139,250,0.35)' : 'none',
+                      opacity: formData.technicianName ? 1 : 0.6 }}>
+                    <CalendarDays size={14}/>Folga
+                  </button>
                 </div>
               </div>
 
@@ -598,14 +611,6 @@ const handleFileUpload = async (e) => {
                     : isZeroMode
                       ? <><ListChecks size={17}/>Explicar Motivo <ArrowRight size={14}/></>
                       : <><ListChecks size={17}/>Configurar Tipos de Serviço <ArrowRight size={14}/></>}
-                </button>
-
-                {/* Atalho: Técnico de folga (zerado + obs "Folga") */}
-                <button type="button" onClick={handleFolga}
-                  disabled={!formData.technicianName || loading}
-                  title="Cria um registro zerado com observação Folga (grava no Firebase e na planilha)"
-                  style={{ width: '100%', marginTop: '10px', padding: '12px', borderRadius: '12px', border: `1px solid ${S.border}`, background: 'transparent', color: formData.technicianName ? S.purple : S.muted, fontSize: '14px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: formData.technicianName ? 1 : 0.5, transition: 'all 0.2s' }}>
-                  <CalendarDays size={16}/>Técnico de folga
                 </button>
               </div>
             </Glass>
