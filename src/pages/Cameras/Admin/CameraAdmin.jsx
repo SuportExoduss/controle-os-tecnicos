@@ -448,10 +448,10 @@ const handleFileUpload = async (e) => {
                   <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
                     title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
                     style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                      border: `1px solid ${formData.technicianName ? S.purple : S.border}`,
-                      background: formData.technicianName ? 'rgba(167,139,250,0.15)' : 'transparent',
-                      color: formData.technicianName ? S.purple : S.muted,
-                      boxShadow: formData.technicianName ? '0 0 14px rgba(167,139,250,0.35)' : 'none',
+                      border: `1px solid ${formData.technicianName ? S.red : S.border}`,
+                      background: formData.technicianName ? 'rgba(239,68,68,0.15)' : 'transparent',
+                      color: formData.technicianName ? S.red : S.muted,
+                      boxShadow: formData.technicianName ? '0 0 14px rgba(239,68,68,0.35)' : 'none',
                       opacity: formData.technicianName ? 1 : 0.6 }}>
                     <CalendarDays size={14}/>Folga
                   </button>
