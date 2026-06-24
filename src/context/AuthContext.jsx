@@ -45,6 +45,12 @@ export const AuthProvider = ({ children }) => {
       return;
     }
 
+    // "Lembrar dispositivo": mantém a sessão indefinidamente (sem auto-logout por inatividade).
+    if (localStorage.getItem('ibiunet_remember') === '1') {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+
     let lastWrite = 0;
     const markActivity = () => {
       const now = Date.now();

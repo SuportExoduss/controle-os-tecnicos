@@ -1,7 +1,12 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { loginUser, logoutUser } from '../../services/auth/authService';
+import { loginUser, logoutUser, setRememberDevice } from '../../services/auth/authService';
+
+// Chaves do "Lembrar dispositivo"
+const REMEMBER_KEY = 'ibiunet_remember';
+const EMAIL_KEY = 'ibiunet_email';
+const PASS_KEY = 'ibiunet_pass';
 import { getUserProfile, setUserNickname, isNicknameTaken } from '../../services/database/userProfileService';
 import { Spinner } from '../../components/common/Spinner';
 import { toast } from 'react-hot-toast';
@@ -10,8 +15,10 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { Eye, EyeOff, UserCircle, Check, Sun, Moon } from 'lucide-react';
 
 export const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const rememberInit = localStorage.getItem(REMEMBER_KEY) !== '0'; // ligado por padrão
+  const [email, setEmail] = useState(() => rememberInit ? (localStorage.getItem(EMAIL_KEY) || '') : '');
+  const [password, setPassword] = useState(() => rememberInit ? (localStorage.getItem(PASS_KEY) || '') : '');
+  const [remember, setRemember] = useState(rememberInit);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -19,8 +26,13 @@ export const Login = () => {
   const adminDest = location.pathname.startsWith('/redes') ? '/redes/admin'
     : location.pathname.startsWith('/cameras') ? '/cameras/admin'
     : '/fibra/admin';
-  const { refreshProfile } = useContext(AuthContext);
+  const { refreshProfile, user, profile, loading: authLoading } = useContext(AuthContext);
   const { mode, toggleTheme, S } = useContext(ThemeContext);
+
+  // Já logado neste dispositivo → pula o login (entra direto no painel).
+  useEffect(() => {
+    if (!authLoading && user && profile?.nickname) navigate(adminDest, { replace: true });
+  }, [authLoading, user, profile, adminDest, navigate]);
 
   // Primeiro acesso — escolher apelido
   const [needNickname, setNeedNickname] = useState(false);
@@ -32,7 +44,13 @@ export const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Persistência conforme "Lembrar dispositivo" (antes do login)
+      try { await setRememberDevice(remember); } catch { /* segue com o padrão */ }
       const cred = await loginUser(email, password);
+      // Salva preferência + credenciais (ou limpa)
+      localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0');
+      if (remember) { localStorage.setItem(EMAIL_KEY, email); localStorage.setItem(PASS_KEY, password); }
+      else { localStorage.removeItem(EMAIL_KEY); localStorage.removeItem(PASS_KEY); }
       const profile = await getUserProfile(cred.user.uid);
       if (!profile || !profile.nickname) {
         setPendingUser(cred.user);
@@ -159,6 +177,18 @@ export const Login = () => {
                 </button>
               </div>
             </div>
+
+            {/* Lembrar dispositivo */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', userSelect: 'none', margin: '-4px 0 2px' }}>
+              <span style={{ width: '20px', height: '20px', flexShrink: 0, borderRadius: '6px', border: `1px solid ${remember ? S.accent : S.border}`, background: remember ? S.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
+                {remember && <Check size={14} color={S.onAccent} strokeWidth={3} />}
+              </span>
+              <input type="checkbox" checked={remember} onChange={e => setRemember(e.target.checked)} style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }} />
+              <span style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: S.text, fontSize: '13px', fontWeight: 700, letterSpacing: '0.3px' }}>Lembrar dispositivo</span>
+                <span style={{ color: S.muted, fontSize: '11px' }}>Mantém você logado e preenche o login automaticamente</span>
+              </span>
+            </label>
 
             <button type="submit" disabled={loading}
               style={{ width: '100%', padding: '14px', borderRadius: '12px', background: loading ? S.border : S.gradient, border: 'none', color: S.onAccent, fontSize: '15px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: loading ? 'none' : `0 0 30px ${S.glow}`, transition: 'all 0.2s' }}>
