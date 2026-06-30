@@ -111,9 +111,9 @@ export const Home = () => {
         @media (max-width: 1020px) {
           .home-brand-mark {
             position: static !important;
-            width: min(280px, 72vw) !important;
+            width: min(220px, 64vw) !important;
             max-width: none !important;
-            margin: 0 auto -8px !important;
+            margin: -18px auto 12px !important;
           }
         }
       `}</style>
@@ -154,8 +154,8 @@ export const Home = () => {
           style={{
             position: 'absolute',
             left: 'clamp(230px, 22vw, 330px)',
-            top: 'clamp(-10px, 0.6vw, 8px)',
-            width: 'clamp(210px, 22vw, 300px)',
+            top: 'clamp(-42px, -2vw, -22px)',
+            width: 'clamp(170px, 18vw, 240px)',
             maxWidth: '30%',
             height: 'auto',
             pointerEvents: 'none',
