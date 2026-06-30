@@ -107,11 +107,21 @@ export const Home = () => {
       {/* Glow de fundo */}
       <div style={{ position: 'absolute', top: '-120px', left: '-120px', width: '460px', height: '460px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.12), transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'absolute', bottom: '-160px', right: '-140px', width: '560px', height: '560px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(167,139,250,0.10), transparent 70%)', pointerEvents: 'none' }} />
+      <style>{`
+        @media (max-width: 1020px) {
+          .home-brand-mark {
+            position: static !important;
+            width: min(280px, 72vw) !important;
+            max-width: none !important;
+            margin: 0 auto -8px !important;
+          }
+        }
+      `}</style>
 
       {/* HEADER */}
       <header style={{ position: 'relative', zIndex: 2, padding: '0 clamp(16px, 5vw, 32px)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <img src="/logo.png" alt="IbiúNET Multiplay" style={{ height: 'clamp(22px, 6vw, 30px)', width: 'auto', flexShrink: 0 }} />
+          <img src="/logo-frota.png" alt="IbiúNET Multiplay" style={{ width: 'clamp(126px, 16vw, 176px)', height: 'auto', flexShrink: 0, display: 'block' }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <button onClick={toggleTheme} title="Alternar tema"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '10px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0 }}>
@@ -134,6 +144,24 @@ export const Home = () => {
 
       {/* MAIN */}
       <main style={{ position: 'relative', zIndex: 2, flex: 1, width: '100%', maxWidth: '1100px', margin: '0 auto', padding: 'clamp(24px, 6vw, 56px) clamp(16px, 5vw, 32px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'clamp(28px, 5vw, 44px)' }}>
+        <motion.img
+          src="/logo-frota.png"
+          alt="IbiúNET Multiplay"
+          className="home-brand-mark"
+          initial={{ opacity: 0, x: -24 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.08, duration: 0.45 }}
+          style={{
+            position: 'absolute',
+            left: 'clamp(16px, 3vw, 28px)',
+            top: 'clamp(2px, 2.6vw, 30px)',
+            width: 'clamp(240px, 28vw, 380px)',
+            maxWidth: '35%',
+            height: 'auto',
+            pointerEvents: 'none',
+            filter: 'drop-shadow(0 18px 38px rgba(46,139,255,0.20))',
+          }}
+        />
 
         {/* Título + botão Administração */}
         <div style={{ textAlign: 'center', width: '100%' }}>
