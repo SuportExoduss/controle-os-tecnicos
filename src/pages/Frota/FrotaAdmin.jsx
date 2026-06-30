@@ -89,7 +89,7 @@ export const FrotaAdmin = () => {
       <header style={{ background: S.card, borderBottom: `1px solid ${S.border}` }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <img src="/logo.png" alt="IbiúNET" style={{ height: '26px', width: 'auto' }} />
+            <img src="/logo.png" alt="IbiúNET" style={{ height: '34px', width: 'auto', display: 'block' }} />
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: S.accent }}><Truck size={11} /> FROTA · ADMIN</div>
           </div>
           <button onClick={toggleTheme} title="Tema" style={{ ...ibtn, padding: '7px' }}>{mode === 'light' ? <Moon size={15} /> : <Sun size={15} color="#fbbf24" />}</button>
