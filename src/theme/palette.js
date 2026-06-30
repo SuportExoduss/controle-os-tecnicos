@@ -43,7 +43,7 @@ export const BRANDS = {
     },
     light: {
       ...txtLight,
-      bg: '#eef3fb', card: '#ffffff', card2: '#f4f8fd', border: '#dbe5f2',
+      bg: '#eef3fb', card: '#ffffff', card2: '#f4f8fd', border: '#15243d',
       surface: '#ffffff', input: '#f5f8fd', input2: '#ffffff', headerBg: '#ffffff',
       blue: '#1763e8', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
       accent: '#1763e8', accentDeep: '#0b47b8', accentSoft: '#e4edff',
@@ -67,7 +67,7 @@ export const BRANDS = {
     light: {
       ...txtLight,
       text: '#2a2310', muted2: '#6b5f45',
-      bg: '#fbf6ec', card: '#ffffff', card2: '#fcf8f0', border: '#ece1cd',
+      bg: '#fbf6ec', card: '#ffffff', card2: '#fcf8f0', border: '#352a12',
       surface: '#ffffff', input: '#fbf7ee', input2: '#ffffff', headerBg: '#ffffff',
       blue: '#c77a00', green: '#059669', orange: '#ea7c2a', purple: '#7c3aed', red: '#dc2626',
       accent: '#c77a00', accentDeep: '#9a5e00', accentSoft: '#fdeed0',
@@ -91,7 +91,7 @@ export const BRANDS = {
     light: {
       ...txtLight,
       text: '#10241c', muted2: '#456b5b',
-      bg: '#eef8f3', card: '#ffffff', card2: '#f2faf6', border: '#cfe8db',
+      bg: '#eef8f3', card: '#ffffff', card2: '#f2faf6', border: '#0f3024',
       surface: '#ffffff', input: '#f1f9f5', input2: '#ffffff', headerBg: '#ffffff',
       blue: '#0e9e66', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
       accent: '#0e9e66', accentDeep: '#0a7a4e', accentSoft: '#d6f3e6',
@@ -115,7 +115,7 @@ export const BRANDS = {
     light: {
       ...txtLight,
       text: '#13302e', muted2: '#4f7370',
-      bg: '#eaf7f5', card: '#ffffff', card2: '#f0faf8', border: '#cce8e4',
+      bg: '#eaf7f5', card: '#ffffff', card2: '#f0faf8', border: '#0e302d',
       surface: '#ffffff', input: '#eef8f6', input2: '#ffffff', headerBg: '#ffffff',
       blue: '#0a9690', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
       accent: '#0a9690', accentDeep: '#07736e', accentSoft: '#d2efec',
