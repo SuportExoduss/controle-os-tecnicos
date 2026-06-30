@@ -148,17 +148,18 @@ export const Home = () => {
           src="/logo-frota.png"
           alt="IbiúNET Multiplay"
           className="home-brand-mark"
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08, duration: 0.45 }}
           style={{
             position: 'absolute',
-            left: 'clamp(230px, 22vw, 330px)',
+            left: '50%',
             top: 'clamp(-42px, -2vw, -22px)',
             width: 'clamp(170px, 18vw, 240px)',
             maxWidth: '30%',
             height: 'auto',
             pointerEvents: 'none',
+            transform: 'translateX(-50%)',
             filter: 'drop-shadow(0 18px 38px rgba(46,139,255,0.20))',
           }}
         />
