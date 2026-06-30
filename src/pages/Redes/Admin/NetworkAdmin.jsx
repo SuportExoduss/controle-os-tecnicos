@@ -10,6 +10,7 @@ import {
 import * as XLSX from 'xlsx';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { logoutUser } from '../../../services/auth/authService';
 import {
   saveNetworkOrder, getAllNetworkOrders,
@@ -485,71 +486,31 @@ export const NetworkAdmin = () => {
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
 
-      {/* ── HEADER ── */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 30, background: S.card, borderBottom: `1px solid ${S.border}`, padding: '0 clamp(12px, 4vw, 24px)' }}>
-        <div className="r-maxw" style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-
-          {/* Esquerda */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flexShrink: 0 }}>
-              <img src="/logo-frota.png" alt="IbiúNET" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-              {profile?.nickname && (
-                <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check size={9} />{profile.nickname}
-                </div>
-              )}
-            </div>
-
-            {/* Badge REDES */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '8px', background: S.accentSoft, border: `1px solid ${S.accent}`, flexShrink: 0 }}>
-              <Wifi size={12} color={S.accent} />
-              <span style={{ fontSize: '12px', fontWeight: 800, color: S.accent, letterSpacing: '1.5px', textTransform: 'uppercase' }}>Redes</span>
-            </div>
-
-            <button onClick={toggleTheme} title="Alternar tema"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? '#7c3aed' : '#f59e0b', cursor: 'pointer', flexShrink: 0 }}>
-              {mode === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="redes"
+        variant="admin"
+        isLogged
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={() => navigate('/redes/dashboard')}
+        onAuth={handleLogout}
+        rightSlot={(
+          <>
+            <button onClick={handleVerifySheet} disabled={verifying} title="Verificar se a planilha está 100% populada" className="area-action-btn" style={{ borderColor: S.border, color: S.muted2, cursor: verifying ? 'wait' : 'pointer' }}>
+              <CheckCircle2 size={14} /><span className="r-topbar-label">{verifying ? 'Verificando...' : 'Verificar'}</span>
             </button>
-
-            <button onClick={() => navigate('/redes/dashboard')} title="Dashboard"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
-              <LayoutDashboard size={13} /><span className="r-topbar-label">Dashboard</span>
-            </button>
-
-            <button onClick={handleLogout} title="Sair"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '8px', background: '#0d2d1f', border: '1px solid #065f46', color: '#34d399', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#2d0f0f'; e.currentTarget.style.color = '#f87171'; e.currentTarget.style.borderColor = '#7f1d1d'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#0d2d1f'; e.currentTarget.style.color = '#34d399'; e.currentTarget.style.borderColor = '#065f46'; }}>
-              <LogOut size={13} /><span className="r-topbar-label">Sair</span>
-            </button>
-          </div>
-
-          {/* Direita — verificar + sincronizar + importar */}
-          <div style={{ flexShrink: 0, display: 'flex', gap: '6px' }}>
-            <button onClick={handleVerifySheet} disabled={verifying} title="Verificar se a planilha está 100% populada (compara com o Firebase)"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '13px', fontWeight: 600, cursor: verifying ? 'wait' : 'pointer', background: 'transparent', transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
-              <CheckCircle2 size={14} /><span className="r-topbar-label">{verifying ? 'Verificando…' : 'Verificar'}</span>
-            </button>
-            <button onClick={handleSyncAll} disabled={syncing} title="Enviar tudo do Firebase para a planilha (corrige DATA dos importados e converte tudo)"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: '1px solid #065f46', color: '#34d399', fontSize: '13px', fontWeight: 600, cursor: syncing ? 'wait' : 'pointer', background: 'transparent', transition: 'all 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = mode === 'light' ? '#d1fae5' : '#0d2d1f'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <RefreshCw size={14} /><span className="r-topbar-label">{syncing ? 'Enviando…' : 'Enviar p/ planilha'}</span>
+            <button onClick={handleSyncAll} disabled={syncing} title="Enviar tudo do Firebase para a planilha" className="area-action-btn" style={{ borderColor: '#065f46', color: '#34d399', cursor: syncing ? 'wait' : 'pointer' }}>
+              <RefreshCw size={14} /><span className="r-topbar-label">{syncing ? 'Enviando...' : 'Enviar planilha'}</span>
             </button>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImportExcel} />
-            <button onClick={() => fileInputRef.current?.click()} disabled={importing}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: `1px solid ${S.border}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: importing ? 'wait' : 'pointer', background: 'transparent', transition: 'all 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = mode === 'light' ? '#dbeafe' : '#0d1d3a'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              <Upload size={14} /><span className="r-topbar-label">{importing ? 'Importando…' : 'Importar Excel'}</span>
+            <button onClick={() => fileInputRef.current?.click()} disabled={importing} className="area-action-btn" style={{ borderColor: S.border, color: S.blue, cursor: importing ? 'wait' : 'pointer' }}>
+              <Upload size={14} /><span className="r-topbar-label">{importing ? 'Importando...' : 'Importar Excel'}</span>
             </button>
-          </div>
-        </div>
-      </header>
+          </>
+        )}
+      />
 
       {/* ── MAIN ── */}
       <main style={{ flex: 1, width: '100%' }} className="r-page-pad r-maxw">

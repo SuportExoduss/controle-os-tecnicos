@@ -18,6 +18,7 @@ import { getNetworkOrdersCached, deleteNetworkOrder } from '../../../services/da
 import { deleteNetworkOrderInSheet } from '../../../services/integrations/networkSheetSync';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
+import { AreaTopbar } from '../../../components/common/AreaTopbar';
 
 // ─── Constantes ────────────────────────────────────────────────────────────────
 
@@ -442,74 +443,21 @@ export const NetworkDashboard = () => {
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
 
-      {/* ── HEADER ── */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 30, background: S.card, borderBottom: `1px solid ${S.border}` }}>
-        <div className="r-maxw" style={{ padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
-              <img src="/logo-frota.png" alt="IbiúNET" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Wifi size={10} color={S.blue} />
-                <span style={{ fontSize: '10px', fontWeight: 700, color: S.blue, letterSpacing: '1px', textTransform: 'uppercase' }}>Redes</span>
-              </div>
-              {isLogged && (
-                <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <CheckCircle2 size={10} />{profile.nickname}
-                </div>
-              )}
-            </div>
-
-            <button onClick={toggleTheme} title="Alternar tema"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}>
-              {mode === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-            </button>
-
-            <button onClick={() => { if (isLogged) navigate('/redes/admin'); else { setRedirectAfterLogin('/redes/admin'); setShowLoginModal(true); } }}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
-              <ClipboardEdit size={14} /><span className="r-topbar-label">ADM</span>
-            </button>
-
-            <button onClick={() => isLogged ? handleDashLogout() : setShowLoginModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '8px', background: isLogged ? '#0d2d1f' : 'transparent', border: `1px solid ${isLogged ? '#065f46' : S.border}`, color: isLogged ? '#34d399' : S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginLeft: '4px' }}>
-              {isLogged ? <><LogOut size={13} /><span className="r-topbar-label">Sair</span></> : <><Lock size={13} /><span className="r-topbar-label">Editar</span></>}
-            </button>
-          </div>
-
-          {/* Exportações desktop */}
-          <div className="r-dash-header-btns">
-            {isLogged && (<>
-              <button onClick={() => { if (!canExport) { toast.error('Selecione período para exportar'); return; } if (!allFiltered.length) { toast.error('Nenhuma O.S no período'); return; } setShowText(true); }}
-                style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', border: '1px solid #60a5fa', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                <FileText size={15} />Texto
-              </button>
-              <button onClick={() => { setExcelFrom(dateFrom || firstOfMonth); setExcelTo(dateTo || today); setShowExcelModal(true); }}
-                style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #047857, #10b981)', border: '1px solid #34d399', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                <FileSpreadsheet size={15} />Excel
-              </button>
-            </>)}
-          </div>
-
-          {/* Exportações mobile */}
-          <div className="r-dash-header-btns-sm">
-            {isLogged && (<>
-              <button onClick={() => { if (!canExport) return; setShowText(true); }}
-                style={{ padding: '8px', borderRadius: '8px', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', border: '1px solid #60a5fa', color: '#fff', cursor: 'pointer', display: 'flex' }}>
-                <FileText size={16} />
-              </button>
-              <button onClick={() => { setExcelFrom(dateFrom || firstOfMonth); setExcelTo(dateTo || today); setShowExcelModal(true); }}
-                style={{ padding: '8px', borderRadius: '8px', background: 'linear-gradient(135deg, #047857, #10b981)', border: '1px solid #34d399', color: '#fff', cursor: 'pointer', display: 'flex' }}>
-                <FileSpreadsheet size={16} />
-              </button>
-            </>)}
-          </div>
-        </div>
-      </header>
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="redes"
+        variant="dashboard"
+        isLogged={isLogged}
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={() => { if (isLogged) navigate('/redes/admin'); else { setRedirectAfterLogin('/redes/admin'); setShowLoginModal(true); } }}
+        onAuth={() => isLogged ? handleDashLogout() : setShowLoginModal(true)}
+        exportActions={[
+          { label: 'Texto', onClick: () => { if (!canExport) { toast.error('Selecione período para exportar'); return; } if (!allFiltered.length) { toast.error('Nenhuma O.S no período'); return; } setShowText(true); } },
+          { label: 'Excel', onClick: () => { setExcelFrom(dateFrom || firstOfMonth); setExcelTo(dateTo || today); setShowExcelModal(true); } },
+        ]}
+      />
 
       <main style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }} className="r-page-pad r-maxw">
 

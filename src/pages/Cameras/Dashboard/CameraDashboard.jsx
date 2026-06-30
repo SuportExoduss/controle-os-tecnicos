@@ -8,6 +8,7 @@ import { syncCameraReportToSheet, deleteCameraRowInSheet } from '../../../servic
 import { TextReportModal } from '../../../components/modals/TextReportModal';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
+import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { formatDate } from '../../../utils/formatDate';
 import { AuthContext } from '../../../context/AuthContext';
@@ -459,85 +460,22 @@ export const CameraDashboard = () => {
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
 
-      {/* TOPBAR */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 30, background: S.card, borderBottom: `1px solid ${S.border}` }}>
-        <div className="r-maxw" style={{ padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
-              <img src="/logo-frota.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Video size={10} color="#a78bfa" />
-                <span style={{ fontSize: '10px', fontWeight: 700, color: '#a78bfa', letterSpacing: '1px', textTransform: 'uppercase' }}>WIBICAM</span>
-              </div>
-              {isLogged && (
-                <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Check size={10}/>{profile.nickname}
-                </div>
-              )}
-            </div>
-            {/* Toggle tema */}
-            <button onClick={toggleTheme} title="Alternar tema"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}>
-              {mode === 'light' ? <Moon size={15}/> : <Sun size={15}/>}
-            </button>
-            {/* Botão ADM */}
-            <button onClick={() => { if (isLogged) navigate('/cameras/admin'); else { setRedirectAfterLogin('/cameras/admin'); setShowLoginModal(true); } }} title="Ir para o painel Admin"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
-              <ClipboardEdit size={14}/><span className="r-topbar-label">ADM</span>
-            </button>
-            {/* Botão login/logout colado ao nome */}
-            <button onClick={() => isLogged ? handleDashLogout() : setShowLoginModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '8px', background: isLogged ? '#0d2d1f' : 'transparent', border: `1px solid ${isLogged ? '#065f46' : S.border}`, color: isLogged ? '#34d399' : S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginLeft: '4px' }}
-              title={isLogged ? 'Sair do modo edição' : 'Entrar para editar'}>
-              {isLogged ? <><LogOut size={13}/><span className="r-topbar-label">Sair</span></> : <><Lock size={13}/><span className="r-topbar-label">Editar</span></>}
-            </button>
-          </div>
-
-          {/* Desktop buttons — exportações só para quem está logado */}
-          <div className="r-dash-header-btns">
-            {isLogged && (<>
-            <button onClick={() => { if (!canExport) { toast.error('Selecione a data de início e fim para exportar'); return; } if (!filteredReports.length) { toast.error('Nenhum relatório'); return; } setShowGeneralText(true); }}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', border: '1px solid #60a5fa', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(59,130,246,0.3)', transition: 'all 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <FileText size={15} />Texto
-            </button>
-            <button onClick={handleExcel}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #047857, #10b981)', border: '1px solid #34d399', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(16,185,129,0.3)', transition: 'all 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <FileSpreadsheet size={15} />Excel
-            </button>
-            <button onClick={handleGeneralPDF} disabled={generatingPDF}
-              style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 16px', borderRadius: '10px', background: 'linear-gradient(135deg, #b91c1c, #ef4444)', border: '1px solid #f87171', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 0 16px rgba(239,68,68,0.3)', transition: 'all 0.2s' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-              <Download size={15} />{generatingPDF ? '...' : 'PDF'}
-            </button>
-            </>)}
-          </div>
-
-          {/* Mobile icon buttons — exportações só para quem está logado */}
-          <div className="r-dash-header-btns-sm">
-            {isLogged && (<>
-            <button onClick={() => { if (!canExport) { toast.error('Selecione a data de início e fim para exportar'); return; } setShowGeneralText(true); }}
-              style={{ padding: '8px', borderRadius: '8px', background: 'linear-gradient(135deg, #1d4ed8, #3b82f6)', border: '1px solid #60a5fa', color: '#fff', cursor: 'pointer', display: 'flex' }} title="Texto Geral">
-              <FileText size={16} />
-            </button>
-            <button onClick={handleExcel}
-              style={{ padding: '8px', borderRadius: '8px', background: 'linear-gradient(135deg, #047857, #10b981)', border: '1px solid #34d399', color: '#fff', cursor: 'pointer', display: 'flex' }} title="Excel">
-              <FileSpreadsheet size={16} />
-            </button>
-            <button onClick={handleGeneralPDF} disabled={generatingPDF}
-              style={{ padding: '8px', borderRadius: '8px', background: 'linear-gradient(135deg, #b91c1c, #ef4444)', border: '1px solid #f87171', color: '#fff', cursor: 'pointer', display: 'flex' }} title="PDF Geral">
-              <Download size={16} />
-            </button>
-            </>)}
-          </div>
-        </div>
-      </header>
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="cameras"
+        variant="dashboard"
+        isLogged={isLogged}
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={() => { if (isLogged) navigate('/cameras/admin'); else { setRedirectAfterLogin('/cameras/admin'); setShowLoginModal(true); } }}
+        onAuth={() => isLogged ? handleDashLogout() : setShowLoginModal(true)}
+        exportActions={[
+          { label: 'Texto', title: 'Texto Geral', onClick: () => { if (!canExport) { toast.error('Selecione a data de início e fim para exportar'); return; } if (!filteredReports.length) { toast.error('Nenhum relatório'); return; } setShowGeneralText(true); } },
+          { label: 'Excel', onClick: handleExcel },
+          { label: 'PDF', title: 'PDF Geral', onClick: handleGeneralPDF, disabled: generatingPDF },
+        ]}
+      />
 
       <main style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }} className="r-page-pad r-maxw">
 

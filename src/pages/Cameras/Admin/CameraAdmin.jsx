@@ -6,6 +6,7 @@ import { getCameraReportsByTechnician, deleteAllCameraReportsByTechnician, delet
 import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators } from '../../../services/database/cameraCollaboratorService';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
+import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../../context/AuthContext';
 import { getCurrentTime } from '../../../utils/formatTime';
@@ -344,52 +345,23 @@ const handleFileUpload = async (e) => {
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
 
-      {/* TOPBAR */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 30, background: S.card, borderBottom: `1px solid ${S.border}`, padding: '0 clamp(12px, 4vw, 24px)' }}>
-        <div className="r-maxw" style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
-              <img src="/logo-frota.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-              <div style={{ color: profile?.nickname ? S.green : S.muted, fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {profile?.nickname ? <><Check size={10}/>{profile.nickname}</> : <span className="r-topbar-label" style={{ textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{today}</span>}
-              </div>
-            </div>
-            {/* Badge WIBICAM */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '8px', background: S.accentSoft, border: `1px solid ${S.accent}`, flexShrink: 0 }}>
-              <Video size={12} color={S.accent} />
-              <span style={{ fontSize: '12px', fontWeight: 800, color: S.accent, letterSpacing: '1.5px', textTransform: 'uppercase' }}>WIBICAM</span>
-            </div>
-            {/* Toggle tema */}
-            <button onClick={toggleTheme} title="Alternar tema"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '7px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}>
-              {mode === 'light' ? <Moon size={15}/> : <Sun size={15}/>}
-            </button>
-            {/* Botão Dashboard */}
-            <button onClick={() => navigate('/cameras/dashboard')} title="Ir para o Dashboard"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = S.blue; e.currentTarget.style.color = S.blue; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.color = S.muted2; }}>
-              <LayoutDashboard size={14}/><span className="r-topbar-label">Dashboard</span>
-            </button>
-            {/* Botão Sair */}
-            <button onClick={handleLogout} title="Sair"
-              style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '8px', background: '#0d2d1f', border: `1px solid #065f46`, color: '#34d399', fontSize: '12px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, transition: 'all 0.15s', marginLeft: '4px' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#2d0f0f'; e.currentTarget.style.color = S.red; e.currentTarget.style.borderColor = '#7f1d1d'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#0d2d1f'; e.currentTarget.style.color = '#34d399'; e.currentTarget.style.borderColor = '#065f46'; }}>
-              <LogOut size={13}/><span className="r-topbar-label">Sair</span>
-            </button>
-          </div>
-          {/* Importar Excel à direita */}
-          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '8px', border: `1px solid ${S.border}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: importLoading ? 'wait' : 'pointer', transition: 'all 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = mode === 'light' ? '#dbeafe' : S.accentSoft}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              {importLoading ? <Spinner /> : <><Upload size={14}/><span className="r-topbar-label">Importar Excel</span></>}
-              <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ display: 'none' }} />
-            </label>
-          </div>
-        </div>
-      </header>
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="cameras"
+        variant="admin"
+        isLogged
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={() => navigate('/cameras/dashboard')}
+        onAuth={handleLogout}
+        rightSlot={(
+          <label className="area-action-btn" style={{ borderColor: S.border, color: S.blue, cursor: importLoading ? 'wait' : 'pointer' }}>
+            {importLoading ? <Spinner /> : <><Upload size={14}/><span className="r-topbar-label">Importar Excel</span></>}
+            <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ display: 'none' }} />
+          </label>
+        )}
+      />
 
       {/* MAIN */}
       <main style={{ flex: 1, width: '100%' }} className="r-page-pad r-maxw">

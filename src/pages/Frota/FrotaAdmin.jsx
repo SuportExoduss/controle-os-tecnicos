@@ -6,6 +6,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { logoutUser } from '../../services/auth/authService';
 import { getFrotaCadastro, saveFrotaCadastro, saveFrotaMonth, getFrotaMonth } from '../../services/database/frotaService';
+import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { parseProlog, buildSheetsPayload, MESES, DEFAULT_TEAMS } from './frotaCore';
 
 const SHEETS_URL = import.meta.env.VITE_FROTA_SHEETS_URL || '';
@@ -86,17 +87,17 @@ export const FrotaAdmin = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: S.bg, color: S.text }}>
-      <header style={{ background: S.card, borderBottom: `1px solid ${S.border}` }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <img src="/logo-frota.png" alt="IbiúNET" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: S.accent }}><Truck size={11} /> FROTA · ADMIN</div>
-          </div>
-          <button onClick={toggleTheme} title="Tema" style={{ ...ibtn, padding: '7px' }}>{mode === 'light' ? <Moon size={15} /> : <Sun size={15} color="#fbbf24" />}</button>
-          <button onClick={() => navigate('/frota/dashboard')} style={ibtn}><LayoutDashboard size={14} /> Dashboard</button>
-          <button onClick={handleLogout} style={{ ...ibtn, background: '#0d2d1f', borderColor: '#065f46', color: '#34d399', marginLeft: 'auto' }}><LogOut size={13} /> Sair</button>
-        </div>
-      </header>
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="frota"
+        variant="admin"
+        isLogged
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={() => navigate('/frota/dashboard')}
+        onAuth={handleLogout}
+      />
 
       <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '16px' }}>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderBottom: `1px solid ${S.border}`, paddingBottom: '14px', marginBottom: '16px' }}>

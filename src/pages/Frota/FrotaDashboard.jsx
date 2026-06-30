@@ -14,6 +14,7 @@ import { getUserProfile } from '../../services/database/userProfileService';
 import { getFrotaCadastro, getFrotaMonth } from '../../services/database/frotaService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
+import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { MESES, ST, SEV, isObrig, statsOf, initials, DEFAULT_TEAMS } from './frotaCore';
 import { buildTextoRelacao, exportExcelRelacao, exportPdfRelacao } from './frotaExport';
 
@@ -103,26 +104,22 @@ export const FrotaDashboard = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: S.bg, color: S.text }}>
-      {/* HEADER */}
-      <header style={{ background: S.card, borderBottom: `1px solid ${S.border}`, position: 'sticky', top: 0, zIndex: 30 }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '11px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <img src="/logo-frota.png" alt="IbiúNET" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '9px', fontWeight: 700, letterSpacing: '1px', color: S.accent }}><Truck size={11} /> FROTA</div>
-            {isLogged && <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#34d399' }}><Check size={11} />{profile.nickname}</div>}
-          </div>
-          <button onClick={toggleTheme} title="Tema" style={{ ...ibtn, padding: '7px' }}>{mode === 'light' ? <Moon size={15} /> : <Sun size={15} color="#fbbf24" />}</button>
-          <button onClick={openAdmin} title="Painel Admin" style={ibtn}><ClipboardEdit size={14} /> ADM</button>
-          <button onClick={() => (isLogged ? handleDashLogout() : setShowLoginModal(true))} title={isLogged ? 'Sair do modo edição' : 'Entrar para editar'} style={{ ...ibtn, ...(isLogged ? { background: '#0d2d1f', borderColor: '#065f46', color: '#34d399' } : {}) }}>{isLogged ? <><LogOut size={13} /> Sair</> : <><Lock size={13} /> Editar</>}</button>
-          {isLogged && (
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: '7px' }}>
-              {[['Texto', '#3b82f6', FileText, handleTexto], ['Excel', '#10b981', FileSpreadsheet, handleExcel], ['PDF', '#ef4444', Download, handlePdf]].map(([l, c, Ic, fn]) => (
-                <button key={l} onClick={fn} style={{ padding: '9px 16px', borderRadius: '10px', border: 'none', background: c, color: '#fff', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}><Ic size={15} /> {l}</button>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
+      <AreaTopbar
+        S={S}
+        mode={mode}
+        area="frota"
+        variant="dashboard"
+        isLogged={isLogged}
+        nickname={profile?.nickname}
+        onTheme={toggleTheme}
+        onPrimary={openAdmin}
+        onAuth={() => (isLogged ? handleDashLogout() : setShowLoginModal(true))}
+        exportActions={[
+          { label: 'Texto', onClick: handleTexto },
+          { label: 'Excel', onClick: handleExcel },
+          { label: 'PDF', onClick: handlePdf },
+        ]}
+      />
 
       <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '16px' }}>
         {/* MODES */}
