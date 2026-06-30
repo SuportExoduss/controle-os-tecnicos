@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
-  Cable, Wifi, Video, ShieldCheck, LogIn, LogOut, Sun, Moon,
+  Cable, Wifi, Video, Truck, ShieldCheck, LogIn, LogOut, Sun, Moon,
   ArrowRight, Check, UserCircle, Eye, EyeOff, LayoutDashboard,
 } from 'lucide-react';
 import { AuthContext } from '../../context/AuthContext';
@@ -21,6 +21,8 @@ const TEAMS = [
     icon: Wifi, dashboard: '/redes/dashboard', admin: '/redes/admin' },
   { key: 'cameras', name: 'WIBICAM', desc: 'Equipe de câmeras de monitoramento',
     icon: Video, dashboard: '/cameras/dashboard', admin: '/cameras/admin' },
+  { key: 'frota', name: 'Frota', desc: 'Checklist diário dos veículos',
+    icon: Truck, dashboard: '/frota/dashboard', admin: '/frota/admin' },
 ];
 
 export const Home = () => {

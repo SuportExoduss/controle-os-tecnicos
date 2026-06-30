@@ -47,6 +47,18 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // FROTA — relatório mensal de checklist (1 doc por mês): leitura pública, escrita só autenticado
+    match /fleet_reports/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // FROTA — cadastro de colaboradores/equipes: leitura pública, escrita só autenticado
+    match /fleet_config/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Qualquer outra coleção: bloqueada por padrão (deny)
   }
 }

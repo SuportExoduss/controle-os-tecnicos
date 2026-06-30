@@ -13,6 +13,8 @@ const NetworkAdmin     = lazy(() => import('./pages/Redes/Admin/NetworkAdmin').t
 const NetworkDashboard = lazy(() => import('./pages/Redes/Dashboard/NetworkDashboard').then(m => ({ default: m.NetworkDashboard })));
 const CameraAdmin      = lazy(() => import('./pages/Cameras/Admin/CameraAdmin').then(m => ({ default: m.CameraAdmin })));
 const CameraDashboard  = lazy(() => import('./pages/Cameras/Dashboard/CameraDashboard').then(m => ({ default: m.CameraDashboard })));
+const FrotaDashboard   = lazy(() => import('./pages/Frota/FrotaDashboard').then(m => ({ default: m.FrotaDashboard })));
+const FrotaAdmin       = lazy(() => import('./pages/Frota/FrotaAdmin').then(m => ({ default: m.FrotaAdmin })));
 const Home             = lazy(() => import('./pages/Home/Home').then(m => ({ default: m.Home })));
 const NotFound         = lazy(() => import('./pages/NotFound/NotFound').then(m => ({ default: m.NotFound })));
 
@@ -65,6 +67,19 @@ function App() {
               }
             />
             <Route path="/cameras/dashboard" element={<CameraDashboard />} />
+
+            {/* Frota — checklist de veículos (mockup nas rotas reais por enquanto) */}
+            <Route path="/frota" element={<Navigate to="/frota/dashboard" replace />} />
+            <Route path="/frota/login" element={<Login />} />
+            <Route path="/frota/dashboard" element={<FrotaDashboard />} />
+            <Route
+              path="/frota/admin"
+              element={
+                <ProtectedRoute>
+                  <FrotaAdmin />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Raiz → tela de escolha de equipe (Home) */}
             <Route path="/" element={<Home />} />

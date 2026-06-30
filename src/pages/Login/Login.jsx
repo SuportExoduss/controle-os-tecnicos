@@ -25,6 +25,7 @@ export const Login = () => {
   const location = useLocation();
   const adminDest = location.pathname.startsWith('/redes') ? '/redes/admin'
     : location.pathname.startsWith('/cameras') ? '/cameras/admin'
+    : location.pathname.startsWith('/frota') ? '/frota/admin'
     : '/fibra/admin';
   const { refreshProfile, user, profile, loading: authLoading } = useContext(AuthContext);
   const { mode, toggleTheme, S } = useContext(ThemeContext);

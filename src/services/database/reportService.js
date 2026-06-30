@@ -94,6 +94,12 @@ export const updateReport = async (reportId, updateData) => {
   return res;
 };
 
+// Exclui UM relatório (1 técnico + 1 dia) pelo id do documento.
+export const deleteReport = async (reportId) => {
+  await deleteDoc(doc(db, COLLECTION_NAME, reportId));
+  clearCache(COLLECTION_NAME);
+};
+
 export const deleteAllReportsByTechnician = async (technicianName) => {
   const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName));
   const snap = await getDocs(q);

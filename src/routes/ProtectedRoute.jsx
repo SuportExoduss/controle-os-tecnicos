@@ -15,7 +15,10 @@ export const ProtectedRoute = ({ children }) => {
   }
 
   // Redireciona para o login do setor correto (mantém /redes em /redes)
-  const loginDest = location.pathname.startsWith('/redes') ? '/redes/login' : '/fibra/login';
+  const loginDest = location.pathname.startsWith('/redes') ? '/redes/login'
+    : location.pathname.startsWith('/cameras') ? '/cameras/login'
+    : location.pathname.startsWith('/frota') ? '/frota/login'
+    : '/fibra/login';
 
   return user ? children : <Navigate to={loginDest} replace />;
 };

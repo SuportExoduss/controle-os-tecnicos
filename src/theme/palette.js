@@ -99,6 +99,30 @@ export const BRANDS = {
       glow: 'rgba(14,158,102,0.20)', onAccent: '#ffffff', rec: '#dc2626',
     },
   },
+
+  // ── FROTA — Azul céu (mais claro que a Fibra; checklist dos veículos) ───
+  frota: {
+    key: 'frota', name: 'Frota',
+    dark: {
+      ...txtDark,
+      bg: '#07111c', card: '#0c1826', card2: '#102236', border: '#173249',
+      surface: '#091523', input: '#07111c', input2: '#0c1c2e', headerBg: '#0c1826',
+      blue: '#7dd3fc', green: '#34d399', orange: '#fbbf24', purple: '#a78bfa', red: '#f87171',
+      accent: '#38bdf8', accentDeep: '#0ea5e9', accentSoft: '#0a2333',
+      gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
+      glow: 'rgba(56,189,248,0.30)', onAccent: '#06283d',
+    },
+    light: {
+      ...txtLight,
+      text: '#15293b', muted2: '#56708a',
+      bg: '#e2edf5', card: '#edf2f8', card2: '#e5edf4', border: '#c4d3e0',
+      surface: '#f0f5fa', input: '#e7eef5', input2: '#edf2f8', headerBg: '#e9f0f7',
+      blue: '#0284c7', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
+      accent: '#0284c7', accentDeep: '#0369a1', accentSoft: '#d4ecfb',
+      gradient: 'linear-gradient(135deg, #0284c7, #0ea5e9)',
+      glow: 'rgba(2,132,199,0.20)', onAccent: '#ffffff',
+    },
+  },
 };
 
 // Compatibilidade: DARK/LIGHT antigos = identidade Fibra

@@ -1,10 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getCameraReportsByDateRange, getCameraReportsByTechnicianAll, updateCameraReport } from '../../../services/database/cameraReportService';
+import { getCameraReportsByDateRange, getCameraReportsByTechnicianAll, updateCameraReport, deleteCameraReport } from '../../../services/database/cameraReportService';
 import { generateIndividualPDF, generateGeneralPDF } from '../../../services/reports/pdfService';
 import { generateCameraExcel } from '../../../services/reports/cameraExcelService';
-import { syncCameraReportToSheet } from '../../../services/integrations/cameraSheetSync';
+import { syncCameraReportToSheet, deleteCameraRowInSheet } from '../../../services/integrations/cameraSheetSync';
 import { TextReportModal } from '../../../components/modals/TextReportModal';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
@@ -19,7 +19,7 @@ import {
   ChevronDown, ChevronUp, FileText, Download, Users, ClipboardList,
   CalendarClock, TrendingUp, SearchX, Calendar, Search, Edit2, X,
   Check, BarChart3, FileSpreadsheet, History, Copy, CheckCheck, PieChart as PieIcon,
-  Info, Lock, LogIn, LogOut, Sun, Moon, ClipboardEdit, RotateCcw, Video, Gauge, MapPin,
+  Info, Lock, LogIn, LogOut, Sun, Moon, ClipboardEdit, RotateCcw, Video, Gauge, MapPin, Trash2,
 } from 'lucide-react';
 
 const TYPE_COLORS = {
@@ -377,6 +377,18 @@ export const CameraDashboard = () => {
       await loadRange(dateFrom, dateTo, searchTechnician, { force: true });
     } catch (err) { toast.error('Erro ao atualizar'); console.error(err); }
     finally { setEditLoading(false); }
+  };
+
+  // Excluir lançamento (1 técnico + 1 dia) — APAGA a linha da planilha (não zera).
+  const handleDeleteRecord = async (rec) => {
+    const quando = new Date(rec.date + 'T00:00:00').toLocaleDateString('pt-BR');
+    if (!window.confirm(`Excluir o lançamento de ${rec.technicianName} (${quando})?\n\nA LINHA será apagada da planilha — esta ação não pode ser desfeita.`)) return;
+    try {
+      await deleteCameraReport(rec.id);
+      deleteCameraRowInSheet(rec.date, rec.technicianName); // planilha (best-effort)
+      toast.success('Lançamento excluído');
+      await loadRange(dateFrom, dateTo, searchTechnician, { force: true });
+    } catch (err) { toast.error('Erro ao excluir'); console.error(err); }
   };
 
   // Feature 6 — General text
@@ -839,11 +851,20 @@ export const CameraDashboard = () => {
                                   </button>
                                   {/* Editar (só logado) */}
                                   {isLogged && (
-                                    <button onClick={() => setEditReport({ ...rec })} title="Corrigir O.S"
+                                    <button onClick={() => setEditReport({ ...rec })} title="Corrigir O.S (zera/edita)"
                                       style={{ background: 'none', border: 'none', color: '#fbbf24', cursor: 'pointer', padding: '2px', display: 'flex', borderRadius: '4px' }}
                                       onMouseEnter={e => e.currentTarget.style.color = '#f59e0b'}
                                       onMouseLeave={e => e.currentTarget.style.color = '#fbbf24'}>
                                       <Edit2 size={14} />
+                                    </button>
+                                  )}
+                                  {/* Excluir — apaga a LINHA da planilha (só logado) */}
+                                  {isLogged && (
+                                    <button onClick={() => handleDeleteRecord(rec)} title="Excluir lançamento (apaga a linha da planilha)"
+                                      style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px', display: 'flex', borderRadius: '4px' }}
+                                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                                      onMouseLeave={e => e.currentTarget.style.color = '#f87171'}>
+                                      <Trash2 size={14} />
                                     </button>
                                   )}
                                 </div>

@@ -9,6 +9,7 @@ export const ThemeContext = createContext();
 const brandFromPath = (pathname) => {
   if (pathname.startsWith('/redes')) return 'redes';
   if (pathname.startsWith('/cameras')) return 'cameras';
+  if (pathname.startsWith('/frota')) return 'frota';
   return 'fibra';
 };
 

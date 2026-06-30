@@ -162,10 +162,21 @@ function doPost(e) {
       return out({ ok: true, zeroed: zeroed });
     }
 
+    // ACAO: excluir a LINHA (tecnico + dia) de verdade — diferente do 'zero'
+    if (body.action === 'deleteRow') {
+      var removedFib = deleteRowsByDateTech(sheet, map, body.date, body.technician);
+      return out({ ok: true, removed: removedFib });
+    }
+
     // ACAO padrao: gravar/atualizar registros
     var records = body.records || (body.record ? [body.record] : []);
     var saved = 0;
     var debugOut = [];
+
+    // Colunas dos tipos de servico (ordenadas) para montar a formula do Total OS
+    var typeCols = [];
+    for (var tk in map.types) if (map.types[tk] >= 0) typeCols.push(map.types[tk]);
+    typeCols.sort(function (a, b) { return a - b; });
 
     records.forEach(function (r) {
       var counts = {};
@@ -208,6 +219,12 @@ function doPost(e) {
       }
 
       sheet.appendRow(row);
+      // Total OS como FORMULA (=soma dos tipos) — igual ao manual; recalcula
+      // sozinho quando editam as celulas e a formatacao condicional acompanha.
+      if (map.total >= 0 && typeCols.length) {
+        var nr = sheet.getLastRow();
+        sheet.getRange(nr, map.total + 1).setFormula(camTotalFormula(typeCols, nr));
+      }
       saved++;
       debugOut.push({ rDate: rDateNorm, rTech: rTechNorm, deleted: deleted, sample: sample });
     });
@@ -219,6 +236,9 @@ function doPost(e) {
       sheet.getRange(2, map.date + 1, sheet.getLastRow() - 1, 1)
         .setNumberFormat('dd/mm/yyyy');
     }
+
+    // Desenha a linha separadora no fim do bloco de cada dia (apos o ultimo tecnico)
+    formatDaySeparators(sheet, map);
 
     return out({ ok: true, saved: saved, debug: debugOut });
   } catch (err) {
@@ -566,6 +586,21 @@ function camNum(v) {
   return (v === '' || v == null) ? '' : Number(v);
 }
 
+// Indice de coluna (0-based) -> letra(s) A1: 0->A, 25->Z, 26->AA
+function colLetter(idx0) {
+  var n = idx0 + 1, s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+// Formula de Total OS = soma das colunas dos tipos de servico, na linha dada.
+// Ex.: =C5+D5+E5+F5+G5+H5+I5 (igual ao relatorio manual). Como o total vira
+// formula, qualquer edicao nas celulas dos tipos recalcula e a formatacao
+// condicional (cores) acompanha sozinha.
+function camTotalFormula(typeCols, rowNum) {
+  return '=' + typeCols.map(function (ci) { return colLetter(ci) + rowNum; }).join('+');
+}
+
 function handleCameras(body) {
   var sheet = getCamerasSheet();
   if (!sheet) return out({ ok: false, error: 'aba Lancamentos Equipe Cameras nao encontrada' });
@@ -581,9 +616,20 @@ function handleCameras(body) {
     return out({ ok: true, zeroed: zeroed });
   }
 
+  // ACAO: excluir a LINHA (tecnico + dia) de verdade — diferente do 'zero'
+  if (body.action === 'deleteRow') {
+    var removedCam = deleteRowsByDateTech(sheet, map, body.date, body.technician);
+    return out({ ok: true, removed: removedCam });
+  }
+
   // ACAO padrao: gravar/atualizar registros (dedup por dia+tecnico)
   var records = body.records || (body.record ? [body.record] : []);
   var saved = 0;
+
+  // Colunas dos tipos de servico (ordenadas) para montar a formula do Total OS
+  var typeCols = [];
+  for (var tk in map.types) if (map.types[tk] >= 0) typeCols.push(map.types[tk]);
+  typeCols.sort(function (a, b) { return a - b; });
 
   records.forEach(function (r) {
     var counts = {};
@@ -613,6 +659,12 @@ function handleCameras(body) {
     }
 
     sheet.appendRow(row);
+    // Total OS como FORMULA (=soma dos tipos) — igual ao manual. Referencias
+    // relativas na mesma linha sobrevivem ao sort do Sheets.
+    if (map.total >= 0 && typeCols.length) {
+      var nr = sheet.getLastRow();
+      sheet.getRange(nr, map.total + 1).setFormula(camTotalFormula(typeCols, nr));
+    }
     saved++;
   });
 
@@ -624,7 +676,61 @@ function handleCameras(body) {
     sheet.getRange(2, map.date + 1, sheet.getLastRow() - 1, 1).setNumberFormat('dd/mm/yyyy');
   }
 
+  // Desenha a linha separadora no fim do bloco de cada dia (apos o ultimo tecnico)
+  formatDaySeparators(sheet, map);
+
   return out({ ok: true, saved: saved });
+}
+
+// Desenha uma borda inferior grossa no fim do bloco de cada DIA — ou seja, na
+// ultima linha de cada data (que, por estar ordenado por data+tecnico, e sempre
+// o ultimo tecnico em ordem alfabetica daquele dia). Vale tambem para linhas de
+// folga / 0 O.S (elas tem data e tecnico, entao contam no bloco do dia).
+// Recalcula tudo do zero a cada chamada, entao se entrar um tecnico que vire o
+// novo "ultimo", a linha vai automaticamente para baixo dele.
+function formatDaySeparators(sheet, map) {
+  if (map.date < 0) return;
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  var nData = lastRow - 1;
+  var endCol = (map.obs >= 0 ? map.obs + 1 : sheet.getLastColumn());
+
+  // 1) Limpa as bordas inferiores/horizontais antigas na area de dados
+  //    (mantem as linhas de grade padrao — gridlines nao sao "bordas").
+  sheet.getRange(2, 1, nData, endCol).setBorder(null, null, false, null, null, false);
+
+  // 2) Para cada linha cujo DIA muda na linha seguinte (ou e a ultima), desenha
+  //    a borda inferior grossa atravessando as colunas de dados.
+  var dates = sheet.getRange(2, map.date + 1, nData, 1).getValues();
+  for (var i = 0; i < nData; i++) {
+    var dCur = cellToISO(dates[i][0]);
+    if (!dCur) continue; // linha sem data -> ignora
+    var dNext = (i + 1 < nData) ? cellToISO(dates[i + 1][0]) : null;
+    if (dNext !== dCur) {
+      sheet.getRange(i + 2, 1, 1, endCol)
+        .setBorder(null, null, true, null, null, null, '#000000', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    }
+  }
+}
+
+// Exclui (apaga de verdade) a(s) linha(s) que batem com data + tecnico. Diferente
+// do 'zero' (que mantem a linha zerada), aqui a linha some. Redesenha os
+// separadores de dia ao final. Retorna quantas linhas foram removidas.
+function deleteRowsByDateTech(sheet, map, date, technician) {
+  var alvoDate = date || '';
+  var alvoTech = norm(technician || '');
+  if (!alvoDate || !alvoTech || map.date < 0 || map.technician < 0) return 0;
+  var data = sheet.getDataRange().getValues();
+  var removed = 0;
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (cellToISO(data[i][map.date]) === alvoDate &&
+        norm(data[i][map.technician]) === alvoTech) {
+      sheet.deleteRow(i + 1);
+      removed++;
+    }
+  }
+  formatDaySeparators(sheet, map);
+  return removed;
 }
 
 // >>> Rode para conferir o mapeamento da aba de CAMERAS (date/tecnico devem ser >= 0):
@@ -634,6 +740,77 @@ function debugHeadersCameras() {
   Logger.log('Aba: ' + sheet.getName());
   Logger.log('Cabecalhos detectados: ' + JSON.stringify(info.headers));
   Logger.log('Mapeamento Cameras: ' + JSON.stringify(info.map));
+}
+
+// >>> Rode UMA vez no editor (botao Executar) para converter o Total OS de
+// TODAS as linhas ja existentes (gravadas como numero fixo, ex.: a 422) em
+// FORMULA =C+D+...+I, igual as linhas manuais. So mexe em linhas que tem
+// tecnico; as vazias ficam intactas. Depois disso o total recalcula sozinho.
+function camerasTotalsToFormula() {
+  var sheet = getCamerasSheet();
+  var info = buildCamerasColMap(sheet);
+  var map = info.map;
+  if (map.total < 0) { Logger.log('Coluna Total OS nao encontrada.'); return; }
+  var typeCols = [];
+  for (var t in map.types) if (map.types[t] >= 0) typeCols.push(map.types[t]);
+  typeCols.sort(function (a, b) { return a - b; });
+  if (!typeCols.length) { Logger.log('Nenhuma coluna de tipo de servico encontrada.'); return; }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('Sem linhas de dados.'); return; }
+  var techs = sheet.getRange(2, map.technician + 1, lastRow - 1, 1).getValues();
+  var count = 0;
+  for (var i = 0; i < techs.length; i++) {
+    if (!String(techs[i][0]).trim()) continue; // pula linhas sem tecnico
+    var rowNum = i + 2;
+    sheet.getRange(rowNum, map.total + 1).setFormula(camTotalFormula(typeCols, rowNum));
+    count++;
+  }
+  Logger.log('Total OS convertido para formula em ' + count + ' linha(s).');
+}
+
+// >>> Rode UMA vez no editor para desenhar as linhas separadoras de dia em TODA
+// a aba de Cameras ja existente (sem precisar esperar um novo lancamento).
+function camerasDesenharSeparadores() {
+  var sheet = getCamerasSheet();
+  var info = buildCamerasColMap(sheet);
+  formatDaySeparators(sheet, info.map);
+  Logger.log('Separadores de dia desenhados na aba de Cameras.');
+}
+
+// >>> Rode UMA vez no editor para converter o Total OS de TODAS as linhas ja
+// existentes da aba FIBRA (gravadas como numero) em FORMULA =C+D+...
+// So mexe em linhas que tem tecnico; as vazias ficam intactas.
+function fibraTotalsToFormula() {
+  var sheet = getSheet();
+  var info = buildColMap(sheet);
+  var map = info.map;
+  if (map.total < 0) { Logger.log('Coluna Total OS nao encontrada.'); return; }
+  var typeCols = [];
+  for (var t in map.types) if (map.types[t] >= 0) typeCols.push(map.types[t]);
+  typeCols.sort(function (a, b) { return a - b; });
+  if (!typeCols.length) { Logger.log('Nenhuma coluna de tipo de servico encontrada.'); return; }
+
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) { Logger.log('Sem linhas de dados.'); return; }
+  var techs = sheet.getRange(2, map.technician + 1, lastRow - 1, 1).getValues();
+  var count = 0;
+  for (var i = 0; i < techs.length; i++) {
+    if (!String(techs[i][0]).trim()) continue; // pula linhas sem tecnico
+    var rowNum = i + 2;
+    sheet.getRange(rowNum, map.total + 1).setFormula(camTotalFormula(typeCols, rowNum));
+    count++;
+  }
+  Logger.log('Total OS (Fibra) convertido para formula em ' + count + ' linha(s).');
+}
+
+// >>> Rode UMA vez no editor para desenhar as linhas separadoras de dia em TODA
+// a aba de FIBRA ja existente (sem precisar esperar um novo lancamento).
+function fibraDesenharSeparadores() {
+  var sheet = getSheet();
+  var info = buildColMap(sheet);
+  formatDaySeparators(sheet, info.map);
+  Logger.log('Separadores de dia desenhados na aba de Fibra.');
 }
 
 // Rotulos (com acento) e ordem das colunas que devem existir na planilha.

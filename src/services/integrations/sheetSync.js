@@ -40,3 +40,7 @@ export const syncReportsToSheet = (records) =>
 export const zeroDayInSheet = (date) => post({ action: 'zero', date });
 export const zeroTechnicianInSheet = (technicianName) =>
   post({ action: 'zero', technician: technicianName });
+
+// Excluir = REMOVE a linha (técnico + dia) da planilha de verdade (não zera).
+export const deleteRowInSheet = (date, technicianName) =>
+  post({ action: 'deleteRow', date, technician: technicianName });
