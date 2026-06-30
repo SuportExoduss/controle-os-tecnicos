@@ -153,10 +153,10 @@ export const Home = () => {
           transition={{ delay: 0.08, duration: 0.45 }}
           style={{
             position: 'absolute',
-            left: 'clamp(-18px, -1.2vw, 4px)',
-            top: 'clamp(2px, 2.6vw, 30px)',
-            width: 'clamp(240px, 28vw, 380px)',
-            maxWidth: '35%',
+            left: 'clamp(230px, 22vw, 330px)',
+            top: 'clamp(-10px, 0.6vw, 8px)',
+            width: 'clamp(210px, 22vw, 300px)',
+            maxWidth: '30%',
             height: 'auto',
             pointerEvents: 'none',
             filter: 'drop-shadow(0 18px 38px rgba(46,139,255,0.20))',
