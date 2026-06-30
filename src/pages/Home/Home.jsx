@@ -156,10 +156,10 @@ export const Home = () => {
             left: '50%',
             top: 'clamp(-42px, -2vw, -22px)',
             width: 'clamp(170px, 18vw, 240px)',
+            marginLeft: 'clamp(-120px, -9vw, -85px)',
             maxWidth: '30%',
             height: 'auto',
             pointerEvents: 'none',
-            transform: 'translateX(-50%)',
             filter: 'drop-shadow(0 18px 38px rgba(46,139,255,0.20))',
           }}
         />
