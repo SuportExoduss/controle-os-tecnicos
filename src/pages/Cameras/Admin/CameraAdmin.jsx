@@ -349,7 +349,7 @@ const handleFileUpload = async (e) => {
         <div className="r-maxw" style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
-              <img src="/logo.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'auto' }} />
+              <img src="/logo-frota.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
               <div style={{ color: profile?.nickname ? S.green : S.muted, fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {profile?.nickname ? <><Check size={10}/>{profile.nickname}</> : <span className="r-topbar-label" style={{ textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{today}</span>}
               </div>

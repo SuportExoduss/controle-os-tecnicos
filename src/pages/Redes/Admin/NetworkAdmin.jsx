@@ -492,7 +492,7 @@ export const NetworkAdmin = () => {
           {/* Esquerda */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flexShrink: 0 }}>
-              <img src="/logo.png" alt="IbiúNET" className="r-logo" style={{ width: 'auto' }} />
+              <img src="/logo-frota.png" alt="IbiúNET" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
               {profile?.nickname && (
                 <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Check size={9} />{profile.nickname}
