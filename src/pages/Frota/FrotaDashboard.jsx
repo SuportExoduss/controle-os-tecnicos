@@ -57,11 +57,9 @@ export const FrotaDashboard = () => {
 
   const totals = useMemo(() => {
     let f = 0, a = 0, n = 0, au = 0;
-    teams.forEach((t) => t.members.forEach((m) => { const s = st(name(m)); f += s.f; a += s.a; n += s.n; au += s.au; }));
+    teams.forEach((t) => t.members.forEach((m) => { const s = st(m.name); f += s.f; a += s.a; n += s.n; au += s.au; }));
     return { f, a, n, au };
   }, [teams, doc, d1, d2]); // eslint-disable-line
-
-  function name(m) { return m[0]; }
   const openAdmin = () => { if (isLogged) navigate('/frota/admin'); else { setRedirectAfterLogin('/frota/admin'); setShowLoginModal(true); } };
   const handleDashLogin = async () => {
     if (!loginEmail || !loginPass) { toast.error('Preencha email e senha'); return; }
@@ -158,7 +156,7 @@ export const FrotaDashboard = () => {
           {/* TEAM CARDS */}
           {teams.map((t) => {
             const Ic = TEAM_ICON[t.key] || IdCard;
-            let tf = 0, ta = 0, tn = 0, tau = 0; t.members.forEach((m) => { const s = st(m[0]); tf += s.f; ta += s.a; tn += s.n; tau += s.au; });
+            let tf = 0, ta = 0, tn = 0, tau = 0; t.members.forEach((m) => { const s = st(m.name); tf += s.f; ta += s.a; tn += s.n; tau += s.au; });
             const ob = isObrig(t.key);
             return (
               <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
@@ -174,10 +172,10 @@ export const FrotaDashboard = () => {
                 </div>
                 {exp[t.key] && (
                   <div style={{ padding: '0 12px 12px' }}>
-                    {[...t.members].map((m) => ({ m, s: st(m[0]) })).sort((x, y) => ({ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab] ? y.s[{ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab]] - x.s[{ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab]] : 0)).map(({ m, s }) => (
-                      <div key={m[0]} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderTop: `1px solid ${S.border}` }}>
-                        <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600 }}>{initials(m[0])}</span>
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{m[0]}</span>
+                    {[...t.members].map((m) => ({ m, s: st(m.name) })).sort((x, y) => ({ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab] ? y.s[{ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab]] - x.s[{ feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab]] : 0)).map(({ m, s }) => (
+                      <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 10px', borderTop: `1px solid ${S.border}` }}>
+                        <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600 }}>{initials(m.name)}</span>
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{m.name}</span>
                         <span style={{ marginLeft: 'auto', display: 'flex', gap: '5px' }}>
                           {[['f', '#34d399'], ['a', '#fbbf24'], ['n', '#f87171'], ['au', '#fb923c']].map(([k, c]) => (
                             <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', padding: '2px 8px', borderRadius: '7px', background: c + '22', color: c }}><span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c }} />{s[k]}</span>
@@ -240,7 +238,7 @@ export const FrotaDashboard = () => {
 };
 
 function CalView({ S, teams, cal }) {
-  let f = 0, a = 0, n = 0; teams.forEach((t) => t.members.forEach((m) => { const c = cal[m[0]]; if (!c || c.st === 'naofez') n++; else if (c.st === 'feito') f++; else a++; }));
+  let f = 0, a = 0, n = 0; teams.forEach((t) => t.members.forEach((m) => { const c = cal[m.name]; if (!c || c.st === 'naofez') n++; else if (c.st === 'feito') f++; else a++; }));
   const card = { background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px' };
   return (<>
     <div style={{ fontSize: '12px', color: S.muted2, marginBottom: '12px' }}>Calibragem é semanal — deve ser feita toda <b style={{ color: S.text }}>segunda-feira</b>. Em outro dia = atrasado.</div>
@@ -252,10 +250,10 @@ function CalView({ S, teams, cal }) {
     {teams.map((t) => (
       <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
         <div style={{ padding: '12px 16px', fontWeight: 700, fontSize: '14px' }}>{t.label}</div>
-        {t.members.map((m) => { const c = cal[m[0]] || { st: 'naofez' }; const col = ST[c.st === 'feito' ? 'feito' : c.st === 'atrasado' ? 'atrasado' : 'naofez'].c; const txt = c.st === 'feito' ? 'Feita na segunda' : c.st === 'atrasado' ? 'Atrasada' : 'Não fez'; return (
-          <div key={m[0]} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px', borderTop: `1px solid ${S.border}` }}>
-            <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600 }}>{initials(m[0])}</span>
-            <span style={{ fontSize: '13px', fontWeight: 600 }}>{m[0]}</span>
+        {t.members.map((m) => { const c = cal[m.name] || { st: 'naofez' }; const col = ST[c.st === 'feito' ? 'feito' : c.st === 'atrasado' ? 'atrasado' : 'naofez'].c; const txt = c.st === 'feito' ? 'Feita na segunda' : c.st === 'atrasado' ? 'Atrasada' : 'Não fez'; return (
+          <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px', borderTop: `1px solid ${S.border}` }}>
+            <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 600 }}>{initials(m.name)}</span>
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>{m.name}</span>
             <span style={{ marginLeft: 'auto', fontSize: '11.5px', padding: '2px 8px', borderRadius: '7px', background: col + '22', color: col }}>{txt}</span>
           </div>); })}
       </div>
@@ -269,7 +267,7 @@ function OccView({ S, teams, occ }) {
   if (!list.length) return <div style={{ textAlign: 'center', color: S.muted2, padding: '30px' }}>Nenhuma ocorrência neste mês.</div>;
   return (<>
     <div style={{ fontSize: '12px', color: S.muted2, marginBottom: '12px' }}><AlertTriangle size={13} style={{ verticalAlign: '-2px', color: '#fb923c' }} /> Ocorrências — avaliar socorro ou manutenção. Ordenado por gravidade.</div>
-    {list.map((o, i) => { const sv = SEV[o.sev]; const Ic = SEV_ICON[o.sev]; const t = teams.find((tt) => tt.members.some((m) => m[0] === o.name)); return (
+    {list.map((o, i) => { const sv = SEV[o.sev]; const Ic = SEV_ICON[o.sev]; const t = teams.find((tt) => tt.members.some((m) => m.name === o.name)); return (
       <div key={i} style={{ background: S.card, border: `1px solid ${S.border}`, borderLeft: `3px solid ${sv.c}`, borderRadius: '12px', padding: '13px 15px', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '7px' }}>
           <span style={{ width: '34px', height: '34px', borderRadius: '50%', background: (t?.accent || '#93a6c6'), color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 600 }}>{initials(o.name)}</span>
@@ -289,7 +287,7 @@ function OccView({ S, teams, occ }) {
 
 function RelView({ S, teams, st }) {
   const rows = [];
-  teams.forEach((t) => t.members.forEach((m) => { const s = st(m[0]); const total = s.f + s.a + s.n + s.au; rows.push({ name: m[0], eq: t, s, total, ok: total === s.rec }); }));
+  teams.forEach((t) => t.members.forEach((m) => { const s = st(m.name); const total = s.f + s.a + s.n + s.au; rows.push({ name: m.name, eq: t, s, total, ok: total === s.rec }); }));
   const th = { textAlign: 'center', color: S.muted2, fontWeight: 400, padding: '8px 5px', borderBottom: `1px solid ${S.border}`, fontSize: '11px' };
   const td = { padding: '8px 5px', borderBottom: `1px solid ${S.border}`, textAlign: 'center' };
   return (<>

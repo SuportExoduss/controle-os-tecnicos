@@ -62,9 +62,9 @@ export const FrotaAdmin = () => {
   const readFile = (f) => { if (!f) return; const rd = new FileReader(); rd.onload = () => importText(rd.result, f.name); rd.onerror = () => setMsg('Erro ao ler o arquivo.'); rd.readAsText(f, 'utf-8'); };
 
   const moveMember = async (name, toKey) => {
-    const next = teams.map((t) => ({ ...t, members: t.members.filter((m) => m[0] !== name) }));
-    const from = teams.find((t) => t.members.some((m) => m[0] === name));
-    const m = from?.members.find((x) => x[0] === name); if (!m) return;
+    const next = teams.map((t) => ({ ...t, members: t.members.filter((m) => m.name !== name) }));
+    const from = teams.find((t) => t.members.some((m) => m.name === name));
+    const m = from?.members.find((x) => x.name === name); if (!m) return;
     next.find((t) => t.key === toKey).members.push(m);
     setTeams(next);
     try { await saveFrotaCadastro(next); toast.success('Área atualizada'); } catch { toast.error('Erro ao salvar'); }
@@ -74,7 +74,7 @@ export const FrotaAdmin = () => {
     if (!confirm('Limpar os dados do mês de Junho/2026 no Firebase? (zera a matriz)')) return;
     setProg({ label: 'Limpando…', pct: 40 });
     try {
-      const empty = {}; teams.forEach((t) => t.members.forEach((mm) => { empty[mm[0]] = {}; }));
+      const empty = {}; teams.forEach((t) => t.members.forEach((mm) => { empty[mm.name] = {}; }));
       await saveFrotaMonth(2026, 5, { data: {}, cal: {}, occ: [], period: { d1: 1, d2: 31 } }, profile?.nickname || 'admin');
       setMsg('Dados do mês limpos. Importe um arquivo do Prolog.'); toast.success('Mês limpo no Firebase');
     } catch (e) { setMsg('Erro: ' + e.message); }
@@ -146,9 +146,9 @@ export const FrotaAdmin = () => {
               <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px' }}><div style={{ fontSize: '14px', fontWeight: 700 }}>{t.label}</div><span style={{ marginLeft: 'auto', fontSize: '10.5px', padding: '2px 9px', borderRadius: '999px', background: t.accent + '22', color: t.accent }}>{t.short}</span></div>
                 {t.members.map((m) => (
-                  <div key={m[0]} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px', borderTop: `1px solid ${S.border}` }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{m[0]}</span>
-                    <select value={t.key} onChange={(e) => moveMember(m[0], e.target.value)} style={{ marginLeft: 'auto', background: S.input, border: `1px solid ${S.border}`, color: S.text, borderRadius: '8px', padding: '6px 9px', fontSize: '12px', colorScheme: mode }}>
+                  <div key={m.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 16px', borderTop: `1px solid ${S.border}` }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{m.name}</span>
+                    <select value={t.key} onChange={(e) => moveMember(m.name, e.target.value)} style={{ marginLeft: 'auto', background: S.input, border: `1px solid ${S.border}`, color: S.text, borderRadius: '8px', padding: '6px 9px', fontSize: '12px', colorScheme: mode }}>
                       {teams.map((t2) => <option key={t2.key} value={t2.key}>{t2.short}</option>)}
                     </select>
                   </div>

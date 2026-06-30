@@ -516,13 +516,13 @@ export const NetworkDashboard = () => {
         {/* ── MÉTRICAS (topo) ── */}
         {SHOW.metricas && (
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="r-metrics3">
-          {metrics.map(({ icon: Icon, label, value, color, bg, glow, small, onClick, hint }) => (
+          {metrics.map(({ icon: Icon, label, value, color, glow, small, onClick, hint }) => (
             <div key={label} onClick={onClick}
               style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s' }}
               onMouseEnter={onClick ? (e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = color; }) : undefined}
               onMouseLeave={onClick ? (e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = S.border; }) : undefined}>
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', borderRadius: '50%', background: glow, filter: 'blur(30px)', pointerEvents: 'none' }} />
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: glow, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
                 <Icon size={17} color={color} />
               </div>
               <div style={{ color: S.muted, fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>
@@ -918,7 +918,7 @@ export const NetworkDashboard = () => {
             <div style={{ width: '100%', maxWidth: '440px', background: S.surface, border: '1px solid #047857', borderRadius: '20px', boxShadow: '0 0 40px rgba(16,185,129,0.2)', padding: 'clamp(20px, 5vw, 28px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#052e1a', border: '1px solid #047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <FileSpreadsheet size={20} color="#10b981" />
                   </div>
                   <div>
@@ -1172,7 +1172,7 @@ export const NetworkDashboard = () => {
             <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', padding: 'clamp(20px, 5vw, 28px)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0f1d35', border: '1px solid #1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, border: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Info size={20} color={S.blue} />
                   </div>
                   <div>

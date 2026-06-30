@@ -446,7 +446,7 @@ export const Dashboard = () => {
   );
 
   const metrics = [
-    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, bg: '#0f1d35', glow: 'rgba(96,165,250,0.12)' },
+    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, bg: S.accentSoft, glow: 'rgba(96,165,250,0.12)' },
     { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
     { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, bg: '#1c1200', glow: 'rgba(251,191,36,0.12)' },
     { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, bg: '#140f26', glow: 'rgba(167,139,250,0.12)', small: true },
@@ -486,8 +486,8 @@ export const Dashboard = () => {
               </div>
               <input type="date" value={dateFrom} onChange={e => handleSearch(e.target.value, dateTo, searchTechnician)}
                 onClick={e => { try { e.target.showPicker(); } catch { /* ignora */ } }}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: S.input2, border: `1px solid #2a4a7f`, color: dateFrom ? S.text : S.muted2, fontSize: '14px', outline: 'none', boxSizing: 'border-box', colorScheme: mode, cursor: 'pointer' }}
-                onFocus={e => e.target.style.borderColor = S.blue} onBlur={e => e.target.style.borderColor = '#2a4a7f'} />
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: S.input2, border: `1px solid ${S.border}`, color: dateFrom ? S.text : S.muted2, fontSize: '14px', outline: 'none', boxSizing: 'border-box', colorScheme: mode, cursor: 'pointer' }}
+                onFocus={e => e.target.style.borderColor = S.blue} onBlur={e => e.target.style.borderColor = S.border} />
             </div>
             {/* Fim */}
             <div>
@@ -496,8 +496,8 @@ export const Dashboard = () => {
               </div>
               <input type="date" value={dateTo} onChange={e => handleSearch(dateFrom, e.target.value, searchTechnician)}
                 onClick={e => { try { e.target.showPicker(); } catch { /* ignora */ } }}
-                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: S.input2, border: `1px solid #2a4a7f`, color: dateTo ? S.text : S.muted2, fontSize: '14px', outline: 'none', boxSizing: 'border-box', colorScheme: mode, cursor: 'pointer' }}
-                onFocus={e => e.target.style.borderColor = S.blue} onBlur={e => e.target.style.borderColor = '#2a4a7f'} />
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', background: S.input2, border: `1px solid ${S.border}`, color: dateTo ? S.text : S.muted2, fontSize: '14px', outline: 'none', boxSizing: 'border-box', colorScheme: mode, cursor: 'pointer' }}
+                onFocus={e => e.target.style.borderColor = S.blue} onBlur={e => e.target.style.borderColor = S.border} />
             </div>
             {/* Técnico */}
             <div>
@@ -539,13 +539,13 @@ export const Dashboard = () => {
         {/* METRICS */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           className="r-metrics">
-          {metrics.map(({ icon: Icon, label, value, color, bg, glow, small, onClick }) => (
+          {metrics.map(({ icon: Icon, label, value, color, glow, small, onClick }) => (
             <div key={label} onClick={onClick}
               style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s' }}
               onMouseEnter={onClick ? (e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = color; }) : undefined}
               onMouseLeave={onClick ? (e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = S.border; }) : undefined}>
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', borderRadius: '50%', background: glow, filter: 'blur(30px)', pointerEvents: 'none' }} />
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: glow, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
                 <Icon size={17} color={color} />
               </div>
               <div style={{ color: S.muted, fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>
@@ -668,12 +668,12 @@ export const Dashboard = () => {
                     if (isSelected) handleSearch('', '', searchTechnician);
                     else handleSearch(date, date, searchTechnician);
                   }}
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '6px 4px', borderRadius: '10px', border: `1px solid ${isSelected ? '#6366f1' : inRange ? '#1e3a5f' : 'transparent'}`, background: isSelected ? '#1a1d3a' : inRange ? '#0d1220' : 'transparent', cursor: 'pointer', minWidth: '36px', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#0d1220'; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = inRange ? '#0d1220' : 'transparent'; }}>
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', padding: '6px 4px', borderRadius: '10px', border: `1px solid ${isSelected ? S.accent : inRange ? S.border : 'transparent'}`, background: isSelected ? S.accentSoft : inRange ? S.card : 'transparent', cursor: 'pointer', minWidth: '36px', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = S.card; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = inRange ? S.card : 'transparent'; }}>
                     {/* Barra */}
                     <div style={{ width: '20px', height: '60px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-                      <div style={{ width: '100%', height: `${barH}px`, borderRadius: '4px 4px 0 0', background: isSelected ? '#6366f1' : inRange ? '#3b82f6' : total > 0 ? '#1e3a5f' : '#0f1624', transition: 'all 0.2s' }} />
+                      <div style={{ width: '100%', height: `${barH}px`, borderRadius: '4px 4px 0 0', background: isSelected ? S.accent : inRange ? S.accentDeep : total > 0 ? S.accentSoft : S.input, transition: 'all 0.2s' }} />
                     </div>
                     {/* Total */}
                     {total > 0 && <span style={{ fontSize: '9px', fontWeight: 700, color: isSelected ? '#818cf8' : S.muted, lineHeight: 1 }}>{total}</span>}
@@ -726,13 +726,13 @@ export const Dashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   <span className="r-badge-os" onClick={(e) => { e.stopPropagation(); setPersonalModal(report); }}
                     title="Ver tipos de O.S deste técnico"
-                    style={{ background: '#0f1d35', color: S.blue, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #3a2f12', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
+                    style={{ background: S.accentSoft, color: S.accent, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #3a2f12', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.background = '#13243f'; e.currentTarget.style.borderColor = '#574517'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = '#0f1d35'; e.currentTarget.style.borderColor = '#3a2f12'; }}>
+                    onMouseLeave={e => { e.currentTarget.style.background = S.accentSoft; e.currentTarget.style.borderColor = '#3a2f12'; }}>
                     <ClipboardList size={11}/>{report.totalOrders} O.S
                   </span>
                   {report.rescheduledCount > 0 && (
-                    <span style={{ background: '#1c1200', color: S.orange, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #78350f' }}>
+                    <span style={{ background: S.warnBg, color: S.orange, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.warnBorder}` }}>
                       {report.rescheduledCount} reagend.
                     </span>
                   )}
@@ -767,11 +767,11 @@ export const Dashboard = () => {
                                   {rec.submissionTime && <span style={{ color: S.muted, fontSize: '11px' }}>{rec.submissionTime}</span>}
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} onClick={e => e.stopPropagation()}>
-                                  <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: '1px solid #1e3a5f' }}>
+                                  <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}` }}>
                                     {rec.totalOrders} O.S
                                   </span>
                                   {rec.rescheduledCount > 0 && (
-                                    <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                                    <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
                                       {rec.rescheduledCount} reagend.
                                     </span>
                                   )}
@@ -858,7 +858,7 @@ export const Dashboard = () => {
             <div style={{ width: '100%', maxWidth: '500px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', maxHeight: '90vh', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Edit2 size={17} color={S.blue} />
                   </div>
                   <div>
@@ -883,7 +883,7 @@ export const Dashboard = () => {
                       const qty = editTypeCount(svc);
                       const color = TYPE_COLORS[svc] || S.muted2;
                       return (
-                        <div key={svc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '7px 10px 7px 12px', borderRadius: '10px', background: qty > 0 ? '#0f1d35' : S.input, border: `1px solid ${qty > 0 ? '#1e3a5f' : S.border}`, transition: 'all 0.15s' }}>
+                        <div key={svc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '7px 10px 7px 12px', borderRadius: '10px', background: qty > 0 ? S.accentSoft : S.input, border: `1px solid ${qty > 0 ? S.accent : S.border}`, transition: 'all 0.15s' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                             <span style={{ width: '9px', height: '9px', borderRadius: '3px', background: color, flexShrink: 0 }} />
                             <span style={{ color: qty > 0 ? S.text : S.muted2, fontSize: '13px', fontWeight: qty > 0 ? 700 : 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{svc}</span>
@@ -954,7 +954,7 @@ export const Dashboard = () => {
             className="r-history-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 50, background: S.surface, borderLeft: `1px solid ${S.border}`, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '24px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#140f26', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: S.card2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <History size={17} color={S.purple} />
                 </div>
                 <div>
@@ -973,11 +973,11 @@ export const Dashboard = () => {
                 <div key={r.id} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '14px 16px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>{formatDate(r.date)}</span>
-                    <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>{r.totalOrders} O.S</span>
+                    <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>{r.totalOrders} O.S</span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: r.observations ? '8px' : 0 }}>
                     {(r.serviceTypes || []).map((s, j) => (
-                      <span key={j} style={{ background: '#1a2540', color: S.muted2, fontSize: '11px', padding: '2px 8px', borderRadius: '999px' }}>{s}</span>
+                      <span key={j} style={{ background: S.card2, color: S.muted2, fontSize: '11px', padding: '2px 8px', borderRadius: '999px' }}>{s}</span>
                     ))}
                   </div>
                   {r.rescheduledCount > 0 && <div style={{ color: S.orange, fontSize: '12px', fontWeight: 600 }}>⟳ {r.rescheduledCount} reagendamento(s)</div>}
@@ -1107,15 +1107,15 @@ export const Dashboard = () => {
                   <div style={{ color: '#94a3b8', fontSize: '13px', marginTop: '4px' }}>Entre para corrigir ordens de serviço</div>
                 </div>
                 <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="Email"
-                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: '#0f1624', border: '1px solid #1a2540', color: '#e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#1a2540'} />
+                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '12px' }}
+                  onFocus={e => e.target.style.borderColor = S.accent} onBlur={e => e.target.style.borderColor = S.border} />
                 <input type="password" value={loginPass} onChange={e => setLoginPass(e.target.value)} placeholder="Senha"
                   onKeyDown={e => { if (e.key === 'Enter') handleDashLogin(); }}
-                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: '#0f1624', border: '1px solid #1a2540', color: '#e2e8f0', fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '20px' }}
-                  onFocus={e => e.target.style.borderColor = '#3b82f6'} onBlur={e => e.target.style.borderColor = '#1a2540'} />
+                  style={{ width: '100%', padding: '13px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', marginBottom: '20px' }}
+                  onFocus={e => e.target.style.borderColor = S.accent} onBlur={e => e.target.style.borderColor = S.border} />
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <button onClick={() => setShowLoginModal(false)}
-                    style={{ flex: 1, padding: '13px', borderRadius: '12px', background: 'transparent', border: '1px solid #1a2540', color: '#94a3b8', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                    style={{ flex: 1, padding: '13px', borderRadius: '12px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
                     Cancelar
                   </button>
                   <button onClick={handleDashLogin} disabled={loginLoading}
@@ -1140,7 +1140,7 @@ export const Dashboard = () => {
               <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', padding: 'clamp(20px, 5vw, 28px)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0f1d35', border: '1px solid #1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, border: `1px solid ${S.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Info size={20} color={S.blue} />
                     </div>
                     <div>
@@ -1186,7 +1186,7 @@ export const Dashboard = () => {
               <div style={{ width: '100%', maxWidth: '440px', background: S.surface, border: '1px solid #047857', borderRadius: '20px', boxShadow: '0 0 40px rgba(16,185,129,0.2)', padding: 'clamp(20px, 5vw, 28px)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#052e1a', border: '1px solid #047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <FileSpreadsheet size={20} color="#10b981" />
                     </div>
                     <div>
@@ -1300,7 +1300,7 @@ export const Dashboard = () => {
               style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
               <div style={{ width: '100%', maxWidth: '520px', background: S.surface, border: '1px solid #d97706', borderRadius: '20px', boxShadow: '0 0 40px rgba(217,119,6,0.2)', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ padding: '22px 24px 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0, background: 'linear-gradient(135deg, #12100a, #0a0f1e)' }}>
+                <div style={{ padding: '22px 24px 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0, background: S.card2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #d97706', background: '#78350f22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', fontWeight: 900, fontSize: '18px' }}>
@@ -1335,8 +1335,8 @@ export const Dashboard = () => {
                               {rec.submissionTime && <span style={{ color: S.muted, fontSize: '11px' }}>{rec.submissionTime}</span>}
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                              <span style={{ background: '#0f1d35', color: S.blue, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: '1px solid #1e3a5f' }}>{rec.totalOrders} O.S</span>
-                              {rec.rescheduledCount > 0 && <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>{rec.rescheduledCount} reagend.</span>}
+                              <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}` }}>{rec.totalOrders} O.S</span>
+                              {rec.rescheduledCount > 0 && <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>{rec.rescheduledCount} reagend.</span>}
                             </div>
                           </div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>

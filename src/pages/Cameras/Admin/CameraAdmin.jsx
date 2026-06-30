@@ -818,7 +818,7 @@ const handleFileUpload = async (e) => {
               {/* Header fixo */}
               <div style={{ padding: '24px 28px 20px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#0d2d1f', border: '1px solid #065f46', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <CheckCircle2 size={22} color={S.green} />
                   </div>
                   <div>
@@ -913,7 +913,7 @@ const handleFileUpload = async (e) => {
                 {/* Header */}
                 <div style={{ padding: '24px 28px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0d2d1f', border: '1px solid #065f46', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <FileSpreadsheet size={20} color={S.green} />
                     </div>
                     <div>
@@ -930,7 +930,7 @@ const handleFileUpload = async (e) => {
 
                 {/* Prévia */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#0d2d1f', border: '1px solid #065f46' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: S.okBg, border: `1px solid ${S.okBorder}` }}>
                     <AlertCircle size={15} color={S.green} />
                     <span style={{ color: S.green, fontSize: '13px', fontWeight: 600 }}>
                       {importData.records.length} registros serão importados para o Firestore
@@ -954,7 +954,7 @@ const handleFileUpload = async (e) => {
                             {r.totalOrders} O.S
                           </span>
                           {r.rescheduledCount > 0 && (
-                            <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                            <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
                               {r.rescheduledCount} reagend.
                             </span>
                           )}

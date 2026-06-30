@@ -343,7 +343,7 @@ const handleFileUpload = async (e) => {
         onPrimary={() => navigate('/fibra/dashboard')}
         onAuth={handleLogout}
         rightSlot={(
-          <label className="area-action-btn" style={{ borderColor: '#1e3a5f', color: S.blue, cursor: importLoading ? 'wait' : 'pointer' }}>
+          <label className="area-action-btn" style={{ borderColor: S.border, color: S.blue, cursor: importLoading ? 'wait' : 'pointer' }}>
             {importLoading ? <Spinner /> : <><Upload size={14}/><span className="r-topbar-label">Importar Excel</span></>}
             <input type="file" accept=".xlsx,.xls" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
@@ -475,7 +475,7 @@ const handleFileUpload = async (e) => {
                                   onMouseLeave={e => e.currentTarget.style.background = formData.technicianName === c.name ? '#0d1d3a' : 'none'}>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: st.color, flexShrink: 0, boxShadow: `0 0 6px ${st.color}` }} title={st.label} />
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0)}</div>
+                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0)}</div>
                                     <span style={{ color: formData.technicianName === c.name ? S.blue : S.text, fontSize: '14px', fontWeight: formData.technicianName === c.name ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                                   </div>
                                   {formData.technicianName === c.name && <Check size={14} color={S.blue} style={{ flexShrink: 0 }} />}
@@ -556,7 +556,7 @@ const handleFileUpload = async (e) => {
                 <AnimatePresence>
                   {tempServices.length > 0 && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      style={{ padding: '16px', borderRadius: '10px', background: S.input, border: `1px solid #1e3a5f` }}>
+                      style={{ padding: '16px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <span style={{ color: S.blue, fontSize: '12px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
                           <ListChecks size={13} style={{ display: 'inline', marginRight: '5px' }} />
@@ -635,7 +635,7 @@ const handleFileUpload = async (e) => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
                   <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Colaboradores</span>
-                  <span style={{ background: '#1e3a5f', color: S.blue, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
+                  <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
                 </div>
               </div>
 
@@ -646,7 +646,7 @@ const handleFileUpload = async (e) => {
                   {collaborators.map(c => (
                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '8px', background: S.input, border: `1px solid ${S.border}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
                       </div>
                       <button onClick={() => handleDeleteCollab(c.id, c.name)}
@@ -661,7 +661,7 @@ const handleFileUpload = async (e) => {
               )}
 
 <button onClick={() => setShowAddCollab(true)}
-                style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'transparent', border: `1px dashed #1e3a5f`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.15s', marginBottom: '6px' }}
+                style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'transparent', border: `1px dashed ${S.accent}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.15s', marginBottom: '6px' }}
                 onMouseEnter={e => { e.currentTarget.style.background = '#0d1d3a'; e.currentTarget.style.borderStyle = 'solid'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed'; }}>
                 <Plus size={14} />Adicionar colaborador
@@ -684,7 +684,7 @@ const handleFileUpload = async (e) => {
             <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#1e3a5f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <UserPlus size={20} color={S.blue} />
                   </div>
                   <div>
@@ -770,7 +770,7 @@ const handleFileUpload = async (e) => {
               {/* Header fixo */}
               <div style={{ padding: '24px 28px 20px', borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#0d2d1f', border: '1px solid #065f46', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <CheckCircle2 size={22} color={S.green} />
                   </div>
                   <div>
@@ -862,7 +862,7 @@ const handleFileUpload = async (e) => {
                 {/* Header */}
                 <div style={{ padding: '24px 28px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0d2d1f', border: '1px solid #065f46', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <FileSpreadsheet size={20} color={S.green} />
                     </div>
                     <div>
@@ -879,7 +879,7 @@ const handleFileUpload = async (e) => {
 
                 {/* Prévia */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px 28px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: '#0d2d1f', border: '1px solid #065f46' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', background: S.okBg, border: `1px solid ${S.okBorder}` }}>
                     <AlertCircle size={15} color={S.green} />
                     <span style={{ color: S.green, fontSize: '13px', fontWeight: 600 }}>
                       {importData.records.length} registros serão importados para o Firestore
@@ -890,7 +890,7 @@ const handleFileUpload = async (e) => {
                     {importData.records.slice(0, 20).map((r, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}` }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#1e3a5f', color: S.blue, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>
                             {(r.technicianName || '?').charAt(0)}
                           </div>
                           <div>
@@ -899,11 +899,11 @@ const handleFileUpload = async (e) => {
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <span style={{ background: '#1e3a5f', color: S.blue, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                          <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
                             {r.totalOrders} O.S
                           </span>
                           {r.rescheduledCount > 0 && (
-                            <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                            <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '3px 8px', borderRadius: '999px', fontWeight: 700 }}>
                               {r.rescheduledCount} reagend.
                             </span>
                           )}

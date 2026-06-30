@@ -544,13 +544,13 @@ export const CameraDashboard = () => {
         {/* METRICS */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           className="r-metrics">
-          {metrics.map(({ icon: Icon, label, value, color, bg, glow, small, onClick }) => (
+          {metrics.map(({ icon: Icon, label, value, color, glow, small, onClick }) => (
             <div key={label} onClick={onClick}
               style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '20px', position: 'relative', overflow: 'hidden', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.15s' }}
               onMouseEnter={onClick ? (e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = color; }) : undefined}
               onMouseLeave={onClick ? (e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = S.border; }) : undefined}>
               <div style={{ position: 'absolute', top: 0, right: 0, width: '100px', height: '100px', borderRadius: '50%', background: glow, filter: 'blur(30px)', pointerEvents: 'none' }} />
-              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: glow, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
                 <Icon size={17} color={color} />
               </div>
               <div style={{ color: S.muted, fontSize: '11px', fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>{label}</div>
@@ -737,7 +737,7 @@ export const CameraDashboard = () => {
                     <ClipboardList size={11}/>{report.totalOrders} O.S
                   </span>
                   {report.rescheduledCount > 0 && (
-                    <span style={{ background: '#1c1200', color: S.orange, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #78350f' }}>
+                    <span style={{ background: S.warnBg, color: S.orange, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.warnBorder}` }}>
                       {report.rescheduledCount} reagend.
                     </span>
                   )}
@@ -776,7 +776,7 @@ export const CameraDashboard = () => {
                                     {rec.totalOrders} O.S
                                   </span>
                                   {rec.rescheduledCount > 0 && (
-                                    <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                                    <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
                                       {rec.rescheduledCount} reagend.
                                     </span>
                                   )}
@@ -959,7 +959,7 @@ export const CameraDashboard = () => {
             className="r-history-panel" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 50, background: S.surface, borderLeft: `1px solid ${S.border}`, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '24px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#140f26', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: S.card2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <History size={17} color={S.purple} />
                 </div>
                 <div>
@@ -982,7 +982,7 @@ export const CameraDashboard = () => {
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: r.observations ? '8px' : 0 }}>
                     {(r.serviceTypes || []).map((s, j) => (
-                      <span key={j} style={{ background: '#1a2540', color: S.muted2, fontSize: '11px', padding: '2px 8px', borderRadius: '999px' }}>{s}</span>
+                      <span key={j} style={{ background: S.card2, color: S.muted2, fontSize: '11px', padding: '2px 8px', borderRadius: '999px' }}>{s}</span>
                     ))}
                   </div>
                   {r.rescheduledCount > 0 && <div style={{ color: S.orange, fontSize: '12px', fontWeight: 600 }}>⟳ {r.rescheduledCount} reagendamento(s)</div>}
@@ -1191,7 +1191,7 @@ export const CameraDashboard = () => {
               <div style={{ width: '100%', maxWidth: '440px', background: S.surface, border: '1px solid #047857', borderRadius: '20px', boxShadow: '0 0 40px rgba(16,185,129,0.2)', padding: 'clamp(20px, 5vw, 28px)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#052e1a', border: '1px solid #047857', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <FileSpreadsheet size={20} color="#10b981" />
                     </div>
                     <div>
@@ -1305,7 +1305,7 @@ export const CameraDashboard = () => {
               style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
               <div style={{ width: '100%', maxWidth: '520px', background: S.surface, border: '1px solid #d97706', borderRadius: '20px', boxShadow: '0 0 40px rgba(217,119,6,0.2)', maxHeight: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                 {/* Header */}
-                <div style={{ padding: '22px 24px 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0, background: 'linear-gradient(135deg, #12100a, #0a0f1e)' }}>
+                <div style={{ padding: '22px 24px 18px', borderBottom: `1px solid ${S.border}`, flexShrink: 0, background: S.card2 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{ width: '44px', height: '44px', borderRadius: '50%', border: '2px solid #d97706', background: '#78350f22', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', fontWeight: 900, fontSize: '18px' }}>
@@ -1341,7 +1341,7 @@ export const CameraDashboard = () => {
                             </div>
                             <div style={{ display: 'flex', gap: '6px' }}>
                               <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.accent}` }}>{rec.totalOrders} O.S</span>
-                              {rec.rescheduledCount > 0 && <span style={{ background: '#1c1200', color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>{rec.rescheduledCount} reagend.</span>}
+                              {rec.rescheduledCount > 0 && <span style={{ background: S.warnBg, color: S.orange, fontSize: '11px', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>{rec.rescheduledCount} reagend.</span>}
                             </div>
                           </div>
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>

@@ -5,8 +5,8 @@ import { statsOf, isObrig, MESES } from './frotaCore';
 const buildRows = (teams, data, d1, d2) => {
   const rows = [];
   teams.forEach((t) => t.members.forEach((m) => {
-    const s = statsOf(data, m[0], d1, d2);
-    rows.push({ name: m[0], eq: t.short, obrig: isObrig(t.key), f: s.f, a: s.a, n: s.n, au: s.au, total: s.f + s.a + s.n + s.au });
+    const s = statsOf(data, m.name, d1, d2);
+    rows.push({ name: m.name, eq: t.short, obrig: isObrig(t.key), f: s.f, a: s.a, n: s.n, au: s.au, total: s.f + s.a + s.n + s.au });
   }));
   return rows;
 };

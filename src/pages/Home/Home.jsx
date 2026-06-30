@@ -133,7 +133,7 @@ export const Home = () => {
                   <Check size={12} style={{ flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '22vw' }}>{profile.nickname}</span>
                 </div>
                 <button onClick={handleLogout} title="Sair"
-                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '10px', background: '#0d2d1f', border: '1px solid #065f46', color: '#34d399', fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', borderRadius: '10px', background: S.okBg, border: `1px solid ${S.okBorder}`, color: S.green, fontSize: '12px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
                   <LogOut size={13} />Sair
                 </button>
               </>

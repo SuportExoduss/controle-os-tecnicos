@@ -911,7 +911,7 @@ export const NetworkAdmin = () => {
                 style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 60, padding: '16px' }}>
                 <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${ok ? '#065f46' : '#92400e'}`, borderRadius: '20px', boxShadow: '0 40px 100px rgba(0,0,0,0.8)', padding: 'clamp(20px,5vw,28px)' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '20px' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: ok ? '#0d2d1f' : '#1c1200', border: `1px solid ${ok ? '#065f46' : '#92400e'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: ok ? S.okBg : S.warnBg, border: `1px solid ${ok ? S.okBorder : S.warnBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
                       {ok ? <CheckCircle2 size={30} color="#34d399" /> : <AlertCircle size={30} color="#fbbf24" />}
                     </div>
                     <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>
@@ -953,7 +953,7 @@ export const NetworkAdmin = () => {
 
                 {/* Cabeçalho */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '22px' }}>
-                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: importModal.phase === 'done' ? '#0d2d1f' : importModal.phase === 'error' ? '#2d0f0f' : S.accentSoft, border: `1px solid ${importModal.phase === 'done' ? '#065f46' : importModal.phase === 'error' ? '#7f1d1d' : S.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: importModal.phase === 'done' ? S.okBg : importModal.phase === 'error' ? '#2d0f0f' : S.accentSoft, border: `1px solid ${importModal.phase === 'done' ? S.okBorder : importModal.phase === 'error' ? '#7f1d1d' : S.accent}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {importModal.phase === 'done'
                       ? <CheckCircle2 size={22} color="#34d399" />
                       : importModal.phase === 'error'
@@ -1090,7 +1090,7 @@ export const NetworkAdmin = () => {
             style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
             <div style={{ width: '100%', maxWidth: '440px', background: S.surface, border: '1px solid #065f46', borderRadius: '20px', padding: 'clamp(16px,5vw,28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#0d2d1f', border: '1px solid #065f46', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.okBg, border: `1px solid ${S.okBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <CheckCircle2 size={20} color="#10b981" />
                 </div>
                 <div>

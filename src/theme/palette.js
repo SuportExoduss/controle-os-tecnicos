@@ -24,9 +24,9 @@
 // destaque já ficam na identidade certa automaticamente.
 // ─────────────────────────────────────────────────────────────────────────
 
-// Neutros de texto compartilhados (não mudam por área)
-const txtDark  = { text: '#f1f5f9', muted: '#475569', muted2: '#94a3b8' };
-const txtLight = { text: '#1a2236', muted: '#8a93a8', muted2: '#5b6478' };
+// Neutros de texto + "sucesso suave" (Sair/confirmações) — adaptam por tema.
+const txtDark  = { text: '#f1f5f9', muted: '#475569', muted2: '#94a3b8', okBg: '#0d2d1f', okBorder: '#065f46', warnBg: '#1c1200', warnBorder: '#78350f' };
+const txtLight = { text: '#1a2236', muted: '#8a93a8', muted2: '#5b6478', okBg: '#dcfce7', okBorder: '#86efac', warnBg: '#fef3c7', warnBorder: '#fcd34d' };
 
 export const BRANDS = {
   // ── FIBRA — Azul (base navy original) ──────────────────────────────────
@@ -100,27 +100,27 @@ export const BRANDS = {
     },
   },
 
-  // ── FROTA — Azul céu (mais claro que a Fibra; checklist dos veículos) ───
+  // ── FROTA — Azul Tiffany (cyan-turquesa; checklist dos veículos) ───────
   frota: {
     key: 'frota', name: 'Frota',
     dark: {
       ...txtDark,
-      bg: '#07111c', card: '#0c1826', card2: '#102236', border: '#173249',
-      surface: '#091523', input: '#07111c', input2: '#0c1c2e', headerBg: '#0c1826',
-      blue: '#7dd3fc', green: '#34d399', orange: '#fbbf24', purple: '#a78bfa', red: '#f87171',
-      accent: '#38bdf8', accentDeep: '#0ea5e9', accentSoft: '#0a2333',
-      gradient: 'linear-gradient(135deg, #0ea5e9, #38bdf8)',
-      glow: 'rgba(56,189,248,0.30)', onAccent: '#06283d',
+      bg: '#08161a', card: '#0d2125', card2: '#112b30', border: '#1a4146',
+      surface: '#0a1c20', input: '#08161a', input2: '#0e2327', headerBg: '#0d2125',
+      blue: '#5fe3da', green: '#34d399', orange: '#fbbf24', purple: '#a78bfa', red: '#f87171',
+      accent: '#1cc5bd', accentDeep: '#0a9690', accentSoft: '#07221f',
+      gradient: 'linear-gradient(135deg, #0a9690, #1cc5bd)',
+      glow: 'rgba(28,197,189,0.30)', onAccent: '#042220',
     },
     light: {
       ...txtLight,
-      text: '#15293b', muted2: '#56708a',
-      bg: '#e2edf5', card: '#edf2f8', card2: '#e5edf4', border: '#c4d3e0',
-      surface: '#f0f5fa', input: '#e7eef5', input2: '#edf2f8', headerBg: '#e9f0f7',
-      blue: '#0284c7', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
-      accent: '#0284c7', accentDeep: '#0369a1', accentSoft: '#d4ecfb',
-      gradient: 'linear-gradient(135deg, #0284c7, #0ea5e9)',
-      glow: 'rgba(2,132,199,0.20)', onAccent: '#ffffff',
+      text: '#13302e', muted2: '#4f7370',
+      bg: '#e0efee', card: '#ecf6f5', card2: '#e3f1f0', border: '#c2dedb',
+      surface: '#f0f8f7', input: '#e6f2f1', input2: '#ecf6f5', headerBg: '#e8f4f3',
+      blue: '#0a9690', green: '#059669', orange: '#d97706', purple: '#7c3aed', red: '#dc2626',
+      accent: '#0a9690', accentDeep: '#07736e', accentSoft: '#cdebe9',
+      gradient: 'linear-gradient(135deg, #0a9690, #14b3ab)',
+      glow: 'rgba(10,150,144,0.20)', onAccent: '#ffffff',
     },
   },
 };

@@ -19,13 +19,53 @@ export const SEV = {
   normal: { c: '#3d8bff', l: 'Normal', i: 'InfoCircle' },
 };
 
-// Cadastro padrão (usado quando não há nada salvo no Firestore ainda).
+// Cadastro padrão — members são objetos {name, plate} (Firestore não aceita arrays aninhados).
 export const DEFAULT_TEAMS = [
-  { key: 'fibra', label: 'Técnicos de Fibra', short: 'Fibra', accent: '#5fa3ff', members: [['Andre Luiz Roberth', 'TIV1I01'], ['Bruno Luiz Pupo', 'SJI3F16'], ['Carlos Daniel Pedroso', 'CUI8B34'], ['Danilo Tiburtino', 'SUV0A56'], ['Deyvison Vinícius', 'TIO7A14'], ['Eduardo Calixto', 'GFJ5A85'], ['Felipe Aparecido', 'BTR5G04'], ['Geovani Santos', 'CUN0C95'], ['José Luiz Campos', 'SUA3B34'], ['Kaique Ribeiro', 'GFP7106'], ['Marco Aurélio', 'TMJ7A39'], ['Matheus Henrique', 'UGG4F94'], ['Rafael Carvalho', 'DVD6I69'], ['Thiago Matheus', 'UFD1G43'], ['Vitor Daniel', 'TLO2A48'], ['Walter Alves', 'UGA0H38'], ['Wesley Ribeiro', 'SUM8B53']] },
-  { key: 'redes', label: 'Técnicos de Redes', short: 'Redes', accent: '#fbbf24', members: [['Getulio Benedito', 'TIT2C23'], ['Mattheus Mera', 'UDY7D49'], ['Pablo Henrique Dantas', 'PYZ0H96'], ['Richard Luis Barbosa', 'QNE0F56'], ['Robson Donizete', 'GBN1F45'], ['Walter Victor Jacob', 'RMN3A56']] },
-  { key: 'cameras', label: 'Técnicos de Câmeras', short: 'Câmeras', accent: '#34d399', members: [['Ewerson Marques', 'SWU8J67'], ['Gabriel Aranha', 'GGV3700'], ['Natan Krainer', 'PZU8D07'], ['Gustavo Torolla', 'GJX1958']] },
-  { key: 'frota', label: 'Equipe de Frota', short: 'Frota', accent: '#a78bfa', members: [['Gustavo Vítor Domingues', 'EVP3E93'], ['Lucas Camargo de Oliveira', 'TMA4A51']] },
-  { key: 'demais', label: 'Demais colaboradores', short: 'Demais', accent: '#93a6c6', members: [['Victor Hideki (Supervisor)', 'TMA4A51'], ['Paulo Benedito (Supervisor)', 'SSX8J76'], ['Beatriz da Silva (Supervisor)', 'EVP3E93'], ['Ronaldo Pacheco (Fiscal)', 'TLT5I68'], ['Angela da Silva (Vendas)', 'QQR6A88'], ['Anselmo Cavalcante', 'EBF3H85']] },
+  { key: 'fibra', label: 'Técnicos de Fibra', short: 'Fibra', accent: '#5fa3ff', members: [
+    { name: 'Andre Luiz Roberth', plate: 'TIV1I01' },
+    { name: 'Bruno Luiz Pupo', plate: 'SJI3F16' },
+    { name: 'Carlos Daniel Pedroso', plate: 'CUI8B34' },
+    { name: 'Danilo Tiburtino', plate: 'SUV0A56' },
+    { name: 'Deyvison Vinícius', plate: 'TIO7A14' },
+    { name: 'Eduardo Calixto', plate: 'GFJ5A85' },
+    { name: 'Felipe Aparecido', plate: 'BTR5G04' },
+    { name: 'Geovani Santos', plate: 'CUN0C95' },
+    { name: 'José Luiz Campos', plate: 'SUA3B34' },
+    { name: 'Kaique Ribeiro', plate: 'GFP7106' },
+    { name: 'Marco Aurélio', plate: 'TMJ7A39' },
+    { name: 'Matheus Henrique', plate: 'UGG4F94' },
+    { name: 'Rafael Carvalho', plate: 'DVD6I69' },
+    { name: 'Thiago Matheus', plate: 'UFD1G43' },
+    { name: 'Vitor Daniel', plate: 'TLO2A48' },
+    { name: 'Walter Alves', plate: 'UGA0H38' },
+    { name: 'Wesley Ribeiro', plate: 'SUM8B53' },
+  ] },
+  { key: 'redes', label: 'Técnicos de Redes', short: 'Redes', accent: '#fbbf24', members: [
+    { name: 'Getulio Benedito', plate: 'TIT2C23' },
+    { name: 'Mattheus Mera', plate: 'UDY7D49' },
+    { name: 'Pablo Henrique Dantas', plate: 'PYZ0H96' },
+    { name: 'Richard Luis Barbosa', plate: 'QNE0F56' },
+    { name: 'Robson Donizete', plate: 'GBN1F45' },
+    { name: 'Walter Victor Jacob', plate: 'RMN3A56' },
+  ] },
+  { key: 'cameras', label: 'Técnicos de Câmeras', short: 'Câmeras', accent: '#34d399', members: [
+    { name: 'Ewerson Marques', plate: 'SWU8J67' },
+    { name: 'Gabriel Aranha', plate: 'GGV3700' },
+    { name: 'Natan Krainer', plate: 'PZU8D07' },
+    { name: 'Gustavo Torolla', plate: 'GJX1958' },
+  ] },
+  { key: 'frota', label: 'Equipe de Frota', short: 'Frota', accent: '#a78bfa', members: [
+    { name: 'Gustavo Vítor Domingues', plate: 'EVP3E93' },
+    { name: 'Lucas Camargo de Oliveira', plate: 'TMA4A51' },
+  ] },
+  { key: 'demais', label: 'Demais colaboradores', short: 'Demais', accent: '#93a6c6', members: [
+    { name: 'Victor Hideki (Supervisor)', plate: 'TMA4A51' },
+    { name: 'Paulo Benedito (Supervisor)', plate: 'SSX8J76' },
+    { name: 'Beatriz da Silva (Supervisor)', plate: 'EVP3E93' },
+    { name: 'Ronaldo Pacheco (Fiscal)', plate: 'TLT5I68' },
+    { name: 'Angela da Silva (Vendas)', plate: 'QQR6A88' },
+    { name: 'Anselmo Cavalcante', plate: 'EBF3H85' },
+  ] },
 ];
 
 export const norm = (s) => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
@@ -41,7 +81,7 @@ const groupOf = (eq, cg) => {
   return 'fibra';
 };
 
-export const teamOf = (teams, name) => teams.find((t) => t.members.some((m) => m[0] === name));
+export const teamOf = (teams, name) => teams.find((t) => t.members.some((m) => m.name === name));
 
 // Conta os estados de um colaborador no período. monthData[name] = { dia: {st,...}|null }
 export const statsOf = (monthData, name, d1, d2) => {
@@ -69,9 +109,9 @@ export const cellFor = (x) => {
 export const buildSheetsPayload = (teams, data, ano, mesIndex, secret) => {
   const linhas = [];
   teams.forEach((t) => t.members.forEach((m) => {
-    const dias = {}; const r = (data && data[m[0]]) || {};
+    const dias = {}; const r = (data && data[m.name]) || {};
     for (let d = 1; d <= 31; d++) { const c = cellFor(r[d]); if (c) dias[d] = c; }
-    if (Object.keys(dias).length) linhas.push({ nome: m[0], dias });
+    if (Object.keys(dias).length) linhas.push({ nome: m.name, dias });
   }));
   return { secret, mes: MESES[mesIndex], ano: String(ano), linhas };
 };
@@ -79,7 +119,8 @@ export const buildSheetsPayload = (teams, data, ano, mesIndex, secret) => {
 // Parser do CSV do Prolog. Recebe o texto e o cadastro atual de equipes.
 // Retorna { teams (com novos colaboradores), data, cal, occ, period, count, people, novos }.
 export const parseProlog = (text, teamsIn) => {
-  const teams = teamsIn.map((t) => ({ ...t, members: t.members.map((m) => [...m]) }));
+  // Deep copy: members são objetos, usar spread
+  const teams = teamsIn.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) }));
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
   if (lines.length < 2) throw new Error('Arquivo vazio ou inválido.');
   const H = lines[0].replace(/^﻿/, '').split(';').map(norm);
@@ -88,7 +129,7 @@ export const parseProlog = (text, teamsIn) => {
   if (ci.nome < 0 || ci.data < 0) throw new Error('Cabeçalho não reconhecido — esperado o CSV do Prolog (separador ; ).');
 
   const idxM = [];
-  teams.forEach((t) => t.members.forEach((m) => idxM.push({ m, t, n: norm(m[0]) })));
+  teams.forEach((t) => t.members.forEach((m) => idxM.push({ m, t, n: norm(m.name) })));
   const find = (nm) => {
     const xs = new Set(norm(nm).split(' ').filter(Boolean)); let best = null, bl = 0;
     idxM.forEach((it) => { const mt = it.n.split(' ').filter(Boolean); if (mt.length < 2) return; if (mt.every((tok) => xs.has(tok)) && mt.length > bl) { best = it; bl = mt.length; } });
@@ -107,10 +148,15 @@ export const parseProlog = (text, teamsIn) => {
     const modelo = norm(r[ci.modelo] || ''); const tipo = norm(r[ci.tipo] || '');
     const plate = (r[ci.placa] || '').trim().replace(/[-\s]/g, '');
     let fm = find(nome), name;
-    if (fm) { name = fm.m[0]; } else {
+    if (fm) { name = fm.m.name; } else {
       const key = groupOf(r[ci.equipe], r[ci.cargo]); name = nome;
       const t = teams.find((x) => x.key === key) || teams[0];
-      if (!t.members.find((x) => norm(x[0]) === norm(nome))) { t.members.push([nome, plate || '—']); idxM.push({ m: [nome, plate || '—'], t, n: norm(nome) }); novos++; }
+      if (!t.members.find((x) => norm(x.name) === norm(nome))) {
+        const newMember = { name: nome, plate: plate || '—' };
+        t.members.push(newMember);
+        idxM.push({ m: newMember, t, n: norm(nome) });
+        novos++;
+      }
     }
     count++; people.add(name); minD = Math.min(minD, day); maxD = Math.max(maxD, day);
     if (modelo.indexOf('ocorrencia') >= 0) { occ.push({ name, plate, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
@@ -122,7 +168,7 @@ export const parseProlog = (text, teamsIn) => {
   const ano = +(lines[1].split(';')[ci.data] || '').trim().match(/\/(\d{4})/)?.[1] || new Date().getFullYear();
   const data = {}, calOut = {};
   teams.forEach((t) => t.members.forEach((m) => {
-    const byDay = daily[m[0]] || {}; const out = {};
+    const byDay = daily[m.name] || {}; const out = {};
     for (let d = 1; d <= 31; d++) {
       const wd = new Date(ano, mesIdx, d).getDay();
       if (new Date(ano, mesIdx, d).getMonth() !== mesIdx) { out[d] = null; continue; }
@@ -136,8 +182,8 @@ export const parseProlog = (text, teamsIn) => {
       const p2 = plates.length > 1 ? (plates.find((p) => p !== base.plate) || null) : null;
       out[d] = { st, plate: base.plate || null, p2, time: base.time };
     }
-    data[m[0]] = out;
-    calOut[m[0]] = cal[m[0]] || { st: 'naofez', day: null };
+    data[m.name] = out;
+    calOut[m.name] = cal[m.name] || { st: 'naofez', day: null };
   }));
   const occOut = occ.map((o) => ({ ...o, sev: o.pc > 0 ? 'critica' : (o.pa > 0 || o.nok >= 4) ? 'alta' : 'normal' }));
 
