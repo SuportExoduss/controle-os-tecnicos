@@ -459,7 +459,7 @@ export const Dashboard = () => {
         <div className="r-maxw" style={{ padding: '0 16px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, flexShrink: 0 }}>
-              <img src="/logo.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'auto' }} />
+              <img src="/logo-frota.png" alt="IbiúNET Multiplay" className="r-logo" style={{ width: 'clamp(116px, 20vw, 156px)', height: 'auto', display: 'block' }} />
               {isLogged && (
                 <div style={{ color: '#34d399', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Check size={10}/>{profile.nickname}

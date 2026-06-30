@@ -121,7 +121,7 @@ export const Home = () => {
       {/* HEADER */}
       <header style={{ position: 'relative', zIndex: 2, padding: '0 clamp(16px, 5vw, 32px)' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <img src="/logo-frota.png" alt="IbiúNET Multiplay" style={{ width: 'clamp(126px, 16vw, 176px)', height: 'auto', flexShrink: 0, display: 'block' }} />
+          <div aria-hidden="true" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <button onClick={toggleTheme} title="Alternar tema"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '10px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0 }}>
@@ -153,7 +153,7 @@ export const Home = () => {
           transition={{ delay: 0.08, duration: 0.45 }}
           style={{
             position: 'absolute',
-            left: 'clamp(16px, 3vw, 28px)',
+            left: 'clamp(-18px, -1.2vw, 4px)',
             top: 'clamp(2px, 2.6vw, 30px)',
             width: 'clamp(240px, 28vw, 380px)',
             maxWidth: '35%',
