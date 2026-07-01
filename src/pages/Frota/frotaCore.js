@@ -175,12 +175,19 @@ export const parseProlog = (text, teamsIn) => {
       if (wd === 0 || d < minD || d > maxD) { out[d] = null; continue; }
       const arr = byDay[d];
       if (!arr || !arr.length) { out[d] = { st: 'naofez' }; continue; }
-      const sd = arr.filter((x) => x.tipo === 'saida');
-      const base = (sd.length ? sd : arr).slice().sort((a, b) => (a.time < b.time ? -1 : 1))[0];
+      const sortedAll = arr.slice().sort((a, b) => (a.time < b.time ? -1 : 1));
+      const sd = sortedAll.filter((x) => x.tipo === 'saida');
+      const base = (sd.length ? sd : sortedAll)[0];
       const st = base.time <= '09:00' ? 'feito' : 'atrasado';
-      const plates = [...new Set(arr.map((x) => x.plate).filter(Boolean))];
-      const p2 = plates.length > 1 ? (plates.find((p) => p !== base.plate) || null) : null;
-      out[d] = { st, plate: base.plate || null, p2, time: base.time };
+      // Detecta TODAS as trocas: cada mudança de placa consecutiva = 1 troca
+      const swapsList = [];
+      for (let i = 1; i < sortedAll.length; i++) {
+        const prev = sortedAll[i - 1], curr = sortedAll[i];
+        if (curr.plate && prev.plate && curr.plate !== prev.plate)
+          swapsList.push({ plateFrom: prev.plate, plateTo: curr.plate, timeFrom: prev.time, timeTo: curr.time });
+      }
+      const p2 = swapsList.length > 0 ? swapsList[swapsList.length - 1].plateTo : null;
+      out[d] = { st, plate: base.plate || null, p2, time: base.time, ...(swapsList.length ? { swaps: swapsList } : {}) };
     }
     data[m.name] = out;
     calOut[m.name] = cal[m.name] || { st: 'naofez', day: null };

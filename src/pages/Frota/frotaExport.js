@@ -12,7 +12,7 @@ const buildRows = (teams, data, d1, d2) => {
 };
 
 export const buildTextoRelacao = (teams, doc, mesIndex, ano) => {
-  const d1 = doc?.period?.d1 || 1, d2 = doc?.period?.d2 || 31;
+  const d1 = 1, d2 = new Date(ano, mesIndex + 1, 0).getDate();
   const rows = buildRows(teams, doc?.data || {}, d1, d2);
   const L = [];
   L.push('╔════════════════════════════════════════════╗');
@@ -29,7 +29,7 @@ export const buildTextoRelacao = (teams, doc, mesIndex, ano) => {
 export const exportExcelRelacao = async (teams, doc, mesIndex, ano, onProgress) => {
   const XLSX = await import('xlsx');
   onProgress?.(20);
-  const d1 = doc?.period?.d1 || 1, d2 = doc?.period?.d2 || 31;
+  const d1 = 1, d2 = new Date(ano, mesIndex + 1, 0).getDate();
   const rows = buildRows(teams, doc?.data || {}, d1, d2);
   const header = ['Colaborador', 'Equipe', 'Obrigatório', 'Fez', 'Atrasado', 'Não fez', 'Ausente', 'Total'];
   const aoa = [header, ...rows.map((r) => [r.name, r.eq, r.obrig ? 'Sim' : 'Não', r.f, r.a, r.n, r.au, r.total])];
@@ -46,7 +46,7 @@ export const exportPdfRelacao = async (teams, doc, mesIndex, ano, onProgress) =>
   const { jsPDF } = await import('jspdf');
   onProgress?.(20);
   const pdf = new jsPDF('p', 'mm', 'a4');
-  const d1 = doc?.period?.d1 || 1, d2 = doc?.period?.d2 || 31;
+  const d1 = 1, d2 = new Date(ano, mesIndex + 1, 0).getDate();
   const rows = buildRows(teams, doc?.data || {}, d1, d2);
   pdf.setFontSize(14); pdf.text(`Relatório de Frota — ${MESES[mesIndex]} ${ano}`, 14, 16);
   pdf.setFontSize(9);

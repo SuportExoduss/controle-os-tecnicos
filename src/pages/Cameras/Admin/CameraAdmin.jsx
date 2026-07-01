@@ -10,6 +10,7 @@ import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../../context/AuthContext';
 import { getCurrentTime } from '../../../utils/formatTime';
+import { chipStyle } from '../../../utils/chipStyle';
 import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon, Video, Gauge, MapPin } from 'lucide-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
@@ -614,7 +615,7 @@ const handleFileUpload = async (e) => {
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {tempServices.map((svc, i) => {
-                          const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                          const c = chipStyle(SVC_STYLE[svc], mode);
                           return <motion.span key={i} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>{i+1}. {svc}</motion.span>;
                         })}
                       </div>
@@ -785,7 +786,7 @@ const handleFileUpload = async (e) => {
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '6px' }}>Tipo de serviço</div>
                 {SERVICE_TYPES.map(svc => {
-                  const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                  const c = chipStyle(SVC_STYLE[svc], mode);
                   return (
                     <motion.button key={svc} type="button" whileHover={{ scale: 1.01, x: 3 }} whileTap={{ scale: 0.98 }}
                       onClick={() => handleSelectService(svc)}
@@ -851,7 +852,7 @@ const handleFileUpload = async (e) => {
                   <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Tipos de Serviço</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {tempServices.map((svc, i) => {
-                      const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                      const c = chipStyle(SVC_STYLE[svc], mode);
                       return <span key={i} style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '999px', background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>{i+1}. {svc}</span>;
                     })}
                   </div>

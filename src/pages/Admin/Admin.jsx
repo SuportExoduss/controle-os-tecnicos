@@ -10,6 +10,7 @@ import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import { getCurrentTime } from '../../utils/formatTime';
+import { chipStyle } from '../../utils/chipStyle';
 import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
@@ -92,6 +93,7 @@ export const Admin = () => {
 
   // Status dos técnicos: nomes com O.S hoje e ontem
   const [todayDone, setTodayDone] = useState(new Set());
+  const [observedOnly, setObservedOnly] = useState(new Set());
   const [showSaved, setShowSaved] = useState(false);
   const [savedName, setSavedName] = useState('');
   const [techSearch, setTechSearch] = useState('');
@@ -102,15 +104,18 @@ export const Admin = () => {
     try {
       const snap = await getReportsByDateRaw(refDate);
       const done = new Set(snap.docs.filter(d => (d.data().totalOrders || 0) > 0).map(d => d.data().technicianName));
+      const observed = new Set(snap.docs.filter(d => (d.data().totalOrders || 0) === 0 && (d.data().observations || '').trim()).map(d => d.data().technicianName));
       setTodayDone(done);
+      setObservedOnly(observed);
     } catch (err) { console.error('status', err); }
     finally { setStatusLoading(false); }
   };
 
-  // verde = feito | amarelo = pendente HOJE | vermelho = faltou em dia PASSADO
+  // verde = feito | azul = zerado com obs | amarelo = pendente HOJE | vermelho = faltou em dia PASSADO
   const techStatus = (name) => {
     if (statusLoading) return { color: '#475569', label: 'Carregando...' };
     if (todayDone.has(name)) return { color: '#22c55e', label: 'Feito neste dia' };
+    if (observedOnly.has(name)) return { color: '#3b82f6', label: 'Zerado com observação' };
     const isToday = formData.date === localDate();
     if (isToday) return { color: '#f59e0b', label: 'Pendente hoje' };
     return { color: '#ef4444', label: 'Não registrado neste dia' };
@@ -326,6 +331,39 @@ const handleFileUpload = async (e) => {
     } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
     finally { setLoading(false); }
   };
+  const handleAtestado = async () => {
+    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar atestado'); return; }
+    setLoading(true);
+    try {
+      const existing = await getReportsByTechnician(formData.technicianName, formData.date);
+      if (existing.docs.length > 0) {
+        const ex = existing.docs[0].data();
+        const hasData = (ex.totalOrders || 0) > 0 || (ex.serviceTypes || []).length > 0;
+        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar atestado vai zerar. Continuar?`)) { setLoading(false); return; }
+      }
+      await upsertDailyReport({
+        technicianName: formData.technicianName, totalOrders: 0,
+        rescheduled: false, rescheduledCount: 0,
+        observations: 'Atestado', serviceTypes: [],
+        date: formData.date, submissionTime: getCurrentTime(),
+        createdByNickname: profile?.nickname || 'Desconhecido',
+        createdByEmail: user?.email || '', createdByUid: user?.uid || '',
+      });
+      syncReportToSheet({
+        technicianName: formData.technicianName, date: formData.date,
+        rescheduledCount: 0, observations: 'Atestado', serviceTypes: [],
+      });
+      toast.success(`Atestado registrado para ${formData.technicianName}`);
+      setSavedName(formData.technicianName); setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2200);
+      const savedDate = formData.date;
+      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
+      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+      fetchStatus(savedDate);
+    } catch (err) { toast.error('Erro ao registrar atestado'); console.error(err); }
+    finally { setLoading(false); }
+  };
+
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
   const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -403,17 +441,29 @@ const handleFileUpload = async (e) => {
                       <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
                     </div>
                   </div>
-                  {/* Atalho Folga — fica notável após escolher o técnico */}
-                  <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
-                    title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
-                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                      border: `1px solid ${formData.technicianName ? S.red : S.border}`,
-                      background: formData.technicianName ? 'rgba(239,68,68,0.15)' : 'transparent',
-                      color: formData.technicianName ? S.red : S.muted,
-                      boxShadow: formData.technicianName ? '0 0 14px rgba(239,68,68,0.35)' : 'none',
-                      opacity: formData.technicianName ? 1 : 0.6 }}>
-                    <CalendarDays size={14}/>Folga
-                  </button>
+                  {/* Atalhos Folga + Atestado */}
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
+                      title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                        border: `1px solid ${formData.technicianName ? S.red : S.border}`,
+                        background: formData.technicianName ? 'rgba(239,68,68,0.15)' : 'transparent',
+                        color: formData.technicianName ? S.red : S.muted,
+                        boxShadow: formData.technicianName ? '0 0 14px rgba(239,68,68,0.35)' : 'none',
+                        opacity: formData.technicianName ? 1 : 0.6 }}>
+                      <CalendarDays size={14}/>Folga
+                    </button>
+                    <button type="button" onClick={handleAtestado} disabled={!formData.technicianName || loading}
+                      title="Marcar o técnico selecionado como atestado médico (zerado + observação Atestado)"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                        border: `1px solid ${formData.technicianName ? '#3b82f6' : S.border}`,
+                        background: formData.technicianName ? 'rgba(59,130,246,0.15)' : 'transparent',
+                        color: formData.technicianName ? '#3b82f6' : S.muted,
+                        boxShadow: formData.technicianName ? '0 0 14px rgba(59,130,246,0.35)' : 'none',
+                        opacity: formData.technicianName ? 1 : 0.6 }}>
+                      <CalendarDays size={14}/>Atestado
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -426,6 +476,7 @@ const handleFileUpload = async (e) => {
                   <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '8px' }}>
                     {[
                       { c: '#22c55e', t: 'Feito' },
+                      { c: '#3b82f6', t: 'Zerado c/ obs' },
                       { c: '#f59e0b', t: 'Pendente hoje' },
                       { c: '#ef4444', t: 'Faltou (dia passado)' },
                     ].map(({ c, t }) => (
@@ -566,7 +617,7 @@ const handleFileUpload = async (e) => {
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {tempServices.map((svc, i) => {
-                          const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                          const c = chipStyle(SVC_STYLE[svc], mode);
                           return <motion.span key={i} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '999px', background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>{i+1}. {svc}</motion.span>;
                         })}
                       </div>
@@ -737,7 +788,7 @@ const handleFileUpload = async (e) => {
               <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '6px' }}>Tipo de serviço</div>
                 {SERVICE_TYPES.map(svc => {
-                  const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                  const c = chipStyle(SVC_STYLE[svc], mode);
                   return (
                     <motion.button key={svc} type="button" whileHover={{ scale: 1.01, x: 3 }} whileTap={{ scale: 0.98 }}
                       onClick={() => handleSelectService(svc)}
@@ -800,7 +851,7 @@ const handleFileUpload = async (e) => {
                   <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Tipos de Serviço</div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {tempServices.map((svc, i) => {
-                      const c = SVC_STYLE[svc] || { bg:'#111', color:S.muted2, border:S.border };
+                      const c = chipStyle(SVC_STYLE[svc], mode);
                       return <span key={i} style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '999px', background: c.bg, color: c.color, border: `1px solid ${c.border}`, fontWeight: 600 }}>{i+1}. {svc}</span>;
                     })}
                   </div>

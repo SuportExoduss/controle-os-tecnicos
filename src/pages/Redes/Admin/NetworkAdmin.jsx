@@ -10,6 +10,7 @@ import {
 import * as XLSX from 'xlsx';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { chipStyle } from '../../../utils/chipStyle';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { logoutUser } from '../../../services/auth/authService';
 import {
@@ -647,7 +648,7 @@ export const NetworkAdmin = () => {
                       {ASSUNTOS.map(a => <option key={a} value={a}>{a}</option>)}
                     </DarkSelect>
                     {form.assunto && (
-                      <div style={{ marginTop: '6px', display: 'inline-flex', padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, ...ASSUNTO_COLOR[form.assunto] }}>
+                      <div style={{ marginTop: '6px', display: 'inline-flex', padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, ...chipStyle(ASSUNTO_COLOR[form.assunto], mode) }}>
                         {form.assunto}
                       </div>
                     )}
@@ -727,7 +728,7 @@ export const NetworkAdmin = () => {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {openOrders.map(o => {
-                    const ac = ASSUNTO_COLOR[o.assunto] || { bg: '#111', color: '#94a3b8', border: '#1e293b' };
+                    const ac = chipStyle(ASSUNTO_COLOR[o.assunto], mode);
                     return (
                       <div key={o.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid #7f1d1d', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0 }}>
@@ -759,8 +760,8 @@ export const NetworkAdmin = () => {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {todayOrders.map(o => {
-                      const ac = ASSUNTO_COLOR[o.assunto] || { bg: '#111', color: '#94a3b8', border: '#1e293b' };
-                      const sb = SLA_BADGE[o.slaStatus || 'aberta'];
+                      const ac = chipStyle(ASSUNTO_COLOR[o.assunto], mode);
+                      const sb = chipStyle(SLA_BADGE[o.slaStatus || 'aberta'], mode);
                       return (
                         <div key={o.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '10px 14px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}`, flexWrap: 'wrap' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: 0 }}>
@@ -810,7 +811,7 @@ export const NetworkAdmin = () => {
                   { label: 'O.S Registradas',  value: todayOrders.length,           accent: S.blue },
                   { label: 'Em Aberto',         value: todayOrders.filter(o => !o.dataFechamento).length, accent: todayOrders.filter(o => !o.dataFechamento).length > 0 ? '#f87171' : '#4ade80' },
                   { label: 'SLA Médio',         value: slaMediaHoje != null ? `${slaMediaHoje}h` : '—', accent: slaMediaHoje != null ? (slaMediaHoje <= 24 ? '#4ade80' : slaMediaHoje <= 48 ? '#fcd34d' : '#f87171') : S.muted2 },
-                  { label: 'Top Serviço',       value: topAssuntoEntry ? `${topAssuntoEntry[0]} (${topAssuntoEntry[1]})` : '—', accent: topAssuntoEntry ? (ASSUNTO_COLOR[topAssuntoEntry[0]]?.color || S.muted2) : S.muted2 },
+                  { label: 'Top Serviço',       value: topAssuntoEntry ? `${topAssuntoEntry[0]} (${topAssuntoEntry[1]})` : '—', accent: topAssuntoEntry ? (chipStyle(ASSUNTO_COLOR[topAssuntoEntry[0]], mode).color || S.muted2) : S.muted2 },
                 ].map(({ label, value, accent }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <span style={{ color: S.muted, fontSize: '13px', flexShrink: 0 }}>{label}</span>
@@ -825,7 +826,7 @@ export const NetworkAdmin = () => {
                   <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Tipos hoje</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {Object.entries(assuntoCounts).sort((a, b) => b[1] - a[1]).map(([assunto, count]) => {
-                      const ac = ASSUNTO_COLOR[assunto] || { bg: '#111', color: '#94a3b8', border: '#1e293b' };
+                      const ac = chipStyle(ASSUNTO_COLOR[assunto], mode);
                       const maxCount = Math.max(...Object.values(assuntoCounts));
                       return (
                         <div key={assunto} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

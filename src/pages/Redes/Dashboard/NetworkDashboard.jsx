@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
+import { chipStyle } from '../../../utils/chipStyle';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
 import { getUserProfile } from '../../../services/database/userProfileService';
 import { getNetworkOrdersCached, deleteNetworkOrder } from '../../../services/database/networkService';
@@ -783,7 +784,7 @@ export const NetworkDashboard = () => {
                             {(selectedAssunto ? r.orders.filter(o => o.assunto === selectedAssunto) : r.orders)
                               .sort((a, b) => (a.dataAbertura || '').localeCompare(b.dataAbertura || ''))
                               .map(o => {
-                                const ab = ASSUNTO_BADGE[o.assunto] || { bg: S.input, color: S.muted2, border: S.border };
+                                const ab = chipStyle(ASSUNTO_BADGE[o.assunto], mode);
                                 const meta = META_SLA[o.assunto];
                                 const closed = isClosed(o);
                                 const saldoOs = (closed && meta != null) ? round1(meta - o.slaHoras) : null;
@@ -1116,7 +1117,7 @@ export const NetworkDashboard = () => {
                   {list.length === 0 ? (
                     <div style={{ textAlign: 'center', color: S.muted, fontSize: '13px', padding: '30px 0' }}>Nenhuma O.S deste assunto.</div>
                   ) : list.map(o => {
-                    const ab = ASSUNTO_BADGE[o.assunto] || { bg: S.input, color: S.muted2, border: S.border };
+                    const ab = chipStyle(ASSUNTO_BADGE[o.assunto], mode);
                     const meta = META_SLA[o.assunto];
                     const closed = isClosed(o);
                     const saldoOs = (closed && meta != null) ? round1(meta - o.slaHoras) : null;
