@@ -34,14 +34,16 @@ export const FrotaAdmin = () => {
 
   const handleLogout = async () => { try { await logoutUser(); } finally { navigate('/frota/dashboard'); } };
 
-  const sendSheets = (tms, data, ano, mesIndex) => {
+  // Feedback honesto: aguarda a resposta do Web App e reporta falha em vez de
+  // afirmar sucesso sem checar. O payload enviado é exatamente o mesmo de antes.
+  const sendSheets = async (tms, data, ano, mesIndex) => {
     const url = SHEETS_URL || localStorage.getItem('frota_sheets_url') || '';
     if (!url) return '(Sheets: configure VITE_FROTA_SHEETS_URL para ativar)';
     try {
-      fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(buildSheetsPayload(tms, data, ano, mesIndex, localStorage.getItem('frota_sheets_secret') || SHEETS_SECRET)) });
-    } catch { /* */ }
-    return 'Enviado ao Google Sheets.';
+      return res.ok ? 'Enviado ao Google Sheets.' : `Planilha respondeu HTTP ${res.status} — confira a implantação do Apps Script.`;
+    } catch { return 'Falha de rede ao enviar ao Google Sheets (Firebase salvo normalmente).'; }
   };
 
   // Envia uma única entrada manual ao Sheets (cria a aba do mês se necessário).
@@ -96,7 +98,7 @@ export const FrotaAdmin = () => {
       if (r.novos > 0) await saveFrotaCadastro(r.teams);
       await saveFrotaMonth(r.ano, r.mesIndex, { data: r.data, cal: r.cal, occ: r.occ, period: r.period }, by);
       setTeams(r.teams);
-      const sheetNote = sendSheets(r.teams, r.data, r.ano, r.mesIndex);
+      const sheetNote = await sendSheets(r.teams, r.data, r.ano, r.mesIndex);
       done = true;
       // 99→100 suavemente
       for (let i = 99; i <= 100; i++) { setProg({ pct: i, label: 'Concluído!' }); await sleep(30); }
@@ -572,7 +574,7 @@ function ManualEntryModal({ S, teams, profile, onClose, onSaved }) {
 
   const inp = { width: '100%', padding: '10px 13px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
   const lbl = { fontSize: '11.5px', color: S.muted2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '5px', display: 'block' };
-  const sel = { ...inp, cursor: 'pointer', colorScheme: 'dark' };
+  const sel = { ...inp, cursor: 'pointer' };
   const row = { display: 'flex', gap: '10px' };
   const col = (flex = 1) => ({ flex, minWidth: 0 });
 

@@ -446,10 +446,10 @@ export const Dashboard = () => {
   );
 
   const metrics = [
-    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, bg: S.accentSoft, glow: 'rgba(96,165,250,0.12)' },
-    { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
-    { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, bg: '#1c1200', glow: 'rgba(251,191,36,0.12)' },
-    { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, bg: '#140f26', glow: 'rgba(167,139,250,0.12)', small: true },
+    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, glow: 'rgba(96,165,250,0.12)' },
+    { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
+    { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, glow: 'rgba(251,191,36,0.12)' },
+    { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, glow: 'rgba(167,139,250,0.12)', small: true },
   ];
 
   return (
@@ -726,9 +726,9 @@ export const Dashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   <span className="r-badge-os" onClick={(e) => { e.stopPropagation(); setPersonalModal(report); }}
                     title="Ver tipos de O.S deste técnico"
-                    style={{ background: S.accentSoft, color: S.accent, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: '1px solid #3a2f12', alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = '#13243f'; e.currentTarget.style.borderColor = '#574517'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = S.accentSoft; e.currentTarget.style.borderColor = '#3a2f12'; }}>
+                    style={{ background: S.accentSoft, color: S.accent, fontSize: '12px', padding: '4px 10px', borderRadius: '999px', fontWeight: 700, border: `1px solid ${S.border}`, alignItems: 'center', gap: '4px', cursor: 'pointer', transition: 'all 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = S.accent; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; }}>
                     <ClipboardList size={11}/>{report.totalOrders} O.S
                   </span>
                   {report.rescheduledCount > 0 && (

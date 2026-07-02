@@ -7,7 +7,6 @@ import {
   AlertCircle, CheckCircle2, Upload,
   UserPlus, ChevronDown, CalendarDays, Clock, BarChart2, RefreshCw,
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
@@ -110,7 +109,7 @@ const FieldLabel = ({ S, children }) => (
 
 const DarkSelect = ({ S, value, onChange, children, placeholder }) => (
   <select value={value} onChange={onChange}
-    style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}`, color: value ? S.text : S.muted, fontSize: '14px', outline: 'none', boxSizing: 'border-box', cursor: 'pointer', appearance: 'none', colorScheme: 'dark' }}>
+    style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}`, color: value ? S.text : S.muted, fontSize: '14px', outline: 'none', boxSizing: 'border-box', cursor: 'pointer', appearance: 'none' }}>
     {placeholder && <option value="">{placeholder}</option>}
     {children}
   </select>
@@ -350,6 +349,8 @@ export const NetworkAdmin = () => {
     e.target.value = '';
     setImporting(true);
     try {
+      // xlsx sob demanda (mesmo padrão das outras áreas) — não pesa o chunk da rota
+      const XLSX = await import('xlsx');
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, { type: 'array' });
       const sheetName = wb.SheetNames.includes('Lancamentos Redes') ? 'Lancamentos Redes' : wb.SheetNames[0];

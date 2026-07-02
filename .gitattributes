@@ -1,0 +1,10 @@
+# Normaliza fim de linha: LF no repositório para todos os arquivos de texto.
+# Elimina os avisos "LF will be replaced by CRLF" no Windows.
+* text=auto eol=lf
+
+# Binários — nunca converter
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

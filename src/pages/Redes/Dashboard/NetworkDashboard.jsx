@@ -402,9 +402,9 @@ export const NetworkDashboard = () => {
   const slaColorGeral = slaMedioGeral == null ? S.muted : slaMedioGeral <= 12 ? '#4ade80' : slaMedioGeral <= 18 ? '#fcd34d' : '#f87171';
 
   const metrics = [
-    { icon: Users,         label: 'Técnicos',       value: techRows.length, color: S.blue,  bg: '#0f1d35', glow: 'rgba(96,165,250,0.12)' },
-    { icon: CheckCircle2,  label: 'O.S Encerradas', value: encerradas,      color: S.green, bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)' },
-    { icon: Gauge,         label: 'SLA Médio Geral', value: slaMedioGeral != null ? `${slaMedioGeral}h` : 'N/A', color: slaColorGeral, bg: '#1c1200', glow: 'rgba(251,191,36,0.12)', small: true, onClick: () => setShowPie(true) },
+    { icon: Users,         label: 'Técnicos',       value: techRows.length, color: S.blue,  glow: 'rgba(96,165,250,0.12)' },
+    { icon: CheckCircle2,  label: 'O.S Encerradas', value: encerradas,      color: S.green, glow: 'rgba(52,211,153,0.12)' },
+    { icon: Gauge,         label: 'SLA Médio Geral', value: slaMedioGeral != null ? `${slaMedioGeral}h` : 'N/A', color: slaColorGeral, glow: 'rgba(251,191,36,0.12)', small: true, onClick: () => setShowPie(true) },
   ];
 
   // ── Pizza de desempenho por técnico ───────────────────────────────────────────

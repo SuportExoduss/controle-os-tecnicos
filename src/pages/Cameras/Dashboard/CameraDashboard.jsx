@@ -449,12 +449,12 @@ export const CameraDashboard = () => {
   );
 
   const metrics = [
-    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, bg: '#0f1d35', glow: 'rgba(96,165,250,0.12)' },
-    { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
-    { icon: MapPin, label: 'Pontos Instalados', value: summary.totalPontosInstalados, color: '#34d399', bg: '#0d2d1f', glow: 'rgba(52,211,153,0.12)' },
-    { icon: Gauge, label: 'KM Rodado', value: `${summary.totalKm} km`, color: '#38bdf8', bg: '#0f1d35', glow: 'rgba(56,189,248,0.12)', small: true },
-    { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, bg: '#1c1200', glow: 'rgba(251,191,36,0.12)' },
-    { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, bg: '#140f26', glow: 'rgba(167,139,250,0.12)', small: true },
+    { icon: Users, label: 'Técnicos', value: summary.totalTechnicians, color: S.blue, glow: 'rgba(96,165,250,0.12)' },
+    { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
+    { icon: MapPin, label: 'Pontos Instalados', value: summary.totalPontosInstalados, color: '#34d399', glow: 'rgba(52,211,153,0.12)' },
+    { icon: Gauge, label: 'KM Rodado', value: `${summary.totalKm} km`, color: '#38bdf8', glow: 'rgba(56,189,248,0.12)', small: true },
+    { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, glow: 'rgba(251,191,36,0.12)' },
+    { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, glow: 'rgba(167,139,250,0.12)', small: true },
   ];
 
   return (
