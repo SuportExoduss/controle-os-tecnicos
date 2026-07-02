@@ -17,9 +17,11 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // Perfis de usuário (apelido): leitura pública; escrita só do próprio usuário
+    // Perfis de usuário (apelido + email): leitura só autenticado — o dashboard
+    // público NÃO lê perfis; getUserProfile/isNicknameTaken só rodam após login.
+    // Escrita só do próprio usuário.
     match /userProfiles/{uid} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
 
