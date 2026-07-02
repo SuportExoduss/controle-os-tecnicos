@@ -14,7 +14,7 @@ import { chipStyle } from '../../utils/chipStyle';
 import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
-import { syncReportToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
+import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -246,15 +246,20 @@ const handleFileUpload = async (e) => {
     let created = 0;
     let updated = 0;
     let skipped = 0;
+    const sent = []; // gravados com sucesso → espelhar na planilha
     const total = importData.records.length;
     try {
       for (let i = 0; i < total; i++) {
         try {
           const res = await upsertDailyReport(importData.records[i]);
           if (res === 'created') created++; else updated++;
+          sent.push(importData.records[i]);
         } catch { skipped++; }
         setImportProgress(Math.round(((i + 1) / total) * 100));
       }
+      // Espelha o lote na planilha do Google (best-effort, mesmo formato do
+      // salvamento manual — o Codigo.gs trata {records} e {record} igual).
+      if (sent.length) syncReportsToSheet(sent);
       toast.success(`Importação concluída! ${created} novos, ${updated} atualizados${skipped > 0 ? `, ${skipped} ignorados` : ''}.`);
       setShowImport(false);
       setImportData(null);
