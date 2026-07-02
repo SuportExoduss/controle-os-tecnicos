@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import {
   Truck, ChevronLeft, ChevronRight, ChevronRight as Chev,
   ClipboardCheck, Gauge, AlertTriangle, Table as TableIcon,
-  CircleCheck, Clock, X, UserX, Copy, Download, FileText, FileSpreadsheet,
+  CircleCheck, Clock, X, UserX, Copy,
   Router, Network, Cctv, IdCard, AlertOctagon, Info, Road, AlertCircle, LogIn, Check,
   Pencil, Trash2, Save,
 } from 'lucide-react';
@@ -17,7 +17,7 @@ import { getFrotaCadastro, getFrotaMonth, saveFrotaManualEntry, deleteFrotaDayEn
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
-import { MESES, ST, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS } from './frotaCore';
+import { MESES, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS } from './frotaCore';
 import { buildTextoRelacao, exportExcelRelacao, exportPdfRelacao } from './frotaExport';
 
 const SHEETS_URL    = import.meta.env.VITE_FROTA_SHEETS_URL    || '';
@@ -222,7 +222,7 @@ export const FrotaDashboard = () => {
 
         {doc && modePane === 'cal' && <CalView S={S} teams={teams} cal={doc.cal || {}} onSelect={(name, team) => setSelMember({ name, team })} />}
         {doc && modePane === 'occ' && <OccView S={S} teams={teams} occ={doc.occ || []} onSelect={(name, team) => setSelMember({ name, team })} />}
-        {doc && modePane === 'trocas' && <SwapView S={S} teams={teams} data={data} month={month} year={YEAR} lastDay={lastDay} onSelect={(name, team) => setSelMember({ name, team })} />}
+        {doc && modePane === 'trocas' && <SwapView S={S} teams={teams} data={data} month={month} lastDay={lastDay} onSelect={(name, team) => setSelMember({ name, team })} />}
         {doc && modePane === 'rel' && <RelView S={S} teams={teams} st={st} lastDay={lastDay} onSelect={(name, team) => setSelMember({ name, team })} />}
       </main>
 
@@ -550,7 +550,7 @@ function EditDayModal({ S, name, day, entry, month, year, teams, onClose, onSave
 }
 
 // ── TROCAS DE CARRO ─────────────────────────────────────────────────────────
-function SwapView({ S, teams, data, month, year, lastDay, onSelect }) {
+function SwapView({ S, teams, data, month, lastDay, onSelect }) {
   const MESES_LOCAL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   // Coleta todas as trocas do mês de todos os colaboradores
   const swaps = [];

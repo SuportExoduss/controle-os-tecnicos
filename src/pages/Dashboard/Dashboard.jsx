@@ -20,7 +20,7 @@ import {
   ChevronDown, ChevronUp, FileText, Download, Users, ClipboardList,
   CalendarClock, TrendingUp, SearchX, Calendar, Search, Edit2, X,
   Check, BarChart3, FileSpreadsheet, History, Copy, CheckCheck, PieChart as PieIcon,
-  Info, Lock, LogIn, LogOut, Sun, Moon, ClipboardEdit, RotateCcw, Trash2,
+  Info, LogIn, RotateCcw, Trash2,
 } from 'lucide-react';
 
 const TYPE_COLORS = {

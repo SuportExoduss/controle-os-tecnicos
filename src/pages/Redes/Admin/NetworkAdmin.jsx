@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import {
-  LogOut, LayoutDashboard, Plus, Trash2, Edit2, X, Check,
-  Wifi, AlertCircle, CheckCircle2, Sun, Moon, Upload,
+  Plus, Trash2, Edit2, X, Check,
+  AlertCircle, CheckCircle2, Upload,
   UserPlus, ChevronDown, CalendarDays, Clock, BarChart2, RefreshCw,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -134,7 +134,6 @@ export const NetworkAdmin = () => {
 
   // Orders
   const [orders, setOrders] = useState([]);
-  const [ordersLoading, setOrdersLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(BLANK_FORM);
   const [editId, setEditId] = useState(null);
@@ -179,7 +178,6 @@ export const NetworkAdmin = () => {
       const snap = await getAllNetworkOrders();
       setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     } catch { toast.error('Erro ao carregar ordens'); }
-    finally { setOrdersLoading(false); }
   };
 
   const fetchCollaborators = async () => {
@@ -220,11 +218,6 @@ export const NetworkAdmin = () => {
   const topAssuntoEntry = Object.entries(assuntoCounts).sort((a, b) => b[1] - a[1])[0];
 
   const tecnicosHoje = new Set(todayOrders.map(o => o.tecnico));
-  const done  = collaborators.filter(c => tecnicosHoje.has(c.name)).length;
-  const total = collaborators.length;
-  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
-  const barColor = pct === 100 ? '#22c55e' : pct >= 60 ? '#3b82f6' : pct >= 30 ? '#f59e0b' : '#ef4444';
-
   const techStatus = (name) => {
     if (tecnicosHoje.has(name)) return { color: '#22c55e', label: 'Registrou hoje' };
     return { color: '#f59e0b', label: 'Sem registro hoje' };

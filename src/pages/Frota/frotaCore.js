@@ -131,7 +131,7 @@ export const parseProlog = (text, teamsIn) => {
   const teams = teamsIn.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) }));
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
   if (lines.length < 2) throw new Error('Arquivo vazio ou inválido.');
-  const H = lines[0].replace(/^﻿/, '').split(';').map(norm);
+  const H = lines[0].replace(/^\uFEFF/, '').split(';').map(norm);
   const I = (n) => H.indexOf(norm(n));
   const ci = { modelo: I('Modelo checklist'), data: I('Data realização'), nome: I('Colaborador'), equipe: I('Equipe'), cargo: I('Cargo'), placa: I('Placa'), km: I('KM'), tipo: I('Tipo'), nok: I('Total NOK'), pa: I('Prioridade alta'), pc: I('Prioridade critica'), obs: I('Observação') };
   if (ci.nome < 0 || ci.data < 0) throw new Error('Cabeçalho não reconhecido — esperado o CSV do Prolog (separador ; ).');

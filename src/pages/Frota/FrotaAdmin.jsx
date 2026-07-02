@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Truck, Upload, Trash2, Users, History, FileInput, CloudUpload,
+  Upload, Users, History, FileInput, CloudUpload,
   CheckCircle, AlertTriangle, Calendar, BarChart2, PenLine, Plus,
-  X, Road, Clock, ChevronDown, Save, UserX, UserCheck, CalendarCheck,
+  X, Road, Save, UserX, UserCheck, CalendarCheck,
 } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
@@ -133,16 +133,6 @@ export const FrotaAdmin = () => {
     next.find((t) => t.key === toKey).members.push(m);
     setTeams(next);
     try { await saveFrotaCadastro(next); toast.success('Área atualizada'); } catch { toast.error('Erro ao salvar'); }
-  };
-
-  const clearMonth = async () => {
-    if (!confirm('Limpar os dados de Junho/2026 no Firebase?')) return;
-    setProg({ label: 'Limpando…', pct: 40 });
-    try {
-      await saveFrotaMonth(2026, 5, { data: {}, cal: {}, occ: [], period: { d1: 1, d2: 31 } }, profile?.nickname || 'admin');
-      setMsg('Mês limpo. Importe um arquivo do Prolog.'); toast.success('Mês limpo no Firebase');
-    } catch (e) { setMsg('Erro: ' + e.message); }
-    finally { setProg({ label: 'Concluído', pct: 100 }); setTimeout(() => setProg(null), 400); }
   };
 
   const [showManual, setShowManual] = useState(false);
@@ -344,7 +334,6 @@ export const FrotaAdmin = () => {
 // ── FLUXO DE AUSENTES DO SÁBADO ─────────────────────────────────────────────
 function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
   const { day, month, year, teams, presents } = flow;
-  const MESES_LOC = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
   const [phase, setPhase] = useState('select'); // 'select' | 'confirm'
   const [saving, setSaving] = useState(false);
@@ -358,7 +347,6 @@ function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
 
   const totalMembers = teams.reduce((acc, t) => acc + t.members.length, 0);
   const absentList = [...absent];
-  const presentCount = presents.size + (totalMembers - presents.size - absent.size); // presentes + os que o admin desmarcou como ausente
 
   const toggle = (name) => {
     if (presents.has(name)) return;
@@ -377,7 +365,6 @@ function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
   };
 
   const dateStr = `${String(day).padStart(2,'0')}/${String(month + 1).padStart(2,'0')}/${year}`;
-  const card2 = { background: S.card2, borderRadius: '10px' };
 
   // ── FASE 1: SELEÇÃO ──────────────────────────────────────────────────────
   if (phase === 'select') return (

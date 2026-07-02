@@ -11,7 +11,7 @@ import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import { getCurrentTime } from '../../utils/formatTime';
 import { chipStyle } from '../../utils/chipStyle';
-import { LogOut, LayoutDashboard, ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Sun, Moon } from 'lucide-react';
+import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
 import { syncReportToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
@@ -365,7 +365,6 @@ const handleFileUpload = async (e) => {
   };
 
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
-  const today = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>

@@ -4,11 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
 import {
-  Wifi, Search, Calendar, Download, FileText, FileSpreadsheet,
-  ChevronDown, ChevronUp, AlertCircle, CheckCircle2,
-  Lock, LogOut, LogIn, Sun, Moon, ClipboardEdit, X,
+  Search, Calendar, Download, FileText, FileSpreadsheet,
+  ChevronDown, ChevronUp, CheckCircle2,
+  LogIn, X,
   Copy, CheckCheck, PieChart as PieIcon, Info, Users,
-  ClipboardList, Gauge, Target, ListFilter, TrendingUp, TrendingDown, Layers, Trash2,
+  Gauge, Target, ListFilter, TrendingUp, TrendingDown, Layers, Trash2,
 } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
@@ -649,7 +649,6 @@ export const NetworkDashboard = () => {
                 const st = assuntoStats[a] || { count: 0 };
                 const med = assuntoMedia(a);
                 const meta = META_SLA[a] ?? null;
-                const sit = sitFromMedia(med, meta);
                 const sel = selectedAssunto === a;
                 return (
                   <button key={a} onClick={() => setSelectedAssunto(sel ? null : a)}

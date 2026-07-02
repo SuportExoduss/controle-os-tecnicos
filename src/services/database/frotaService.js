@@ -8,7 +8,7 @@
 //     - Import = 1 escrita que sobrescreve o mês (idempotente; o novo prevalece).
 //   • Sem CPF (LGPD).
 // ─────────────────────────────────────────────────────────────────────────
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
 import { DEFAULT_TEAMS } from '../../pages/Frota/frotaCore';
