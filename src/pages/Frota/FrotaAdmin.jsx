@@ -12,7 +12,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { logoutUser } from '../../services/auth/authService';
 import { getFrotaCadastro, saveFrotaCadastro, saveFrotaMonth, saveFrotaManualEntry, saveFrotaAbsences } from '../../services/database/frotaService';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
-import { parseProlog, buildSheetsPayload, MESES, DEFAULT_TEAMS, initials } from './frotaCore';
+import { parseProlog, buildSheetsPayload, cellFor, MESES, DEFAULT_TEAMS, initials } from './frotaCore';
 
 const SHEETS_URL = import.meta.env.VITE_FROTA_SHEETS_URL || '';
 const SHEETS_SECRET = import.meta.env.VITE_FROTA_SHEETS_SECRET || 'ibiunet-frota-TROQUE-ESTE-TOKEN';
@@ -42,6 +42,24 @@ export const FrotaAdmin = () => {
         body: JSON.stringify(buildSheetsPayload(tms, data, ano, mesIndex, localStorage.getItem('frota_sheets_secret') || SHEETS_SECRET)) });
     } catch { /* */ }
     return 'Enviado ao Google Sheets.';
+  };
+
+  // Envia uma única entrada manual ao Sheets (cria a aba do mês se necessário).
+  const sendSheetsEntry = (entry, tms) => {
+    const url = SHEETS_URL || localStorage.getItem('frota_sheets_url') || '';
+    if (!url || !entry.st) return; // sem URL ou entrada não é checklist diário (semanal/ocorrência)
+    const cellValue = cellFor(entry);
+    if (!cellValue) return;
+    const allColabs = [];
+    tms.forEach((t) => t.members.forEach((m) => {
+      allColabs.push({ nome: m.name, placa: m.plate || '', equipe: t.short });
+    }));
+    const secret = localStorage.getItem('frota_sheets_secret') || SHEETS_SECRET;
+    try {
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ secret, mes: MESES[entry.mesIndex], ano: String(entry.ano), allColabs,
+          linhas: [{ nome: entry.name, dias: { [entry.day]: cellValue } }] }) });
+    } catch { /* */ }
   };
 
   // Fase 1: apenas parseia e exibe confirmação
@@ -167,11 +185,6 @@ export const FrotaAdmin = () => {
               <div style={{ fontSize: '11.5px', fontWeight: 400, color: S.muted2, marginTop: '2px' }}>Adicione ou edite uma entrada sem precisar do arquivo do Prolog</div>
             </div>
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginTop: '12px', padding: '12px 14px', border: '1px solid #7f1d1d', borderRadius: '12px', background: 'rgba(127,29,29,.12)' }}>
-            <Trash2 size={20} color="#f87171" />
-            <button onClick={clearMonth} style={{ background: 'linear-gradient(135deg,#b91c1c,#ef4444)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 18px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>Limpar dados do mês</button>
-            <span style={{ fontSize: '11.5px', color: S.muted2 }}>zera a matriz de Junho/2026 no Firebase</span>
-          </div>
         </>)}
 
         {pane === 'hist' && (
@@ -300,6 +313,7 @@ export const FrotaAdmin = () => {
                   onSaved={(entry) => {
                     toast.success('Entrada salva!');
                     setHist((h) => [{ t: 'Entrada manual', by: profile?.nickname || 'admin', dt: new Date().toLocaleString('pt-BR'), meta: `${entry.name} · dia ${entry.day}/${entry.mesIndex + 1}/${entry.ano}`, tipo: 'manual' }, ...h]);
+                    sendSheetsEntry(entry, teams);
                     setShowManual(false);
                   }} />
               </div>

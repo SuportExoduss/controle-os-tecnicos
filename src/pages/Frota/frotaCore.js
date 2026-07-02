@@ -107,13 +107,21 @@ export const cellFor = (x) => {
 };
 
 export const buildSheetsPayload = (teams, data, ano, mesIndex, secret) => {
+  // Lista completa — Apps Script usa para criar a aba quando ela não existe ainda.
+  const allColabs = [];
+  teams.forEach((t) => t.members.forEach((m) => {
+    allColabs.push({ nome: m.name, placa: m.plate || '', equipe: t.short });
+  }));
+
+  // Apenas quem tem entradas no mês — dados diários a gravar.
   const linhas = [];
   teams.forEach((t) => t.members.forEach((m) => {
     const dias = {}; const r = (data && data[m.name]) || {};
     for (let d = 1; d <= 31; d++) { const c = cellFor(r[d]); if (c) dias[d] = c; }
     if (Object.keys(dias).length) linhas.push({ nome: m.name, dias });
   }));
-  return { secret, mes: MESES[mesIndex], ano: String(ano), linhas };
+
+  return { secret, mes: MESES[mesIndex], ano: String(ano), allColabs, linhas };
 };
 
 // Parser do CSV do Prolog. Recebe o texto e o cadastro atual de equipes.

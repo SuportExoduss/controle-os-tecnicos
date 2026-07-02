@@ -7,23 +7,38 @@ import {
   ClipboardCheck, Gauge, AlertTriangle, Table as TableIcon,
   CircleCheck, Clock, X, UserX, Copy, Download, FileText, FileSpreadsheet,
   Router, Network, Cctv, IdCard, AlertOctagon, Info, Road, AlertCircle, LogIn, Check,
+  Pencil, Trash2, Save,
 } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { loginUser, logoutUser } from '../../services/auth/authService';
 import { getUserProfile } from '../../services/database/userProfileService';
-import { getFrotaCadastro, getFrotaMonth } from '../../services/database/frotaService';
+import { getFrotaCadastro, getFrotaMonth, saveFrotaManualEntry, deleteFrotaDayEntry } from '../../services/database/frotaService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
-import { MESES, ST, SEV, isObrig, statsOf, initials, DEFAULT_TEAMS } from './frotaCore';
+import { MESES, ST, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS } from './frotaCore';
 import { buildTextoRelacao, exportExcelRelacao, exportPdfRelacao } from './frotaExport';
+
+const SHEETS_URL    = import.meta.env.VITE_FROTA_SHEETS_URL    || '';
+const SHEETS_SECRET = import.meta.env.VITE_FROTA_SHEETS_SECRET || '';
+
+const syncToSheets = (name, day, ano, mesIndex, cellValue, teams) => {
+  if (!SHEETS_URL) return;
+  const allColabs = [];
+  teams.forEach((t) => t.members.forEach((m) => allColabs.push({ nome: m.name, placa: m.plate || '', equipe: t.short })));
+  try {
+    fetch(SHEETS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ secret: SHEETS_SECRET, mes: MESES[mesIndex], ano: String(ano),
+        allColabs, linhas: [{ nome: name, dias: { [day]: cellValue } }] }) });
+  } catch { /* */ }
+};
 
 const TEAM_ICON = { fibra: Router, redes: Network, cameras: Cctv, frota: Truck, demais: IdCard };
 const SEV_ICON = { critica: AlertOctagon, alta: AlertTriangle, normal: Info };
 const ST_COLOR = { feito: '#34d399', atrasado: '#fbbf24', naofez: '#f87171', ausente: '#fb923c' };
 const ST_LABEL = { feito: 'Feito', atrasado: 'Atrasado', naofez: 'Não fez', ausente: 'Ausente' };
-const YEAR = 2026;
+const YEAR = new Date().getFullYear();
 
 export const FrotaDashboard = () => {
   const navigate = useNavigate();
@@ -32,7 +47,7 @@ export const FrotaDashboard = () => {
   const isLogged = !!user && !!profile?.nickname;
 
   const [teams, setTeams] = useState(DEFAULT_TEAMS);
-  const [month, setMonth] = useState(5); // junho
+  const [month, setMonth] = useState(new Date().getMonth());
   const [doc, setDoc] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('geral');
@@ -63,9 +78,9 @@ export const FrotaDashboard = () => {
   const st = (name) => statsOf(data, name, d1, d2);
 
   const totals = useMemo(() => {
-    let f = 0, a = 0, n = 0, au = 0;
-    teams.forEach((t) => t.members.forEach((m) => { const s = statsOf(data, m.name, d1, d2); f += s.f; a += s.a; n += s.n; au += s.au; }));
-    return { f, a, n, au };
+    let f = 0, a = 0, n = 0, au = 0, tr = 0;
+    teams.forEach((t) => t.members.forEach((m) => { const s = statsOf(data, m.name, d1, d2); f += s.f; a += s.a; n += s.n; au += s.au; tr += s.tr; }));
+    return { f, a, n, au, tr };
   }, [teams, doc, month]); // eslint-disable-line
 
   const openAdmin = () => { if (isLogged) navigate('/frota/admin'); else { setRedirectAfterLogin('/frota/admin'); setShowLoginModal(true); } };
@@ -92,11 +107,12 @@ export const FrotaDashboard = () => {
   const card = { background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px' };
 
   const KP = [
-    { k: 'geral', I: ClipboardCheck, c: S.accent, v: totals.f + totals.a, l: 'Checklists' },
-    { k: 'feito', I: CircleCheck, c: '#34d399', v: totals.f, l: 'Feitos' },
-    { k: 'atrasado', I: Clock, c: '#fbbf24', v: totals.a, l: 'Atrasados' },
-    { k: 'naofez', I: X, c: '#f87171', v: totals.n, l: 'Não feitos' },
-    { k: 'ausente', I: UserX, c: '#fb923c', v: totals.au, l: 'Ausentes' },
+    { k: 'geral',    I: ClipboardCheck, c: S.accent,   v: totals.f + totals.a, l: 'Checklists'     },
+    { k: 'feito',    I: CircleCheck,    c: '#34d399',   v: totals.f,            l: 'Feitos'         },
+    { k: 'atrasado', I: Clock,          c: '#fbbf24',   v: totals.a,            l: 'Atrasados'      },
+    { k: 'naofez',   I: X,              c: '#f87171',   v: totals.n,            l: 'Não feitos'     },
+    { k: 'ausente',  I: UserX,          c: '#fb923c',   v: totals.au,           l: 'Ausentes'       },
+    { k: 'troca',    I: Road,           c: '#38bdf8',   v: totals.tr,           l: 'Trocas de carro'},
   ];
   const SEG = [['geral', 'Visão geral', S.accent], ['feito', 'Feitos', '#34d399'], ['atrasado', 'Atrasados', '#fbbf24'], ['naofez', 'Não feitos', '#f87171'], ['ausente', 'Ausentes', '#fb923c'], ['troca', 'Troca de carro', '#38bdf8']];
   const MODES = [['diario', 'Checklist diário', ClipboardCheck], ['cal', 'Calibragem', Gauge], ['occ', 'Ocorrências', AlertTriangle], ['trocas', 'Trocas de carro', Road], ['rel', 'Relação do mês', TableIcon]];
@@ -142,12 +158,12 @@ export const FrotaDashboard = () => {
               <button key={k} onClick={() => setTab(k)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '999px', border: `1px solid ${tab === k ? c : S.border}`, background: S.card, color: tab === k ? S.text : S.muted2, fontSize: '12.5px', cursor: 'pointer' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c }} />{l}</button>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(108px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '16px' }}>
             {KP.map(({ k, I, c, v, l }) => (
-              <button key={k} onClick={() => setTab(k)} style={{ ...card, padding: '18px', textAlign: 'left', cursor: 'pointer', borderColor: tab === k ? c : S.border, position: 'relative', overflow: 'hidden' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '9px', background: c + '22', color: c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}><I size={17} /></div>
-                <div style={{ fontSize: '25px', fontWeight: 800 }}>{v}</div>
-                <div style={{ fontSize: '12px', color: S.muted2, marginTop: '4px' }}>{l}</div>
+              <button key={k} onClick={() => setTab(k)} style={{ ...card, padding: '12px 10px', textAlign: 'left', cursor: 'pointer', borderColor: tab === k ? c : S.border, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: c + '22', color: c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}><I size={14} /></div>
+                <div style={{ fontSize: '20px', fontWeight: 800 }}>{v}</div>
+                <div style={{ fontSize: '11px', color: S.muted2, marginTop: '3px', lineHeight: '1.3' }}>{l}</div>
               </button>
             ))}
           </div>
@@ -155,8 +171,8 @@ export const FrotaDashboard = () => {
           {/* CARDS DE EQUIPE */}
           {teams.map((t) => {
             const Ic = TEAM_ICON[t.key] || IdCard;
-            let tf = 0, ta = 0, tn = 0, tau = 0;
-            t.members.forEach((m) => { const s = st(m.name); tf += s.f; ta += s.a; tn += s.n; tau += s.au; });
+            let tf = 0, ta = 0, tn = 0, tau = 0, ttr = 0;
+            t.members.forEach((m) => { const s = st(m.name); tf += s.f; ta += s.a; tn += s.n; tau += s.au; ttr += s.tr; });
             const ob = isObrig(t.key);
             return (
               <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
@@ -167,7 +183,7 @@ export const FrotaDashboard = () => {
                     <div style={{ fontSize: '11.5px', color: S.muted2 }}>{t.members.length} colaboradores · {ob ? <span style={{ color: '#34d399' }}>obrigatório</span> : 'não obrigatório'}</div>
                   </div>
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    {[['#34d399', tf], ['#fbbf24', ta], ['#f87171', tn], ['#fb923c', tau]].map(([c, v], i) => (
+                    {[['#34d399', tf], ['#fbbf24', ta], ['#f87171', tn], ['#fb923c', tau], ['#38bdf8', ttr]].map(([c, v], i) => (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', background: S.card2, borderRadius: '8px', padding: '3px 9px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c }} />{v}</span>
                     ))}
                     <Chev size={16} color={S.muted2} style={{ transform: exp[t.key] ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }} />
@@ -189,7 +205,7 @@ export const FrotaDashboard = () => {
                           <span style={{ width: '30px', height: '30px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(m.name)}</span>
                           <span style={{ fontSize: '13px', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
                           <span style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                            {[['f', '#34d399'], ['a', '#fbbf24'], ['n', '#f87171'], ['au', '#fb923c']].map(([k, c]) => (
+                            {[['f', '#34d399'], ['a', '#fbbf24'], ['n', '#f87171'], ['au', '#fb923c'], ['tr', '#38bdf8']].map(([k, c]) => (
                               <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', padding: '2px 8px', borderRadius: '7px', background: c + '22', color: c }}>
                                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c }} />{s[k]}
                               </span>
@@ -222,7 +238,9 @@ export const FrotaDashboard = () => {
             <motion.div key="sel-modal" initial={{ opacity: 0, scale: 0.92, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92 }}
               style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px', pointerEvents: 'none' }}>
               <div style={{ pointerEvents: 'auto' }}>
-                <MemberCalendarModal S={S} name={selMember.name} team={selMember.team} data={data} month={month} year={YEAR} lastDay={lastDay} onClose={() => setSelMember(null)} />
+                <MemberCalendarModal S={S} name={selMember.name} team={selMember.team} data={data} month={month} year={YEAR} lastDay={lastDay} teams={teams}
+                  onClose={() => setSelMember(null)}
+                  onUpdate={() => getFrotaMonth(YEAR, month, { force: true }).then(setDoc)} />
               </div>
             </motion.div>
           </>
@@ -274,12 +292,14 @@ export const FrotaDashboard = () => {
 };
 
 // ── POPUP CALENDÁRIO INDIVIDUAL ─────────────────────────────────────────────
-function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClose }) {
+function MemberCalendarModal({ S, name, team, data, month, year, lastDay, teams, onClose, onUpdate }) {
   const [selDay, setSelDay] = useState(null);
+  const [editDay, setEditDay] = useState(null); // {day, entry} quando editar está aberto
+  const [deleting, setDeleting] = useState(false);
   const memberData = (data && data[name]) || {};
 
   // Stats do mês completo (dia 1 → lastDay)
-  let f = 0, a = 0, n = 0, au = 0;
+  let f = 0, a = 0, n = 0, au = 0, tr = 0;
   for (let d = 1; d <= lastDay; d++) {
     const x = memberData[d];
     if (!x) continue;
@@ -287,6 +307,7 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
     else if (x.st === 'atrasado') a++;
     else if (x.st === 'naofez') n++;
     else au++;
+    if ((x.swaps?.length > 0) || x.p2) tr++;
   }
   const total = f + a + n + au;
   const pct = total > 0 ? Math.round((f + a) / total * 100) : 0;
@@ -301,7 +322,7 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
   const card2 = { background: S.card2, borderRadius: '10px', padding: '10px 13px' };
 
   return (
-    <div style={{ width: '100%', maxWidth: '440px', background: S.surface || S.card, border: `1px solid ${S.accent}40`, borderRadius: '20px', boxShadow: `0 0 60px ${S.glow}`, overflow: 'hidden' }}>
+    <div style={{ position: 'relative', width: '100%', maxWidth: '440px', background: S.surface || S.card, border: `1px solid ${S.accent}40`, borderRadius: '20px', boxShadow: `0 0 60px ${S.glow}`, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ padding: '18px 20px 14px', borderBottom: `1px solid ${S.border}` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -320,8 +341,8 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
         </div>
 
         {/* Stat chips */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '7px', marginTop: '14px' }}>
-          {[['Feito', f, '#34d399'], ['Atrasado', a, '#fbbf24'], ['Não fez', n, '#f87171'], ['Ausente', au, '#fb923c']].map(([l, v, c]) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '7px', marginTop: '14px' }}>
+          {[['Feito', f, '#34d399'], ['Atrasado', a, '#fbbf24'], ['Não fez', n, '#f87171'], ['Ausente', au, '#fb923c'], ['Trocas', tr, '#38bdf8']].map(([l, v, c]) => (
             <div key={l} style={{ textAlign: 'center', padding: '9px 4px', background: c + '18', borderRadius: '10px', border: `1px solid ${c}35` }}>
               <div style={{ fontSize: '20px', fontWeight: 800, color: c, lineHeight: 1 }}>{v}</div>
               <div style={{ fontSize: '10px', color: S.muted2, marginTop: '3px' }}>{l}</div>
@@ -347,8 +368,12 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
             const dow = new Date(year, month, d).getDay(); // 0=Dom
             const isSun = dow === 0;
             const col = x ? ST_COLOR[x.st] : null;
-            const hasSwap = x?.swaps?.length > 0;
+            const hasSwap = (x?.swaps?.length > 0) || !!x?.p2;
             const isSel = selDay === d;
+            // dots a exibir no dia: checklist + troca se houver ambos
+            const dots = [];
+            if (x) dots.push(col);          // dot do status (feito/atrasado/…)
+            if (hasSwap) dots.push('#38bdf8'); // dot azul da troca
             return (
               <div key={d}
                 onClick={() => x || isSun ? setSelDay(isSel ? null : d) : null}
@@ -364,9 +389,11 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
                 onMouseLeave={(e) => { e.currentTarget.style.background = isSel ? (col || S.border) + '30' : 'transparent'; }}
               >
                 <div style={{ fontSize: '11px', fontWeight: isSel ? 700 : 400, color: isSel ? S.text : S.muted2, lineHeight: 1 }}>{d}</div>
-                <div style={{ position: 'relative', marginTop: '3px' }}>
-                  <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: col || 'transparent', border: col ? 'none' : `1px solid ${S.border}40` }} />
-                  {hasSwap && <div style={{ position: 'absolute', top: '-2px', right: '-3px', width: '5px', height: '5px', borderRadius: '50%', background: '#38bdf8', border: `1px solid ${S.surface || S.card}` }} />}
+                <div style={{ display: 'flex', gap: '2px', marginTop: '3px', justifyContent: 'center', minHeight: '7px' }}>
+                  {dots.length > 0
+                    ? dots.map((c, i) => <div key={i} style={{ width: '7px', height: '7px', borderRadius: '50%', background: c }} />)
+                    : <div style={{ width: '7px', height: '7px', borderRadius: '50%', border: `1px solid ${S.border}40` }} />
+                  }
                 </div>
               </div>
             );
@@ -385,13 +412,13 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
                     <span style={{ fontWeight: 700, fontSize: '13px' }}>Dia {selDay} de {['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][month]}</span>
                     <span style={{ marginLeft: 'auto', fontSize: '11px', padding: '2px 8px', borderRadius: '999px', background: ST_COLOR[selInfo.st] + '22', color: ST_COLOR[selInfo.st], fontWeight: 700 }}>{ST_LABEL[selInfo.st]}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '12px', color: S.muted2, marginBottom: selInfo.swaps?.length ? '10px' : 0 }}>
+                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '12px', color: S.muted2, marginBottom: selInfo.swaps?.length ? '10px' : '10px' }}>
                     {selInfo.time && <span><Clock size={12} style={{ verticalAlign: '-2px', marginRight: '4px' }} />{selInfo.time}</span>}
                     {selInfo.plate && <span style={{ color: S.text, fontWeight: 700 }}>{selInfo.plate}</span>}
                     {selInfo.kmIni != null && <span>KM {selInfo.kmIni.toLocaleString('pt-BR')} → {selInfo.kmFim?.toLocaleString('pt-BR') ?? '?'}</span>}
                   </div>
                   {selInfo.swaps?.length > 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '10px' }}>
                       <div style={{ fontSize: '10.5px', color: S.muted2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '2px' }}>Trocas de carro neste dia</div>
                       {selInfo.swaps.map((sw, i) => (
                         <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 10px', background: '#38bdf818', borderRadius: '8px', border: '1px solid #38bdf830', fontSize: '12px' }}>
@@ -403,6 +430,27 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
                       ))}
                     </div>
                   )}
+                  {/* Ações editar / excluir */}
+                  <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: `1px solid ${S.border}` }}>
+                    <button onClick={() => setEditDay({ day: selDay, entry: selInfo })}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', borderRadius: '9px', border: `1px solid ${S.border}`, background: S.card2, color: S.text, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                      <Pencil size={13} /> Editar
+                    </button>
+                    <button onClick={async () => {
+                      if (!confirm(`Excluir registro do dia ${selDay}/${month + 1} de ${name}?`)) return;
+                      setDeleting(true);
+                      try {
+                        await deleteFrotaDayEntry(year, month, name, selDay);
+                        syncToSheets(name, selDay, year, month, '', teams);
+                        toast.success('Registro excluído');
+                        setSelDay(null);
+                        onUpdate?.();
+                      } catch (e) { toast.error('Erro: ' + e.message); } finally { setDeleting(false); }
+                    }} disabled={deleting}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '8px', borderRadius: '9px', border: '1px solid #7f1d1d', background: 'rgba(127,29,29,.15)', color: '#f87171', fontSize: '12px', fontWeight: 600, cursor: 'pointer', opacity: deleting ? 0.5 : 1 }}>
+                      <Trash2 size={13} /> {deleting ? 'Excluindo…' : 'Excluir'}
+                    </button>
+                  </div>
                 </>
               ) : (
                 <div style={{ fontSize: '12.5px', color: S.muted2 }}>
@@ -428,7 +476,76 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, onClos
           </div>
         </div>
       </div>
+
+      {/* ── Modal de edição inline ── */}
+      <AnimatePresence>
+        {editDay && (
+          <EditDayModal S={S} name={name} day={editDay.day} entry={editDay.entry}
+            month={month} year={year} teams={teams}
+            onClose={() => setEditDay(null)}
+            onSaved={() => { setEditDay(null); setSelDay(null); onUpdate?.(); }} />
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+function EditDayModal({ S, name, day, entry, month, year, teams, onClose, onSaved }) {
+  const [st, setSt]       = useState(entry.st || 'feito');
+  const [plate, setPlate] = useState(entry.plate || '');
+  const [time, setTime]   = useState(entry.time || '08:00');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = { name, day, ano: year, mesIndex: month, st, plate: plate || null, time };
+      await saveFrotaManualEntry(year, month, updated, 'admin');
+      syncToSheets(name, day, year, month, cellFor(updated) || '', teams);
+      toast.success('Registro atualizado');
+      onSaved();
+    } catch (e) { toast.error('Erro: ' + e.message); } finally { setSaving(false); }
+  };
+
+  const inp = { width: '100%', padding: '9px 12px', borderRadius: '9px', background: S.card2, border: `1px solid ${S.border}`, color: S.text, fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
+  const lbl = { fontSize: '11px', color: S.muted2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: '4px', display: 'block' };
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'absolute', inset: 0, background: 'rgba(4,9,20,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, borderRadius: '20px' }}>
+      <motion.div initial={{ scale: 0.93 }} animate={{ scale: 1 }} exit={{ scale: 0.93 }}
+        style={{ width: '90%', background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '20px', boxShadow: `0 0 40px ${S.glow}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ fontWeight: 800, fontSize: '14px' }}>Editar — Dia {day}/{month + 1}</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer' }}><X size={18} /></button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <label style={lbl}>Status</label>
+            <select value={st} onChange={(e) => setSt(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+              <option value="feito">Feito</option>
+              <option value="atrasado">Atrasado</option>
+              <option value="naofez">Não fez</option>
+              <option value="ausente">Ausente</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={lbl}>Placa</label>
+              <input value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} placeholder="Ex: TIV1I01" style={inp} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={lbl}>Horário</label>
+              <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inp} />
+            </div>
+          </div>
+          <button onClick={handleSave} disabled={saving}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', padding: '11px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '13px', fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.6 : 1 }}>
+            <Save size={15} /> {saving ? 'Salvando…' : 'Salvar alteração'}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
