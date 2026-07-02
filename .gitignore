@@ -20,7 +20,7 @@ dist-ssr
 .firebase/
 .claude/
 scripts/
-backup-daily_reports-*.json
+backup-*.json
 
 # Editor directories and files
 .vscode/*
