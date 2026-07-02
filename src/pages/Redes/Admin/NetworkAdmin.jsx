@@ -369,6 +369,11 @@ export const NetworkAdmin = () => {
       setImportModal({ phase: 'firebase', fbDone: 0, fbTotal: valid.length, sheet: null, error: null });
       let ok = 0, errors = 0;
       const importados = [];
+      // Dedupe por ID OS: reimportar o mesmo arquivo ATUALIZA a ordem existente
+      // no Firebase em vez de duplicar (a planilha já deduplicava; agora os dois
+      // lados ficam coerentes). Ordens criadas neste próprio import também entram
+      // no mapa, então ID OS repetido dentro do arquivo não duplica.
+      const byIdOs = new Map(orders.filter(o => o.idOs).map(o => [String(o.idOs).trim(), o.id]));
       for (const r of valid) {
         const abertura   = parseSerial(r['DATA ABERTURA']);
         const fechamento = parseSerial(r['DATA FECHAMENTO']);
@@ -389,7 +394,13 @@ export const NetworkAdmin = () => {
           lancadoPor: 'Importado',
         };
         try {
-          await saveNetworkOrder(payload);
+          const existingId = byIdOs.get(payload.idOs);
+          if (existingId) {
+            await updateNetworkOrder(existingId, payload);
+          } else {
+            const ref = await saveNetworkOrder(payload);
+            byIdOs.set(payload.idOs, ref.id);
+          }
           importados.push(payload);
           ok++;
         } catch { errors++; }
