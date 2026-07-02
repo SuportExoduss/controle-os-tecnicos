@@ -13,7 +13,7 @@ import { chipStyle } from '../../../utils/chipStyle';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { logoutUser } from '../../../services/auth/authService';
 import {
-  saveNetworkOrder, getAllNetworkOrders,
+  saveNetworkOrder, getNetworkOrdersCached,
   updateNetworkOrder, deleteNetworkOrder,
 } from '../../../services/database/networkService';
 import {
@@ -172,10 +172,13 @@ export const NetworkAdmin = () => {
   const today = localDate();
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
+  // Cache de 5 min (localStorage): abrir/atualizar o Admin não relê a coleção
+  // inteira do Firestore a cada vez. Toda gravação invalida o cache, então o
+  // fetchOrders pós-salvar/excluir sempre volta fresco.
   const fetchOrders = async () => {
     try {
-      const snap = await getAllNetworkOrders();
-      setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const data = await getNetworkOrdersCached();
+      setOrders(data);
     } catch { toast.error('Erro ao carregar ordens'); }
   };
 

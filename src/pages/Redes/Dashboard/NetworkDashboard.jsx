@@ -15,7 +15,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
 import { getUserProfile } from '../../../services/database/userProfileService';
-import { getNetworkOrdersCached, deleteNetworkOrder } from '../../../services/database/networkService';
+import { getNetworkOrdersByRange, deleteNetworkOrder } from '../../../services/database/networkService';
 import { deleteNetworkOrderInSheet } from '../../../services/integrations/networkSheetSync';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
@@ -153,16 +153,20 @@ export const NetworkDashboard = () => {
   const firstOfMonth = `${today.slice(0, 7)}-01`;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
-  const fetchOrders = async ({ force = false } = {}) => {
+  // Carrega SÓ o período visível (mês atual por padrão) — ~1 mês de docs em vez
+  // da coleção inteira. Cache por período (5 min) torna navegação/refresh grátis.
+  const loadRange = async (from, to, tech, { force = false } = {}) => {
     try {
-      const data = await getNetworkOrdersCached({ force });
+      const start = from || firstOfMonth;
+      const end   = to   || today;
+      const data = await getNetworkOrdersByRange(start, end, { force });
       setOrders(data);
-      filterOrders(data, '', '', '');
+      filterOrders(data, from, to, tech);
     } catch { toast.error('Erro ao carregar dados'); }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchOrders(); }, []); // eslint-disable-line
+  useEffect(() => { loadRange('', '', ''); }, []); // eslint-disable-line
 
   // Data "efetiva" para contabilizar no dashboard.
   // Registros importados são contados pela data de encerramento (ou abertura),
@@ -193,7 +197,7 @@ export const NetworkDashboard = () => {
 
   const handleSearch = (from, to, tech) => {
     setDateFrom(from); setDateTo(to); setSearchTech(tech);
-    filterOrders(orders, from, to, tech);
+    loadRange(from, to, tech); // mesmo período = cache hit (0 leituras)
   };
 
   const goToPrevMonth = () => {
@@ -278,9 +282,12 @@ export const NetworkDashboard = () => {
     finally { setExportTask(null); }
   };
 
-  const handleExcelGenerate = () => {
+  const handleExcelGenerate = async () => {
     if (!excelFrom || !excelTo) { toast.error('Selecione início e fim'); return; }
-    const rows = orders.filter(o => (o.data || '') >= excelFrom && (o.data || '') <= excelTo);
+    // Busca o período pedido direto no Firestore (pode ser maior que o mês carregado)
+    let rows;
+    try { rows = await getNetworkOrdersByRange(excelFrom, excelTo); }
+    catch { toast.error('Erro ao buscar dados do período'); return; }
     if (!rows.length) { toast.error('Nenhuma O.S no período'); return; }
 
     setShowExcelModal(false);

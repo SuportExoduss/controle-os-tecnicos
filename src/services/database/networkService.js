@@ -1,6 +1,6 @@
 import {
   collection, addDoc, getDocs, updateDoc,
-  doc, orderBy, deleteDoc, query,
+  doc, orderBy, deleteDoc, query, where,
 } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
@@ -13,12 +13,21 @@ export const saveNetworkOrder = async (data) => {
   return ref;
 };
 
-export const getAllNetworkOrders = () =>
-  getDocs(query(collection(db, COL), orderBy('createdAt', 'desc')));
+// Busca SÓ o período pedido pelo campo `data` (auditoria 2026-07-02: `data` é a
+// data efetiva em 100% dos docs — os importados já foram corrigidos para a data
+// de encerramento). Cache por período; gravações invalidam. Range num único
+// campo → não precisa de índice composto.
+export const getNetworkOrdersByRange = async (start, end, { force = false } = {}) => {
+  const key = `${COL}:${start}|${end}`;
+  if (!force) { const cached = readCache(key); if (cached) return cached; }
+  const snap = await getDocs(query(collection(db, COL), where('data', '>=', start), where('data', '<=', end)));
+  const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  writeCache(key, arr);
+  return arr;
+};
 
-// Versão com cache (localStorage + TTL) — a "data efetiva" das ordens é
-// composta (data/dataFechamento/dataAbertura), então não dá pra limitar por
-// período no Firestore com segurança; o cache evita reler a cada abertura.
+// Coleção completa com cache (localStorage + TTL) — usada no ADMIN, que precisa
+// da lista inteira (dedupe por ID OS, "Enviar tudo"). Gravações invalidam.
 export const getNetworkOrdersCached = async ({ force = false } = {}) => {
   const key = `${COL}:all`;
   if (!force) { const cached = readCache(key); if (cached) return cached; }
