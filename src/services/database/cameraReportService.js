@@ -1,18 +1,9 @@
-import { collection, addDoc, query, where, getDocs, updateDoc, doc, orderBy, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
 
 // Relatórios diários da equipe de câmeras (WIBICAM).
 const COLLECTION_NAME = 'camera_reports';
-
-export const saveCameraReport = async (reportData) => {
-  const ref = await addDoc(collection(db, COLLECTION_NAME), {
-    ...reportData,
-    createdAt: new Date().toISOString(),
-  });
-  clearCache(COLLECTION_NAME);
-  return ref;
-};
 
 // Busca SÓ o período pedido (mês visível) e SÓ registros com O.S > 0.
 // Folgas/faltas (zerados) não são lidos → não contam na cota. O dashboard já
@@ -58,20 +49,6 @@ export const upsertCameraReport = async (reportData) => {
   await Promise.all(extras.map(d => deleteDoc(doc(db, COLLECTION_NAME, d.id))));
   clearCache(COLLECTION_NAME);
   return 'updated';
-};
-
-export const getCameraReportsByDate = (date) => {
-  const q = query(
-    collection(db, COLLECTION_NAME),
-    where('date', '==', date),
-    orderBy('submissionTime', 'desc')
-  );
-  return getDocs(q);
-};
-
-export const getAllCameraReports = () => {
-  const q = query(collection(db, COLLECTION_NAME), orderBy('createdAt', 'desc'));
-  return getDocs(q);
 };
 
 // Relatórios de uma data, sem orderBy (evita índice composto). Usado no status do Admin.

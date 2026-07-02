@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
 // Colaboradores da equipe de câmeras (WIBICAM).
@@ -36,20 +36,4 @@ export const seedCameraCollaborators = async () => {
       await addDoc(collection(db, COLLECTION), { name, createdAt: new Date().toISOString() });
     }
   }
-};
-
-// Apaga todos e recria com os nomes da planilha
-export const syncCameraCollaboratorsFromExcel = async () => {
-  const snap = await getDocs(collection(db, COLLECTION));
-  const batch = writeBatch(db);
-  snap.docs.forEach(d => batch.delete(d.ref));
-  await batch.commit();
-
-  for (const name of CAMERA_TECHNICIANS_FROM_EXCEL) {
-    await addDoc(collection(db, COLLECTION), {
-      name,
-      createdAt: new Date().toISOString(),
-    });
-  }
-  return CAMERA_TECHNICIANS_FROM_EXCEL.length;
 };

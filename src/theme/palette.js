@@ -125,10 +125,6 @@ export const BRANDS = {
   },
 };
 
-// Compatibilidade: DARK/LIGHT antigos = identidade Fibra
-export const DARK = BRANDS.fibra.dark;
-export const LIGHT = BRANDS.fibra.light;
-
 // Resolve a paleta por tema + área (default: fibra)
 export const getPalette = (mode, brand = 'fibra') => {
   const b = BRANDS[brand] || BRANDS.fibra;
