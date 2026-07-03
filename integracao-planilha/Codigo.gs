@@ -7,8 +7,13 @@
  */
 
 // ===================== CONFIG =====================
-// Mesmo token usado no site (NAO altere - ja esta igual no site):
-var SECRET = 'ibiunet-sheets-3f7Kp9Qw2Lm8';
+// Tokens aceitos. TRANSICAO da rotacao (2026-07-02): o novo e o antigo valem
+// juntos ate o site novo estar no ar. Depois de confirmado o envio com o
+// token novo, APAGUE a linha do antigo e implante NOVA VERSAO.
+var TOKENS = [
+  'COLE_AQUI_O_TOKEN_NOVO',      // = valor de VITE_SHEET_TOKEN do .env (repo e publico: NUNCA commitar o valor real)
+  'ibiunet-sheets-3f7Kp9Qw2Lm8', // ANTIGO - apagar esta linha apos a transicao
+];
 // Nome EXATO da aba onde ficam os lancamentos. Deixe '' para usar a 1a aba.
 var SHEET_NAME = 'Lancamentos Equipe Fibra';
 // =================================================
@@ -140,7 +145,7 @@ function zeroRows(sheet, map, date, technician) {
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
-    if (body.token !== SECRET) return out({ ok: false, error: 'token invalido' });
+    if (TOKENS.indexOf(body.token) === -1) return out({ ok: false, error: 'token invalido' });
 
     // Roteia a Equipe de Redes para a aba "Lancamentos Redes"
     if (body.team === 'redes') return handleRedes(body);

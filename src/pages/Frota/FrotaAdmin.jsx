@@ -15,7 +15,7 @@ import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { parseProlog, buildSheetsPayload, cellFor, MESES, DEFAULT_TEAMS, initials } from './frotaCore';
 
 const SHEETS_URL = import.meta.env.VITE_FROTA_SHEETS_URL || '';
-const SHEETS_SECRET = import.meta.env.VITE_FROTA_SHEETS_SECRET || 'ibiunet-frota-TROQUE-ESTE-TOKEN';
+const SHEETS_SECRET = import.meta.env.VITE_FROTA_SHEETS_SECRET || '';
 
 export const FrotaAdmin = () => {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ export const FrotaAdmin = () => {
     if (!url) return '(Sheets: configure VITE_FROTA_SHEETS_URL para ativar)';
     try {
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(buildSheetsPayload(tms, data, ano, mesIndex, localStorage.getItem('frota_sheets_secret') || SHEETS_SECRET)) });
+        body: JSON.stringify(buildSheetsPayload(tms, data, ano, mesIndex, SHEETS_SECRET || localStorage.getItem('frota_sheets_secret') || '')) });
       return res.ok ? 'Enviado ao Google Sheets.' : `Planilha respondeu HTTP ${res.status} — confira a implantação do Apps Script.`;
     } catch { return 'Falha de rede ao enviar ao Google Sheets (Firebase salvo normalmente).'; }
   };
@@ -56,7 +56,8 @@ export const FrotaAdmin = () => {
     tms.forEach((t) => t.members.forEach((m) => {
       allColabs.push({ nome: m.name, placa: m.plate || '', equipe: t.short });
     }));
-    const secret = localStorage.getItem('frota_sheets_secret') || SHEETS_SECRET;
+    // .env primeiro: localStorage pode guardar um secret antigo (pré-rotação)
+    const secret = SHEETS_SECRET || localStorage.getItem('frota_sheets_secret') || '';
     try {
       fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ secret, mes: MESES[entry.mesIndex], ano: String(entry.ano), allColabs,

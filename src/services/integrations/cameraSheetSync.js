@@ -4,7 +4,8 @@
 // gravando na aba "Lancamentos Equipe Cameras".
 
 const SHEET_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyggMyt2_sIhhWfaxul2ZiF3lahbLRhmuqG2TRH-J7FQ6L-LL1iQTgCEOoIBLNUfGZC3g/exec';
-const SHEET_TOKEN = 'ibiunet-sheets-3f7Kp9Qw2Lm8';
+// Mesmo token do Codigo.gs — vem do .env (VITE_SHEET_TOKEN), fora do git.
+const SHEET_TOKEN = import.meta.env.VITE_SHEET_TOKEN || '';
 
 const post = async (payload) => {
   if (!SHEET_WEBAPP_URL) return;

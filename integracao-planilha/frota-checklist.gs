@@ -18,7 +18,12 @@
  */
 
 // ==================== CONFIG ====================
-var SECRET         = 'ibiunet-frota-ibiunet2026';
+// TRANSICAO da rotacao (2026-07-02): novo e antigo valem juntos ate o site
+// novo estar no ar. Depois, APAGUE a linha do antigo e implante NOVA VERSAO.
+var SECRETS        = [
+  'COLE_AQUI_O_SECRET_NOVO',   // = valor de VITE_FROTA_SHEETS_SECRET do .env (repo e publico: NUNCA commitar o valor real)
+  'ibiunet-frota-ibiunet2026', // ANTIGO - apagar esta linha apos a transicao
+];
 var SPREADSHEET_ID = '1wc3KeHwg6dxuJswvSYCjUPK9X45lLzjMFTGTDJVwNMs';
 // ================================================
 
@@ -59,7 +64,7 @@ var RESUMO = [
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
-    if (body.secret !== SECRET)
+    if (SECRETS.indexOf(body.secret) === -1)
       return _json({ ok: false, error: 'token invalido' });
     if (!body.mes || !body.ano || !body.linhas)
       return _json({ ok: false, error: 'payload incompleto' });
