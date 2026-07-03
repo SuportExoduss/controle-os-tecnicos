@@ -124,6 +124,43 @@ export const buildSheetsPayload = (teams, data, ano, mesIndex, secret) => {
   return { secret, mes: MESES[mesIndex], ano: String(ano), allColabs, linhas };
 };
 
+// Merge de um payload de mês sobre o doc existente (PURO — testável sem Firestore).
+// • data: por pessoa→dia; null = fora do range do arquivo → preserva o existente.
+//   ANTI-REBAIXAMENTO: "não fez" NUNCA substitui um registro real já gravado
+//   (feito/atrasado/ausente) — "não fez" é ausência de informação, não evidência.
+//   Correção deliberada para "não fez" continua possível pela entrada manual.
+// • cal: por pessoa (novo vence; quem não vem no payload é preservado).
+// • occ: union deduplicada por pessoa+dia+hora (novo vence).
+// • period: expande o intervalo para cobrir ambos os envios.
+export const mergeFrotaMonth = (ex, payload) => {
+  const mergedData = {};
+  const allNames = new Set([...Object.keys(ex.data || {}), ...Object.keys(payload.data || {})]);
+  allNames.forEach((person) => {
+    const base = { ...((ex.data || {})[person] || {}) };
+    const incoming = (payload.data || {})[person] || {};
+    for (const day in incoming) {
+      const inc = incoming[day];
+      if (inc === null) continue; // fora do range do arquivo → não sobrescreve
+      const cur = base[day];
+      if (inc.st === 'naofez' && cur && cur.st && cur.st !== 'naofez') continue; // anti-rebaixamento
+      base[day] = inc;
+    }
+    mergedData[person] = base;
+  });
+  const mergedCal = { ...(ex.cal || {}), ...(payload.cal || {}) };
+  const occMap = {};
+  [...(ex.occ || []), ...(payload.occ || [])].forEach((o) => {
+    occMap[`${o.name}:${o.day ?? ''}:${o.dt ?? ''}`] = o;
+  });
+  const exP = ex.period || {};
+  const newP = payload.period || {};
+  const mergedPeriod = {
+    d1: Math.min(exP.d1 ?? 1,  newP.d1 ?? 1),
+    d2: Math.max(exP.d2 ?? 31, newP.d2 ?? 31),
+  };
+  return { ...ex, data: mergedData, cal: mergedCal, occ: Object.values(occMap), period: mergedPeriod };
+};
+
 // Parser do CSV do Prolog. Recebe o texto e o cadastro atual de equipes.
 // MULTI-MÊS: as linhas são agrupadas por mês/ano — um export que cruza a
 // virada do mês gera um payload POR MÊS (cada um vai pro seu doc fleet_reports,

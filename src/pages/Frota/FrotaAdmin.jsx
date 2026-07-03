@@ -97,13 +97,15 @@ export const FrotaAdmin = () => {
 
     try {
       if (r.novos > 0) await saveFrotaCadastro(r.teams);
-      // Um doc por mês: arquivo que cruza a virada grava cada mês no seu próprio relatório
+      // Um doc por mês: arquivo que cruza a virada grava cada mês no seu próprio relatório.
+      // A planilha espelha o doc FINAL (pós-merge), nunca o payload cru — assim um
+      // arquivo parcial jamais rebaixa células boas na planilha da diretoria.
+      let sheetNote = '';
       for (const mo of r.months) {
-        await saveFrotaMonth(mo.ano, mo.mesIndex, { data: mo.data, cal: mo.cal, occ: mo.occ, period: mo.period }, by);
+        const res = await saveFrotaMonth(mo.ano, mo.mesIndex, { data: mo.data, cal: mo.cal, occ: mo.occ, period: mo.period }, by);
+        sheetNote = await sendSheets(r.teams, (res.merged && res.merged.data) || mo.data, mo.ano, mo.mesIndex);
       }
       setTeams(r.teams);
-      let sheetNote = '';
-      for (const mo of r.months) sheetNote = await sendSheets(r.teams, mo.data, mo.ano, mo.mesIndex);
       done = true;
       // 99→100 suavemente
       for (let i = 99; i <= 100; i++) { setProg({ pct: i, label: 'Concluído!' }); await sleep(30); }
