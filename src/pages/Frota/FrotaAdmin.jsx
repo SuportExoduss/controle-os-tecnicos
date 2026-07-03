@@ -97,13 +97,18 @@ export const FrotaAdmin = () => {
 
     try {
       if (r.novos > 0) await saveFrotaCadastro(r.teams);
-      await saveFrotaMonth(r.ano, r.mesIndex, { data: r.data, cal: r.cal, occ: r.occ, period: r.period }, by);
+      // Um doc por mês: arquivo que cruza a virada grava cada mês no seu próprio relatório
+      for (const mo of r.months) {
+        await saveFrotaMonth(mo.ano, mo.mesIndex, { data: mo.data, cal: mo.cal, occ: mo.occ, period: mo.period }, by);
+      }
       setTeams(r.teams);
-      const sheetNote = await sendSheets(r.teams, r.data, r.ano, r.mesIndex);
+      let sheetNote = '';
+      for (const mo of r.months) sheetNote = await sendSheets(r.teams, mo.data, mo.ano, mo.mesIndex);
       done = true;
       // 99→100 suavemente
       for (let i = 99; i <= 100; i++) { setProg({ pct: i, label: 'Concluído!' }); await sleep(30); }
-      const txt = `✓ ${r.count} registros · ${r.people} colaboradores${r.novos ? ` · ${r.novos} novos` : ''} · ${MESES[r.mesIndex]}/${r.ano}. ${sheetNote}`;
+      const mesesTxt = r.months.map((mo) => `${MESES[mo.mesIndex]}/${mo.ano}`).join(', ');
+      const txt = `✓ ${r.count} registros · ${r.people} colaboradores${r.novos ? ` · ${r.novos} novos` : ''} · ${mesesTxt}. ${sheetNote}`;
       setMsg(txt); toast.success('Importado e salvo no Firebase!');
       setHist((h) => [{ t: 'Importado do Prolog', by: by + ' (admin)', dt: new Date().toLocaleString('pt-BR'), meta: `${r.fname || 'arquivo'} · ${r.count} registros`, tipo: 'import' }, ...h]);
 
@@ -113,13 +118,17 @@ export const FrotaAdmin = () => {
         const todayDay = todayDate.getDate();
         const todayMonth = todayDate.getMonth();
         const todayYear = todayDate.getFullYear();
-        // Quem fez checklist hoje (feito ou atrasado) → presente
-        const presents = new Set();
-        r.teams.forEach((t) => t.members.forEach((m) => {
-          const entry = r.data[m.name]?.[todayDay];
-          if (entry && (entry.st === 'feito' || entry.st === 'atrasado')) presents.add(m.name);
-        }));
-        setSatFlow({ day: todayDay, month: todayMonth, year: todayYear, teams: r.teams, presents });
+        // Usa o payload do MÊS de hoje (o arquivo pode conter mais de um mês)
+        const moHoje = r.months.find((x) => x.ano === todayYear && x.mesIndex === todayMonth);
+        if (moHoje) {
+          // Quem fez checklist hoje (feito ou atrasado) → presente
+          const presents = new Set();
+          r.teams.forEach((t) => t.members.forEach((m) => {
+            const entry = moHoje.data[m.name]?.[todayDay];
+            if (entry && (entry.st === 'feito' || entry.st === 'atrasado')) presents.add(m.name);
+          }));
+          setSatFlow({ day: todayDay, month: todayMonth, year: todayYear, teams: r.teams, presents });
+        }
       }
     } catch (e) {
       done = true;
@@ -229,8 +238,7 @@ export const FrotaAdmin = () => {
             {/* Chips de resumo */}
             <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', marginBottom: '16px' }}>
               {[
-                [`${MESES[preview.mesIndex]} ${preview.ano}`, Calendar, S.accent],
-                [`Dias ${preview.period.d1}–${preview.period.d2}`, Calendar, S.accent],
+                ...preview.months.map((mo) => [`${MESES[mo.mesIndex]} ${mo.ano} · dias ${mo.period.d1}–${mo.period.d2}`, Calendar, S.accent]),
                 [`${preview.count} registros`, BarChart2, '#34d399'],
                 [`${preview.people} colaboradores`, Users, '#60a5fa'],
                 ...(preview.novos ? [[`${preview.novos} novos`, AlertTriangle, '#fbbf24']] : []),
@@ -251,6 +259,14 @@ export const FrotaAdmin = () => {
                 </div>
               ))}
             </div>
+
+            {/* Aviso: arquivo cruza a virada do mês */}
+            {preview.months.length > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 13px', background: '#0c4a6e22', border: '1px solid #0c4a6e66', borderRadius: '10px', marginBottom: '16px' }}>
+                <Calendar size={16} color="#38bdf8" />
+                <span style={{ fontSize: '12px', color: '#38bdf8' }}>O arquivo cruza a virada do mês — cada mês será gravado no seu próprio relatório, sem misturar.</span>
+              </div>
+            )}
 
             {/* Alerta novos colaboradores */}
             {preview.novos > 0 && (

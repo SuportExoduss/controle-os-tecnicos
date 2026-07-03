@@ -125,7 +125,15 @@ export const buildSheetsPayload = (teams, data, ano, mesIndex, secret) => {
 };
 
 // Parser do CSV do Prolog. Recebe o texto e o cadastro atual de equipes.
-// Retorna { teams (com novos colaboradores), data, cal, occ, period, count, people, novos }.
+// MULTI-MÊS: as linhas são agrupadas por mês/ano — um export que cruza a
+// virada do mês gera um payload POR MÊS (cada um vai pro seu doc fleet_reports,
+// nunca mistura). Correções de 2026-07-03:
+//   • o período de "não fez" é definido SÓ pelas linhas de checklist DIÁRIO
+//     (ocorrência/calibragem não inflam o range nem geram "não fez" falso);
+//   • cal só inclui quem TEM linha semanal no arquivo (o merge preserva a
+//     calibragem dos demais em vez de zerar todo mundo a cada import);
+//   • ocorrências carregam `day` (dedupe correto no merge do frotaService).
+// Retorna { teams, months: [{ano, mesIndex, data, cal, occ, period, count, people}], count, people, novos }.
 export const parseProlog = (text, teamsIn) => {
   // Deep copy: members são objetos, usar spread
   const teams = teamsIn.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) }));
@@ -144,13 +152,15 @@ export const parseProlog = (text, teamsIn) => {
     return best;
   };
 
-  const daily = {}, cal = {}, occ = [];
-  let minD = 99, maxD = 0, count = 0, novos = 0, mesIdx = 5; const people = new Set();
+  // Balde por mês: 'YYYY-MM' → dados isolados daquele mês
+  const buckets = {};
+  let novos = 0, totalCount = 0;
+  const allPeople = new Set();
   lines.slice(1).forEach((line) => {
     const r = line.split(';');
     const dm = (r[ci.data] || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
     if (!dm) return;
-    const day = +dm[1]; mesIdx = +dm[2] - 1;
+    const day = +dm[1], mesIdx = +dm[2] - 1, anoRow = +dm[3];
     const time = dm[4].padStart(2, '0') + ':' + dm[5];
     const nome = (r[ci.nome] || '').trim(); if (!nome) return;
     const modelo = norm(r[ci.modelo] || ''); const tipo = norm(r[ci.tipo] || '');
@@ -166,41 +176,55 @@ export const parseProlog = (text, teamsIn) => {
         novos++;
       }
     }
-    count++; people.add(name); minD = Math.min(minD, day); maxD = Math.max(maxD, day);
-    if (modelo.indexOf('ocorrencia') >= 0) { occ.push({ name, plate, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
-    if (modelo.indexOf('semanal') >= 0) { const wd = new Date(dm[3], mesIdx, day).getDay(); const prev = cal[name]; if (!prev || day < prev.day) cal[name] = { day, st: wd === 1 ? 'feito' : 'atrasado' }; return; }
-    if (!daily[name]) daily[name] = {}; if (!daily[name][day]) daily[name][day] = []; daily[name][day].push({ time, plate, tipo });
+    const bkey = anoRow + '-' + String(mesIdx + 1).padStart(2, '0');
+    const b = buckets[bkey] = buckets[bkey] || { ano: anoRow, mesIdx, daily: {}, cal: {}, occ: [], minDaily: 99, maxDaily: 0, minAny: 99, maxAny: 0, count: 0, people: new Set() };
+    b.count++; totalCount++; b.people.add(name); allPeople.add(name);
+    b.minAny = Math.min(b.minAny, day); b.maxAny = Math.max(b.maxAny, day);
+    if (modelo.indexOf('ocorrencia') >= 0) { b.occ.push({ name, plate, day, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
+    if (modelo.indexOf('semanal') >= 0) { const wd = new Date(anoRow, mesIdx, day).getDay(); const prev = b.cal[name]; if (!prev || day < prev.day) b.cal[name] = { day, st: wd === 1 ? 'feito' : 'atrasado' }; return; }
+    // Checklist DIÁRIO — só ele define o período de "não fez"
+    b.minDaily = Math.min(b.minDaily, day); b.maxDaily = Math.max(b.maxDaily, day);
+    if (!b.daily[name]) b.daily[name] = {}; if (!b.daily[name][day]) b.daily[name][day] = []; b.daily[name][day].push({ time, plate, tipo });
   });
-  if (!count) throw new Error('Nenhum registro de checklist encontrado no arquivo.');
+  if (!totalCount) throw new Error('Nenhum registro de checklist encontrado no arquivo.');
 
-  const ano = +(lines[1].split(';')[ci.data] || '').trim().match(/\/(\d{4})/)?.[1] || new Date().getFullYear();
-  const data = {}, calOut = {};
-  teams.forEach((t) => t.members.forEach((m) => {
-    const byDay = daily[m.name] || {}; const out = {};
-    for (let d = 1; d <= 31; d++) {
-      const wd = new Date(ano, mesIdx, d).getDay();
-      if (new Date(ano, mesIdx, d).getMonth() !== mesIdx) { out[d] = null; continue; }
-      if (wd === 0 || d < minD || d > maxD) { out[d] = null; continue; }
-      const arr = byDay[d];
-      if (!arr || !arr.length) { out[d] = { st: 'naofez' }; continue; }
-      const sortedAll = arr.slice().sort((a, b) => (a.time < b.time ? -1 : 1));
-      const sd = sortedAll.filter((x) => x.tipo === 'saida');
-      const base = (sd.length ? sd : sortedAll)[0];
-      const st = base.time <= '09:00' ? 'feito' : 'atrasado';
-      // Detecta TODAS as trocas: cada mudança de placa consecutiva = 1 troca
-      const swapsList = [];
-      for (let i = 1; i < sortedAll.length; i++) {
-        const prev = sortedAll[i - 1], curr = sortedAll[i];
-        if (curr.plate && prev.plate && curr.plate !== prev.plate)
-          swapsList.push({ plateFrom: prev.plate, plateTo: curr.plate, timeFrom: prev.time, timeTo: curr.time });
-      }
-      const p2 = swapsList.length > 0 ? swapsList[swapsList.length - 1].plateTo : null;
-      out[d] = { st, plate: base.plate || null, p2, time: base.time, ...(swapsList.length ? { swaps: swapsList } : {}) };
-    }
-    data[m.name] = out;
-    calOut[m.name] = cal[m.name] || { st: 'naofez', day: null };
-  }));
-  const occOut = occ.map((o) => ({ ...o, sev: o.pc > 0 ? 'critica' : (o.pa > 0 || o.nok >= 4) ? 'alta' : 'normal' }));
+  const months = Object.values(buckets)
+    .sort((x, y) => (x.ano - y.ano) || (x.mesIdx - y.mesIdx))
+    .map((b) => {
+      const hasDaily = b.maxDaily >= b.minDaily;
+      const data = {}, calOut = {};
+      teams.forEach((t) => t.members.forEach((m) => {
+        const byDay = b.daily[m.name] || {}; const out = {};
+        for (let d = 1; d <= 31; d++) {
+          const dt = new Date(b.ano, b.mesIdx, d);
+          if (dt.getMonth() !== b.mesIdx) { out[d] = null; continue; }
+          if (!hasDaily || dt.getDay() === 0 || d < b.minDaily || d > b.maxDaily) { out[d] = null; continue; }
+          const arr = byDay[d];
+          if (!arr || !arr.length) { out[d] = { st: 'naofez' }; continue; }
+          const sortedAll = arr.slice().sort((p, q) => (p.time < q.time ? -1 : 1));
+          const sd = sortedAll.filter((x) => x.tipo === 'saida');
+          const base = (sd.length ? sd : sortedAll)[0];
+          const st = base.time <= '09:00' ? 'feito' : 'atrasado';
+          // Detecta TODAS as trocas: cada mudança de placa consecutiva = 1 troca
+          const swapsList = [];
+          for (let i = 1; i < sortedAll.length; i++) {
+            const prev = sortedAll[i - 1], curr = sortedAll[i];
+            if (curr.plate && prev.plate && curr.plate !== prev.plate)
+              swapsList.push({ plateFrom: prev.plate, plateTo: curr.plate, timeFrom: prev.time, timeTo: curr.time });
+          }
+          const p2 = swapsList.length > 0 ? swapsList[swapsList.length - 1].plateTo : null;
+          out[d] = { st, plate: base.plate || null, p2, time: base.time, ...(swapsList.length ? { swaps: swapsList } : {}) };
+        }
+        data[m.name] = out;
+        if (b.cal[m.name]) calOut[m.name] = b.cal[m.name]; // só quem calibrou de fato
+      }));
+      const occOut = b.occ.map((o) => ({ ...o, sev: o.pc > 0 ? 'critica' : (o.pa > 0 || o.nok >= 4) ? 'alta' : 'normal' }));
+      return {
+        ano: b.ano, mesIndex: b.mesIdx, data, cal: calOut, occ: occOut,
+        period: hasDaily ? { d1: b.minDaily, d2: b.maxDaily } : { d1: b.minAny, d2: b.maxAny },
+        count: b.count, people: b.people.size,
+      };
+    });
 
-  return { teams, data, cal: calOut, occ: occOut, period: { d1: minD, d2: maxD }, ano, mesIndex: mesIdx, count, people: people.size, novos };
+  return { teams, months, count: totalCount, people: allPeople.size, novos };
 };

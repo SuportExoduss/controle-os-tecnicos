@@ -137,10 +137,11 @@ export const saveFrotaMonth = async (ano, mesIndex, payload, by) => {
     // cal: merge por pessoa (novo prevalece)
     const mergedCal = { ...(ex.cal || {}), ...(payload.cal || {}) };
 
-    // occ: union; em conflito (mesmo name+day) o novo prevalece
+    // occ: union; em conflito (mesma pessoa + mesmo dia/horário) o novo prevalece.
+    // Ocorrências do Prolog usam `day` + `dt` (dia/hora); manuais usam `day`.
     const occMap = {};
     [...(ex.occ || []), ...(payload.occ || [])].forEach((o) => {
-      occMap[`${o.name}:${o.day}`] = o;
+      occMap[`${o.name}:${o.day ?? ''}:${o.dt ?? ''}`] = o;
     });
 
     // period: expande o intervalo para cobrir ambos os envios
