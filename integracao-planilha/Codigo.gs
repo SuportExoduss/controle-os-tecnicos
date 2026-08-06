@@ -11,8 +11,7 @@
 // juntos ate o site novo estar no ar. Depois de confirmado o envio com o
 // token novo, APAGUE a linha do antigo e implante NOVA VERSAO.
 var TOKENS = [
-  'COLE_AQUI_O_TOKEN_NOVO',      // = valor de VITE_SHEET_TOKEN do .env (repo e publico: NUNCA commitar o valor real)
-  'ibiunet-sheets-3f7Kp9Qw2Lm8', // ANTIGO - apagar esta linha apos a transicao
+  'COLE_AQUI_O_TOKEN_NOVO', // = VITE_SHEET_TOKEN do .env (repo público: NUNCA commitar o valor real; usar o Codigo.gs.local)
 ];
 // Nome EXATO da aba onde ficam os lancamentos. Deixe '' para usar a 1a aba.
 var SHEET_NAME = 'Lancamentos Equipe Fibra';
@@ -27,8 +26,9 @@ var HEADER_ALIASES = {
   obs:        ['observacoes', 'obs', 'observacao']
 };
 var TYPE_ALIASES = {
-  'INSTALACAO FIBRA':     ['instalacao fibra'],
-  'MANUTENCAO FIBRA':     ['manutencao fibra'],
+  'INSTALACAO FIBRA':               ['instalacao fibra'],
+  'MANUTENCAO FIBRA':               ['manutencao fibra'],
+  'PADRONIZACAO CABEAMENTO/CTO':    ['padronizacao cabeamento/cto', 'padronizacao cabeamento', 'padronizacao cto'],
   'MUDANCA DE ENDERECO':  ['mudanca de endereco'],
   'MUDANCA DE PONTO':     ['mudanca de ponto'],
   'INSTALACAO WI-BINET':  ['instalacao wi-binet', 'instalacao wibinet', 'wi-binet'],
@@ -147,6 +147,11 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     if (TOKENS.indexOf(body.token) === -1) return out({ ok: false, error: 'token invalido' });
 
+    // Padroniza nomes em TODAS as abas de lancamento (Fibra/Cameras/Redes) de
+    // uma vez: troca a celula do tecnico pelas correspondencias {from->to}
+    // (casadas por norm). Usado na migracao de identidade. Nao apaga historico.
+    if (body.action === 'renameTechnicians') return out(renameTechnicians(body));
+
     // Roteia a Equipe de Redes para a aba "Lancamentos Redes"
     if (body.team === 'redes') return handleRedes(body);
 
@@ -171,6 +176,22 @@ function doPost(e) {
     if (body.action === 'deleteRow') {
       var removedFib = deleteRowsByDateTech(sheet, map, body.date, body.technician);
       return out({ ok: true, removed: removedFib });
+    }
+
+    // ACAO: excluir TODAS as linhas de um tecnico (usado ao renomear colaborador)
+    if (body.action === 'deleteTechnician') {
+      var alvoTechN = norm(body.technician || '');
+      if (!alvoTechN || map.technician < 0) return out({ ok: false, error: 'tecnico nao informado' });
+      var dataAll = sheet.getDataRange().getValues();
+      var removedAll = 0;
+      for (var ri = dataAll.length - 1; ri >= 1; ri--) {
+        if (norm(dataAll[ri][map.technician]) === alvoTechN) {
+          sheet.deleteRow(ri + 1);
+          removedAll++;
+        }
+      }
+      if (removedAll > 0) formatDaySeparators(sheet, map);
+      return out({ ok: true, removed: removedAll });
     }
 
     // ACAO padrao: gravar/atualizar registros
@@ -256,6 +277,41 @@ function countFor(counts, normType) {
   var total = 0;
   for (var k in counts) if (norm(k) === norm(normType)) total += counts[k];
   return total;
+}
+
+// ===================== RENOMEAR TECNICOS (migracao de identidade) =====================
+// Varre TODAS as abas: acha a coluna do tecnico pelo cabecalho e troca a celula
+// pelo nome canonico quando norm(celula) casa com um `from` do mapa. So altera o
+// nome — nunca apaga a linha nem toca em outras colunas. Idempotente.
+function renameTechnicians(body) {
+  var pairs = body.pairs || [];
+  var m = {};
+  for (var i = 0; i < pairs.length; i++) m[norm(pairs[i].from)] = String(pairs[i].to);
+  var TECH_ALIASES = ['nome_tecnico', 'nome do tecnico', 'nome tecnico', 'tecnico responsavel',
+    'tecnico_responsavel', 'tecnico', 'colaborador', 'nome'];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheets = ss.getSheets();
+  var total = 0, tabs = [];
+  for (var s = 0; s < sheets.length; s++) {
+    var sh = sheets[s];
+    var lastRow = sh.getLastRow(), lastCol = sh.getLastColumn();
+    if (lastRow < 2 || lastCol < 1) continue;
+    var headers = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(norm);
+    var tcol = -1;
+    for (var h = 0; h < headers.length; h++) { if (TECH_ALIASES.indexOf(headers[h]) >= 0) { tcol = h; break; } }
+    if (tcol < 0) continue;
+    var rng = sh.getRange(2, tcol + 1, lastRow - 1, 1);
+    var vals = rng.getValues();
+    var changed = 0;
+    for (var r = 0; r < vals.length; r++) {
+      var cur = vals[r][0];
+      if (cur === '' || cur == null) continue;
+      var nn = norm(cur);
+      if (m[nn] != null && String(cur) !== m[nn]) { vals[r][0] = m[nn]; changed++; }
+    }
+    if (changed) { rng.setValues(vals); total += changed; tabs.push(sh.getName() + ':' + changed); }
+  }
+  return { ok: true, renamed: total, tabs: tabs };
 }
 
 function out(obj) {
@@ -822,6 +878,7 @@ function fibraDesenharSeparadores() {
 var ENSURE_COLUMNS = [
   ['Instalação Fibra', 'INSTALACAO FIBRA'],
   ['Manutenção Fibra', 'MANUTENCAO FIBRA'],
+  ['Padronização Cabeamento/CTO', 'PADRONIZACAO CABEAMENTO/CTO'],
   ['Mudança de endereço', 'MUDANCA DE ENDERECO'],
   ['Mudança de ponto', 'MUDANCA DE PONTO'],
   ['Instalação Wi-biNET', 'INSTALACAO WI-BINET'],

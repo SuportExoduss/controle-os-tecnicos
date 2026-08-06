@@ -66,14 +66,30 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     if (SECRETS.indexOf(body.secret) === -1)
       return _json({ ok: false, error: 'token invalido' });
+
+    // Padroniza nomes na coluna A de TODAS as abas mensais (migracao de
+    // identidade): troca a celula pelo nome canonico quando casa por _norm.
+    // So altera o nome — nao apaga linha nem toca nos dias.
+    if (body.action === 'renameTechnicians') return _json(_renameTechnicians(body));
+
     if (!body.mes || !body.ano || !body.linhas)
       return _json({ ok: false, error: 'payload incompleto' });
 
     var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     var sh = _getOrCreateSheet(ss, body.mes, body.ano, body.allColabs || []);
-    var n  = _writeMatrix(sh, body.linhas);
 
-    return _json({ ok: true, linhasEscritas: n,
+    // Modo REFAZER (body.prune): remove linhas que não são do cadastro atual
+    // (duplicatas, ex-colaboradores, linhas em branco) e zera os dias antes de
+    // reescrever — deixa a aba idêntica ao que está no Firebase.
+    var removidas = 0;
+    if (body.prune) {
+      removidas = _pruneColabs(sh, body.allColabs || []);
+      _clearDays(sh);
+    }
+
+    var n = _writeMatrix(sh, body.linhas);
+
+    return _json({ ok: true, linhasEscritas: n, linhasRemovidas: removidas,
                    url: ss.getUrl() + '#gid=' + sh.getSheetId() });
   } catch (err) {
     return _json({ ok: false, error: String(err) });
@@ -84,8 +100,114 @@ function doPost(e) {
 function _getOrCreateSheet(ss, mes, ano, allColabs) {
   var name = 'RELATORIO CHECKLIST ' + mes + ' ' + ano;
   var sh   = ss.getSheetByName(name);
-  if (!sh) sh = _buildSheet(ss, name, mes, ano, allColabs);
+  if (!sh) {
+    sh = _buildSheet(ss, name, mes, ano, allColabs);
+    // Mês novo entra LOGO ABAIXO da aba "RELATORIO CHECKLIST de CALIBRAGEM",
+    // acima do mês anterior. As abas acima da calibragem ficam intocadas.
+    _moverAbaixoDaCalibragem(ss, sh);
+  } else {
+    // A aba JÁ existe: garante que colaboradores novos (cadastrados depois da
+    // criação da aba) ganhem linha — sem isso o _writeMatrix os descartava,
+    // fazendo os dados aparecerem só na dashboard e nunca na planilha.
+    _ensureColabs(sh, allColabs);
+  }
+  // Repara as fórmulas de resumo (AK–AN, AT) em todas as linhas — corrige
+  // linhas com #ERRO/#NAME sem tocar nas colunas manuais AO–AS.
+  _repairFormulas(sh);
   return sh;
+}
+
+// ── GARANTE LINHA PARA TODO COLABORADOR ──────────────────────────────────────
+// Acrescenta ao fim da aba uma linha para cada colaborador de allColabs que
+// ainda não tem linha. Copia a linha 2 (fórmulas nativas AK–AT + formatação)
+// para herdar tudo, limpa os dias e escreve nome/placa do novo.
+function _ensureColabs(sh, allColabs) {
+  if (!allColabs || !allColabs.length) return;
+  var lastRow = sh.getLastRow();
+
+  var existing = {};
+  if (lastRow >= 2) {
+    var nomes = sh.getRange(2, COL_COLAB, lastRow - 1, 1).getValues();
+    for (var i = 0; i < nomes.length; i++) {
+      var nn = _norm(nomes[i][0]);
+      if (nn) existing[nn] = true;
+    }
+  }
+
+  var faltantes = [];
+  for (var j = 0; j < allColabs.length; j++) {
+    var nm = _norm(allColabs[j].nome);
+    if (nm && !existing[nm]) { faltantes.push(allColabs[j]); existing[nm] = true; }
+  }
+  if (!faltantes.length) return;
+
+  var temModelo = lastRow >= 2;               // há linha 2 para copiar fórmulas nativas?
+  var firstNew  = (lastRow < 2 ? 2 : lastRow + 1);
+
+  for (var k = 0; k < faltantes.length; k++) {
+    var r = firstNew + k;
+    if (temModelo) {
+      sh.getRange(2, 1, 1, LAST_COL).copyTo(sh.getRange(r, 1, 1, LAST_COL));
+      sh.getRange(r, DAY_START, 1, DAY_END - DAY_START + 1).clearContent(); // zera dias copiados
+    } else {
+      _escreverFormulas(sh, r, 1); // aba sem modelo → fórmulas via setFormula
+    }
+    sh.getRange(r, COL_COLAB).setValue(faltantes[k].nome  || '');
+    sh.getRange(r, COL_PLACA).setValue(faltantes[k].placa || '');
+  }
+}
+
+// ── REPARA FÓRMULAS DE RESUMO ────────────────────────────────────────────────
+// Propaga as fórmulas nativas da linha 2 (AK, AL, AM, AN e AT) para todas as
+// demais linhas de dados. Só copia FÓRMULAS (PASTE_FORMULA) — mantém bordas,
+// cores e os valores manuais das colunas AO–AS intactos.
+function _repairFormulas(sh) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 3) return;          // 0 ou 1 linha de dados: nada a propagar
+  var nData = lastRow - 2;          // linhas 3..lastRow
+  // AK:AN (contíguas)
+  sh.getRange(2, RES_AK, 1, RES_AN - RES_AK + 1)
+    .copyTo(sh.getRange(3, RES_AK, nData, RES_AN - RES_AK + 1),
+            SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+  // AT (total) — separado por causa das colunas manuais AO–AS no meio
+  sh.getRange(2, COL_TOTAL, 1, 1)
+    .copyTo(sh.getRange(3, COL_TOTAL, nData, 1),
+            SpreadsheetApp.CopyPasteType.PASTE_FORMULA, false);
+}
+
+// ── LIMPEZA: remove linhas que NÃO são do cadastro atual ─────────────────────
+// Apaga linhas de dados cujo colaborador não está em allColabs, linhas em
+// branco e ocorrências duplicadas do mesmo nome (mantém a primeira). Guarda:
+// se allColabs vier vazio, NÃO faz nada (evita apagar a aba inteira por engano).
+function _pruneColabs(sh, allColabs) {
+  if (!allColabs || !allColabs.length) return 0;
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return 0;
+
+  var valid = {};
+  for (var i = 0; i < allColabs.length; i++) {
+    var nm = _norm(allColabs[i].nome);
+    if (nm) valid[nm] = true;
+  }
+
+  var nomes = sh.getRange(2, COL_COLAB, lastRow - 1, 1).getValues();
+  var seen = {}, toDelete = [];
+  for (var r = 0; r < nomes.length; r++) {
+    var nn = _norm(nomes[r][0]);
+    if (!nn || !valid[nn] || seen[nn]) toDelete.push(r + 2); // linha real na planilha
+    else seen[nn] = true;
+  }
+  // Deleta de baixo para cima para não bagunçar os índices
+  for (var d = toDelete.length - 1; d >= 0; d--) sh.deleteRow(toDelete[d]);
+  return toDelete.length;
+}
+
+// Zera os dias (E–AI) de todas as linhas de dados — usado no modo REFAZER
+// para a aba refletir exatamente o que está no Firebase.
+function _clearDays(sh) {
+  var lastRow = sh.getLastRow();
+  if (lastRow < 2) return;
+  sh.getRange(2, DAY_START, lastRow - 1, DAY_END - DAY_START + 1).clearContent();
 }
 
 // ── CONSTRÓI ABA ─────────────────────────────────────────────────────────────
@@ -325,6 +447,36 @@ function _writeMatrix(sh, linhas) {
   return escritas;
 }
 
+// ── RENOMEAR TECNICOS (migracao de identidade) ───────────────────────────────
+// Percorre as abas mensais ("RELATORIO CHECKLIST ...") e troca o nome na coluna
+// A (Colaborador) pelo canonico quando _norm(celula) casa com um `from` do mapa.
+// So altera o nome — nao apaga linha nem toca nos dias. Idempotente.
+function _renameTechnicians(body) {
+  var pairs = body.pairs || [];
+  var m = {};
+  for (var i = 0; i < pairs.length; i++) m[_norm(pairs[i].from)] = String(pairs[i].to);
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheets = ss.getSheets();
+  var total = 0, tabs = [];
+  for (var s = 0; s < sheets.length; s++) {
+    var sh = sheets[s];
+    if (sh.getName().indexOf('RELATORIO CHECKLIST') !== 0) continue;
+    var lastRow = sh.getLastRow();
+    if (lastRow < 2) continue;
+    var rng = sh.getRange(2, COL_COLAB, lastRow - 1, 1);
+    var vals = rng.getValues();
+    var changed = 0;
+    for (var r = 0; r < vals.length; r++) {
+      var cur = vals[r][0];
+      if (cur === '' || cur == null) continue;
+      var nn = _norm(cur);
+      if (m[nn] != null && String(cur) !== m[nn]) { vals[r][0] = m[nn]; changed++; }
+    }
+    if (changed) { rng.setValues(vals); total += changed; tabs.push(sh.getName() + ':' + changed); }
+  }
+  return { ok: true, renamed: total, tabs: tabs };
+}
+
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function _norm(s) {
   s = String(s == null ? '' : s).toLowerCase();
@@ -337,4 +489,55 @@ function _norm(s) {
 function _json(o) {
   return ContentService.createTextOutput(JSON.stringify(o))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Acha a aba âncora "RELATORIO CHECKLIST de CALIBRAGEM" (ou null se não existir).
+function _acharCalibragem(ss) {
+  var sheets = ss.getSheets();
+  for (var i = 0; i < sheets.length; i++) {
+    var n = _norm(sheets[i].getName());
+    if (n.indexOf('relatorio checklist') === 0 && n.indexOf('calibragem') >= 0) return sheets[i];
+  }
+  return null;
+}
+
+// Move a aba `sh` para logo ABAIXO da calibragem (ou pro topo se não houver âncora).
+function _moverAbaixoDaCalibragem(ss, sh) {
+  var cal = _acharCalibragem(ss);
+  var pos = cal ? cal.getIndex() + 1 : 1;  // getIndex() é 1-based; +1 = logo abaixo
+  ss.setActiveSheet(sh);
+  ss.moveActiveSheet(pos);
+}
+
+// ── ORGANIZADOR (rodar UMA vez no editor: Run → ordenarRelatoriosMensais) ─────
+// Coloca as abas "RELATORIO CHECKLIST {Mes} {Ano}" em sequência LOGO ABAIXO da
+// aba "RELATORIO CHECKLIST de CALIBRAGEM", com o mês MAIS NOVO em primeiro.
+// Tudo que está ACIMA da calibragem permanece intocado.
+function ordenarRelatoriosMensais() {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheets = ss.getSheets();
+  var MESES_N = ['janeiro','fevereiro','marco','abril','maio','junho',
+                 'julho','agosto','setembro','outubro','novembro','dezembro'];
+  var achados = [];
+  for (var i = 0; i < sheets.length; i++) {
+    var nome = sheets[i].getName();
+    var n = _norm(nome); // minúsculo, sem acento
+    if (n.indexOf('relatorio checklist') !== 0) continue; // só relatórios mensais
+    if (n.indexOf('calibragem') >= 0) continue;           // a âncora não se move
+    var mesIdx = -1;
+    for (var m = 0; m < 12; m++) { if (n.indexOf(MESES_N[m]) >= 0) { mesIdx = m; break; } }
+    if (mesIdx < 0) continue;                       // sem mês reconhecível → ignora
+    var am = nome.match(/20\d\d/);
+    if (!am) continue;                              // sem ano (4 dígitos) → ignora
+    achados.push({ sheet: sheets[i], ano: parseInt(am[0], 10), mes: mesIdx });
+  }
+  // Ordena do MAIS NOVO para o mais antigo (ano desc, depois mês desc)
+  achados.sort(function(a, b) { return (b.ano - a.ano) || (b.mes - a.mes); });
+  // Move de trás pra frente para logo abaixo da calibragem — recalcula a
+  // posição a cada passo, ficando imune a deslocamentos.
+  for (var k = achados.length - 1; k >= 0; k--) {
+    _moverAbaixoDaCalibragem(ss, achados[k].sheet);
+  }
+  Logger.log('Relatorios reordenados abaixo da calibragem: ' + achados.length);
+  return achados.length;
 }
