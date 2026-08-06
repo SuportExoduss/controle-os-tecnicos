@@ -86,6 +86,19 @@ export const deleteReport = async (reportId) => {
   clearCache(COLLECTION_NAME);
 };
 
+export const renameReportsByTechnician = async (oldName, newName) => {
+  const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', oldName));
+  const snap = await getDocs(q);
+  await Promise.all(snap.docs.map(async (d) => {
+    const data = d.data();
+    const newId = reportIdFor(data.date, newName);
+    await setDoc(doc(db, COLLECTION_NAME, newId), { ...data, technicianName: newName });
+    if (d.id !== newId) await deleteDoc(doc(db, COLLECTION_NAME, d.id));
+  }));
+  clearCache(COLLECTION_NAME);
+  return snap.docs.map(d => ({ ...d.data(), technicianName: newName }));
+};
+
 export const deleteAllReportsByTechnician = async (technicianName) => {
   const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName));
   const snap = await getDocs(q);

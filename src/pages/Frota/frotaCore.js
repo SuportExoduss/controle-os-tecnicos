@@ -201,9 +201,23 @@ export const parseProlog = (text, teamsIn) => {
     const time = dm[4].padStart(2, '0') + ':' + dm[5];
     const nome = (r[ci.nome] || '').trim(); if (!nome) return;
     const modelo = norm(r[ci.modelo] || ''); const tipo = norm(r[ci.tipo] || '');
+    // LISTA BRANCA de modelos conhecidos do Prolog (Padrão/diário, Ocorrência,
+    // Semanal). Qualquer outro modelo — VISTORIA TÉCNICA ou qualquer novo que o
+    // Prolog venha a criar — é IGNORADO. Antes o parser tratava "tudo que não
+    // era ocorrência/semanal" como diário, então um modelo novo criava técnicos
+    // fantasmas (o campo "Colaborador" da vistoria é o CLIENTE, não um técnico).
+    const isOcorrencia = modelo.indexOf('ocorrencia') >= 0;
+    const isSemanal    = modelo.indexOf('semanal')    >= 0;
+    const isDiario     = modelo.indexOf('padrao')     >= 0;
+    if (!isOcorrencia && !isSemanal && !isDiario) return; // modelo desconhecido → ignora
     const plate = (r[ci.placa] || '').trim().replace(/[-\s]/g, '');
     let fm = find(nome), name;
-    if (fm) { name = fm.m.name; } else {
+    if (fm) {
+      name = fm.m.name;
+    } else if (isDiario) {
+      // Só o checklist DIÁRIO pode cadastrar um técnico novo — é o único modelo
+      // cujo "Colaborador" é sempre um técnico da frota. Isso impede que modelos
+      // estranhos criem fantasmas mesmo que passem pela lista branca no futuro.
       const key = groupOf(r[ci.equipe], r[ci.cargo]); name = nome;
       const t = teams.find((x) => x.key === key) || teams[0];
       if (!t.members.find((x) => norm(x.name) === norm(nome))) {
@@ -212,13 +226,15 @@ export const parseProlog = (text, teamsIn) => {
         idxM.push({ m: newMember, t, n: norm(nome) });
         novos++;
       }
+    } else {
+      return; // ocorrência/semanal de nome não reconhecido → ignora a linha
     }
     const bkey = anoRow + '-' + String(mesIdx + 1).padStart(2, '0');
     const b = buckets[bkey] = buckets[bkey] || { ano: anoRow, mesIdx, daily: {}, cal: {}, occ: [], minDaily: 99, maxDaily: 0, minAny: 99, maxAny: 0, count: 0, people: new Set() };
     b.count++; totalCount++; b.people.add(name); allPeople.add(name);
     b.minAny = Math.min(b.minAny, day); b.maxAny = Math.max(b.maxAny, day);
-    if (modelo.indexOf('ocorrencia') >= 0) { b.occ.push({ name, plate, day, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
-    if (modelo.indexOf('semanal') >= 0) { const wd = new Date(anoRow, mesIdx, day).getDay(); const prev = b.cal[name]; if (!prev || day < prev.day) b.cal[name] = { day, st: wd === 1 ? 'feito' : 'atrasado' }; return; }
+    if (isOcorrencia) { b.occ.push({ name, plate, day, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
+    if (isSemanal) { const wd = new Date(anoRow, mesIdx, day).getDay(); const prev = b.cal[name]; if (!prev || day < prev.day) b.cal[name] = { day, st: wd === 1 ? 'feito' : 'atrasado' }; return; }
     // Checklist DIÁRIO — só ele define o período de "não fez"
     b.minDaily = Math.min(b.minDaily, day); b.maxDaily = Math.max(b.maxDaily, day);
     if (!b.daily[name]) b.daily[name] = {}; if (!b.daily[name][day]) b.daily[name][day] = []; b.daily[name][day].push({ time, plate, tipo });
@@ -235,9 +251,11 @@ export const parseProlog = (text, teamsIn) => {
         for (let d = 1; d <= 31; d++) {
           const dt = new Date(b.ano, b.mesIdx, d);
           if (dt.getMonth() !== b.mesIdx) { out[d] = null; continue; }
-          if (!hasDaily || dt.getDay() === 0 || d < b.minDaily || d > b.maxDaily) { out[d] = null; continue; }
+          // Domingo: só a equipe de Redes trabalha — registra quem FEZ checklist;
+          // quem não fez fica null (não "naofez") e o popup pós-import define folga/ausente.
+          if (!hasDaily || d < b.minDaily || d > b.maxDaily) { out[d] = null; continue; }
           const arr = byDay[d];
-          if (!arr || !arr.length) { out[d] = { st: 'naofez' }; continue; }
+          if (!arr || !arr.length) { out[d] = dt.getDay() === 0 ? null : { st: 'naofez' }; continue; }
           const sortedAll = arr.slice().sort((p, q) => (p.time < q.time ? -1 : 1));
           const sd = sortedAll.filter((x) => x.tipo === 'saida');
           const base = (sd.length ? sd : sortedAll)[0];

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Upload, Users, History, FileInput, CloudUpload,
   CheckCircle, AlertTriangle, Calendar, BarChart2, PenLine, Plus,
-  X, Road, Save, UserX, UserCheck, CalendarCheck,
+  X, Road, Save, UserX, UserCheck, CalendarCheck, Trash2,
 } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
@@ -36,12 +36,14 @@ export const FrotaAdmin = () => {
 
   // Feedback honesto: aguarda a resposta do Web App e reporta falha em vez de
   // afirmar sucesso sem checar. O payload enviado é exatamente o mesmo de antes.
-  const sendSheets = async (tms, data, ano, mesIndex) => {
+  const sendSheets = async (tms, data, ano, mesIndex, opts = {}) => {
     const url = SHEETS_URL || localStorage.getItem('frota_sheets_url') || '';
     if (!url) return '(Sheets: configure VITE_FROTA_SHEETS_URL para ativar)';
     try {
+      const payload = buildSheetsPayload(tms, data, ano, mesIndex, SHEETS_SECRET || localStorage.getItem('frota_sheets_secret') || '');
+      if (opts.prune) payload.prune = true; // modo REFAZER: limpa linhas fora do cadastro
       const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(buildSheetsPayload(tms, data, ano, mesIndex, SHEETS_SECRET || localStorage.getItem('frota_sheets_secret') || '')) });
+        body: JSON.stringify(payload) });
       return res.ok ? 'Enviado ao Google Sheets.' : `Planilha respondeu HTTP ${res.status} — confira a implantação do Apps Script.`;
     } catch { return 'Falha de rede ao enviar ao Google Sheets (Firebase salvo normalmente).'; }
   };
@@ -114,24 +116,32 @@ export const FrotaAdmin = () => {
       setMsg(txt); toast.success('Importado e salvo no Firebase!');
       setHist((h) => [{ t: 'Importado do Prolog', by: by + ' (admin)', dt: new Date().toLocaleString('pt-BR'), meta: `${r.fname || 'arquivo'} · ${r.count} registros`, tipo: 'import' }, ...h]);
 
-      // ── FLUXO SÁBADO: detecta se hoje é sábado → abre tela de ausentes ──
-      const todayDate = new Date();
-      if (todayDate.getDay() === 6) {
-        const todayDay = todayDate.getDate();
-        const todayMonth = todayDate.getMonth();
-        const todayYear = todayDate.getFullYear();
-        // Usa o payload do MÊS de hoje (o arquivo pode conter mais de um mês)
-        const moHoje = r.months.find((x) => x.ano === todayYear && x.mesIndex === todayMonth);
-        if (moHoje) {
-          // Quem fez checklist hoje (feito ou atrasado) → presente
+      // ── FLUXOS DE FIM DE SEMANA (fila de popups, um por dia detectado) ──
+      // Varre o período do arquivo procurando SÁBADOS e DOMINGOS com checklist
+      // feito — funciona mesmo quando o relatório sobe dias depois (ex.: sábado
+      // importado na segunda junto com os dias úteis).
+      //   • Sábado : popup com TODAS as equipes (todo mundo trabalha).
+      //   • Domingo: popup só com as equipes que trabalharam (na prática, Redes).
+      const flows = [];
+      for (const mo of r.months) {
+        for (let d = mo.period.d1; d <= mo.period.d2; d++) {
+          const dt = new Date(mo.ano, mo.mesIndex, d);
+          const dow = dt.getDay();
+          if ((dow !== 0 && dow !== 6) || dt.getMonth() !== mo.mesIndex) continue;
           const presents = new Set();
           r.teams.forEach((t) => t.members.forEach((m) => {
-            const entry = moHoje.data[m.name]?.[todayDay];
+            const entry = mo.data[m.name]?.[d];
             if (entry && (entry.st === 'feito' || entry.st === 'atrasado')) presents.add(m.name);
           }));
-          setSatFlow({ day: todayDay, month: todayMonth, year: todayYear, teams: r.teams, presents });
+          if (!presents.size) continue; // ninguém trabalhou nesse dia → nada a confirmar
+          const teamsForFlow = dow === 0
+            ? r.teams.filter((t) => t.members.some((m) => presents.has(m.name)))
+            : r.teams;
+          flows.push({ day: d, month: mo.mesIndex, year: mo.ano, teams: teamsForFlow, presents,
+                       weekendLabel: dow === 6 ? 'Sábado' : 'Domingo' });
         }
       }
+      if (flows.length) { setSatFlow(flows[0]); setFlowQueue(flows.slice(1)); }
     } catch (e) {
       done = true;
       setMsg('Erro ao salvar: ' + e.message); toast.error('Erro ao salvar: ' + e.message);
@@ -149,8 +159,26 @@ export const FrotaAdmin = () => {
     try { await saveFrotaCadastro(next); toast.success('Área atualizada'); } catch { toast.error('Erro ao salvar'); }
   };
 
+  // Remove um colaborador do cadastro (ex.: técnico fantasma de vistoria).
+  // Depois de remover, use "Refazer planilhas" para apagar a linha dele no Sheets.
+  const deleteMember = async (name) => {
+    if (!window.confirm(`Remover "${name}" do cadastro?\n\nEle some da dashboard e, ao "Refazer planilhas", a linha dele é apagada do Google Sheets.`)) return;
+    const next = teams.map((t) => ({ ...t, members: t.members.filter((m) => m.name !== name) }));
+    setTeams(next);
+    try { await saveFrotaCadastro(next); toast.success('Colaborador removido'); } catch { toast.error('Erro ao remover'); }
+  };
+
   const [showManual, setShowManual] = useState(false);
-  const [satFlow, setSatFlow] = useState(null); // fluxo de ausentes do sábado
+  const [satFlow, setSatFlow] = useState(null); // popup de folga/ausentes atual
+  // Fila de próximos popups (vários domingos no arquivo) — populada; consumo é
+  // feature incompleta (o `satFlow` atual mostra só o primeiro). Mantido o setter.
+  const [, setFlowQueue] = useState([]);
+  const advanceFlow = () => {
+    setFlowQueue((q) => {
+      if (q.length) { setSatFlow(q[0]); return q.slice(1); }
+      setSatFlow(null); return q;
+    });
+  };
   const card = { background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px' };
   const NAV = [['import', 'Importar / criar', FileInput], ['hist', 'Histórico', History], ['colab', 'Colaboradores', Users]];
 
@@ -206,7 +234,7 @@ export const FrotaAdmin = () => {
 
         {pane === 'colab' && (
           <div>
-            <div style={{ fontSize: '12px', color: S.muted2, marginBottom: '12px' }}>Troque a área de cada colaborador pelo seletor (salva no Firebase).</div>
+            <div style={{ fontSize: '12px', color: S.muted2, marginBottom: '12px' }}>Troque a área pelo seletor ou remova um colaborador pela lixeira (salva no Firebase). Remova técnicos fantasmas de vistoria aqui e depois use “Refazer planilhas”.</div>
             {teams.map((t) => (
               <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px' }}><div style={{ fontSize: '14px', fontWeight: 700 }}>{t.label}</div><span style={{ marginLeft: 'auto', fontSize: '10.5px', padding: '2px 9px', borderRadius: '999px', background: t.accent + '22', color: t.accent }}>{t.short}</span></div>
@@ -216,6 +244,10 @@ export const FrotaAdmin = () => {
                     <select value={t.key} onChange={(e) => moveMember(m.name, e.target.value)} style={{ marginLeft: 'auto', background: S.input, border: `1px solid ${S.border}`, color: S.text, borderRadius: '8px', padding: '6px 9px', fontSize: '12px', colorScheme: mode }}>
                       {teams.map((t2) => <option key={t2.key} value={t2.key}>{t2.short}</option>)}
                     </select>
+                    <button onClick={() => deleteMember(m.name)} title="Remover do cadastro"
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '32px', height: '32px', borderRadius: '8px', border: `1px solid #f8717140`, background: '#f8717112', color: '#f87171', cursor: 'pointer', flexShrink: 0 }}>
+                      <Trash2 size={15} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -298,11 +330,11 @@ export const FrotaAdmin = () => {
             <motion.div key="sat-modal" initial={{ opacity: 0, y: 32 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 32 }}
               style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 76, padding: '16px' }}>
               <SaturdayAbsenceFlow S={S} flow={satFlow} profile={profile}
-                onSkip={() => setSatFlow(null)}
+                onSkip={advanceFlow}
                 onSaved={(count) => {
                   toast.success(`${count} técnico${count !== 1 ? 's' : ''} marcado${count !== 1 ? 's' : ''} como ausente${count !== 1 ? 's' : ''}!`);
-                  setHist((h) => [{ t: 'Ausentes do sábado', by: profile?.nickname || 'admin', dt: new Date().toLocaleString('pt-BR'), meta: `${count} ausentes · dia ${satFlow.day}/${satFlow.month + 1}/${satFlow.year}`, tipo: 'sabado' }, ...h]);
-                  setSatFlow(null);
+                  setHist((h) => [{ t: `Ausentes do ${(satFlow.weekendLabel || 'sábado').toLowerCase()}`, by: profile?.nickname || 'admin', dt: new Date().toLocaleString('pt-BR'), meta: `${count} ausentes · dia ${satFlow.day}/${satFlow.month + 1}/${satFlow.year}`, tipo: 'sabado' }, ...h]);
+                  advanceFlow();
                 }} />
             </motion.div>
           </>
@@ -355,6 +387,7 @@ export const FrotaAdmin = () => {
 // ── FLUXO DE AUSENTES DO SÁBADO ─────────────────────────────────────────────
 function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
   const { day, month, year, teams, presents } = flow;
+  const wkLabel = flow.weekendLabel || 'Sábado';
 
   const [phase, setPhase] = useState('select'); // 'select' | 'confirm'
   const [saving, setSaving] = useState(false);
@@ -397,8 +430,8 @@ function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
             <CalendarCheck size={24} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '17px', color: '#fff' }}>Técnicos Ausentes — Sábado</div>
-            <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,.8)', marginTop: '2px' }}>{dateStr} · Confirme quem não compareceu hoje</div>
+            <div style={{ fontWeight: 800, fontSize: '17px', color: '#fff' }}>Técnicos Ausentes — {wkLabel}</div>
+            <div style={{ fontSize: '12.5px', color: 'rgba(255,255,255,.8)', marginTop: '2px' }}>{dateStr} · Confirme quem estava de folga e quem faltou</div>
           </div>
           <button onClick={onSkip} style={{ marginLeft: 'auto', background: 'rgba(255,255,255,.15)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '8px', padding: '7px', display: 'flex', alignItems: 'center' }}><X size={18} /></button>
         </div>
@@ -480,7 +513,7 @@ function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
           <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(255,255,255,.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><UserX size={22} color="#fff" /></div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '16px', color: '#fff' }}>Confirmar ausências</div>
-            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.8)' }}>Sábado, {dateStr}</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,.8)' }}>{wkLabel}, {dateStr}</div>
           </div>
         </div>
       </div>
@@ -490,7 +523,7 @@ function SaturdayAbsenceFlow({ S, flow, profile, onSaved, onSkip }) {
         <div style={{ display: 'flex', gap: '10px', padding: '11px 13px', background: '#fb923c12', border: '1px solid #fb923c35', borderRadius: '11px', marginBottom: '16px' }}>
           <AlertTriangle size={16} color="#fb923c" style={{ flexShrink: 0, marginTop: '1px' }} />
           <span style={{ fontSize: '12.5px', color: S.muted2 }}>
-            Os técnicos abaixo serão registrados como <b style={{ color: '#fb923c' }}>AUSENTE</b> no sábado {dateStr}, não como "Não fez".
+            Os técnicos abaixo serão registrados como <b style={{ color: '#fb923c' }}>AUSENTE</b> no {wkLabel.toLowerCase()} {dateStr}, não como "Não fez".
           </span>
         </div>
 

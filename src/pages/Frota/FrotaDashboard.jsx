@@ -382,7 +382,7 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, teams,
                   padding: '5px 2px', borderRadius: '7px', cursor: x ? 'pointer' : 'default',
                   background: isSel ? (col || S.border) + '30' : 'transparent',
                   border: `1px solid ${isSel ? (col || S.border) : 'transparent'}`,
-                  opacity: isSun ? 0.35 : 1,
+                  opacity: isSun && !x ? 0.35 : 1,
                   transition: 'background .12s',
                 }}
                 onMouseEnter={(e) => { if (x) e.currentTarget.style.background = (col || S.border) + '20'; }}
@@ -454,7 +454,7 @@ function MemberCalendarModal({ S, name, team, data, month, year, lastDay, teams,
                 </>
               ) : (
                 <div style={{ fontSize: '12.5px', color: S.muted2 }}>
-                  Dia {selDay} — {new Date(year, month, selDay).getDay() === 0 ? 'domingo (sem checklist)' : 'sem registro neste dia'}
+                  Dia {selDay} — {new Date(year, month, selDay).getDay() === 0 ? 'domingo — sem registro' : 'sem registro neste dia'}
                 </div>
               )}
             </motion.div>

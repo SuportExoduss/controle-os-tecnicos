@@ -1,5 +1,6 @@
 import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { formatName } from '../../utils/formatName';
 
 const COL = 'network_collaborators';
 
@@ -11,8 +12,9 @@ export const TECNICOS_DEFAULT = [
 export const getNetworkCollaborators = () =>
   getDocs(query(collection(db, COL), orderBy('name', 'asc')));
 
+// Nome próprio canônico (Title Case) — sem MAIÚSCULO (padronização de identidade)
 export const addNetworkCollaborator = (name) =>
-  addDoc(collection(db, COL), { name: name.trim().toUpperCase(), createdAt: new Date().toISOString() });
+  addDoc(collection(db, COL), { name: formatName(name), createdAt: new Date().toISOString() });
 
 export const deleteNetworkCollaborator = (id) =>
   deleteDoc(doc(db, COL, id));

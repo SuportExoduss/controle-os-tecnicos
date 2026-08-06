@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
 const COLLECTION = 'collaborators';
@@ -15,6 +15,9 @@ export const addCollaborator = (name) => {
     createdAt: new Date().toISOString(),
   });
 };
+
+export const updateCollaborator = (id, newName) =>
+  updateDoc(doc(db, COLLECTION, id), { name: newName.trim() });
 
 export const deleteCollaborator = (id) => {
   return deleteDoc(doc(db, COLLECTION, id));

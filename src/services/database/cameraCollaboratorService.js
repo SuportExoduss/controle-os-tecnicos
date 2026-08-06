@@ -1,5 +1,6 @@
 import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
+import { formatName } from '../../utils/formatName';
 
 // Colaboradores da equipe de câmeras (WIBICAM).
 const COLLECTION = 'camera_collaborators';
@@ -16,10 +17,10 @@ export const getCameraCollaborators = () => {
   return getDocs(q);
 };
 
-// Salva o nome exatamente como informado (sem forçar maiúsculas)
+// Nome próprio canônico (Title Case) — mesma regra das outras áreas
 export const addCameraCollaborator = (name) => {
   return addDoc(collection(db, COLLECTION), {
-    name: name.trim(),
+    name: formatName(name),
     createdAt: new Date().toISOString(),
   });
 };

@@ -6,6 +6,7 @@ const EXCEL_COLS = [
   { label: 'Nome_Tecnico',           key: 'technicianName',      isName: true },
   { label: 'Instalação Fibra',       key: 'INSTALAÇÃO FIBRA'      },
   { label: 'Manutenção Fibra',       key: 'MANUTENÇÃO FIBRA'      },
+  { label: 'Padronização Cabeamento/CTO', key: 'PADRONIZAÇÃO CABEAMENTO/CTO' },
   { label: 'Mudança de endereço',    key: 'MUDANÇA DE ENDEREÇO'   },
   { label: 'Mudança de ponto',       key: 'MUDANÇA DE PONTO'      },
   { label: 'Instalação Wi-biNET',    key: 'INSTALAÇÃO WI-BINET'   },

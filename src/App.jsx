@@ -5,18 +5,37 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
+// lazy() resiliente a deploy: quando o chunk pedido some (fizemos um deploy novo
+// e o navegador ainda tem o index.html antigo), o import() falha e a página
+// ficava PRETA. Aqui detectamos essa falha e recarregamos a página UMA vez para
+// pegar o index/chunks novos. sessionStorage evita loop de reload infinito.
+const lazyRetry = (factory) => lazy(() =>
+  factory().catch((err) => {
+    const msg = String(err && err.message || err);
+    const isChunkErr = /dynamically imported module|Importing a module script failed|Failed to fetch|ChunkLoadError|error loading/i.test(msg);
+    const KEY = 'chunk_reload_at';
+    const last = Number(sessionStorage.getItem(KEY) || 0);
+    if (isChunkErr && (!last || Date.now() - last > 15000)) {
+      sessionStorage.setItem(KEY, String(Date.now()));
+      window.location.reload();
+      return new Promise(() => {}); // segura o render até o reload assumir
+    }
+    throw err; // não é chunk velho (ou já recarregou há pouco) → deixa estourar
+  })
+);
+
 // Rotas carregadas sob demanda (code-splitting) — reduz o bundle inicial
-const Login            = lazy(() => import('./pages/Login/Login').then(m => ({ default: m.Login })));
-const Admin            = lazy(() => import('./pages/Admin/Admin').then(m => ({ default: m.Admin })));
-const Dashboard        = lazy(() => import('./pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
-const NetworkAdmin     = lazy(() => import('./pages/Redes/Admin/NetworkAdmin').then(m => ({ default: m.NetworkAdmin })));
-const NetworkDashboard = lazy(() => import('./pages/Redes/Dashboard/NetworkDashboard').then(m => ({ default: m.NetworkDashboard })));
-const CameraAdmin      = lazy(() => import('./pages/Cameras/Admin/CameraAdmin').then(m => ({ default: m.CameraAdmin })));
-const CameraDashboard  = lazy(() => import('./pages/Cameras/Dashboard/CameraDashboard').then(m => ({ default: m.CameraDashboard })));
-const FrotaDashboard   = lazy(() => import('./pages/Frota/FrotaDashboard').then(m => ({ default: m.FrotaDashboard })));
-const FrotaAdmin       = lazy(() => import('./pages/Frota/FrotaAdmin').then(m => ({ default: m.FrotaAdmin })));
-const Home             = lazy(() => import('./pages/Home/Home').then(m => ({ default: m.Home })));
-const NotFound         = lazy(() => import('./pages/NotFound/NotFound').then(m => ({ default: m.NotFound })));
+const Login            = lazyRetry(() => import('./pages/Login/Login').then(m => ({ default: m.Login })));
+const Admin            = lazyRetry(() => import('./pages/Admin/Admin').then(m => ({ default: m.Admin })));
+const Dashboard        = lazyRetry(() => import('./pages/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const NetworkAdmin     = lazyRetry(() => import('./pages/Redes/Admin/NetworkAdmin').then(m => ({ default: m.NetworkAdmin })));
+const NetworkDashboard = lazyRetry(() => import('./pages/Redes/Dashboard/NetworkDashboard').then(m => ({ default: m.NetworkDashboard })));
+const CameraAdmin      = lazyRetry(() => import('./pages/Cameras/Admin/CameraAdmin').then(m => ({ default: m.CameraAdmin })));
+const CameraDashboard  = lazyRetry(() => import('./pages/Cameras/Dashboard/CameraDashboard').then(m => ({ default: m.CameraDashboard })));
+const FrotaDashboard   = lazyRetry(() => import('./pages/Frota/FrotaDashboard').then(m => ({ default: m.FrotaDashboard })));
+const FrotaAdmin       = lazyRetry(() => import('./pages/Frota/FrotaAdmin').then(m => ({ default: m.FrotaAdmin })));
+const Home             = lazyRetry(() => import('./pages/Home/Home').then(m => ({ default: m.Home })));
+const NotFound         = lazyRetry(() => import('./pages/NotFound/NotFound').then(m => ({ default: m.NotFound })));
 
 const PageFallback = () => (
   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#080b14' }}>

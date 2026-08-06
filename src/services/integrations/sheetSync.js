@@ -44,3 +44,7 @@ export const zeroTechnicianInSheet = (technicianName) =>
 // Excluir = REMOVE a linha (técnico + dia) da planilha de verdade (não zera).
 export const deleteRowInSheet = (date, technicianName) =>
   post({ action: 'deleteRow', date, technician: technicianName });
+
+// Remove TODAS as linhas de um técnico (usado ao renomear — limpa as linhas do nome antigo).
+export const deleteTechnicianFromSheet = (technicianName) =>
+  post({ action: 'deleteTechnician', technician: technicianName });

@@ -2,8 +2,8 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../services/auth/authService';
-import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw } from '../../services/database/reportService';
-import { getCollaborators, addCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
+import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician } from '../../services/database/reportService';
+import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
@@ -11,10 +11,11 @@ import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import { getCurrentTime } from '../../utils/formatTime';
 import { chipStyle } from '../../utils/chipStyle';
-import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Edit2, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
-import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, zeroTechnicianInSheet } from '../../services/integrations/sheetSync';
+import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, deleteTechnicianFromSheet } from '../../services/integrations/sheetSync';
+import { formatName } from '../../utils/formatName';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -24,15 +25,16 @@ const localDate = (d = new Date()) => {
 };
 
 const SERVICE_TYPES = [
-  'INSTALAÇÃO FIBRA','MANUTENÇÃO FIBRA','MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO',
+  'INSTALAÇÃO FIBRA','MANUTENÇÃO FIBRA','PADRONIZAÇÃO CABEAMENTO/CTO','MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO',
   'INSTALAÇÃO WI-BINET','REPARO WI-BINET','INSTALAÇÃO TV','REPARO TV',
   'OS AMPLIAÇÃO','VISTORIA','FONTE QUEIMADA','TROCA DE EQUIPAMENTO',
   'SINAL ALTO','REINCIDÊNCIA','IMPRODUTIVA',
 ];
 const SVC_STYLE = {
   'INSTALAÇÃO FIBRA':     { bg:'#0f1d2d', color:'#60a5fa', border:'#1e3a5f' },
-  'MANUTENÇÃO FIBRA':     { bg:'#0f2320', color:'#2dd4bf', border:'#134e4a' },
-  'MUDANÇA DE ENDEREÇO':  { bg:'#1a2010', color:'#86efac', border:'#166534' },
+  'MANUTENÇÃO FIBRA':              { bg:'#0f2320', color:'#2dd4bf', border:'#134e4a' },
+  'PADRONIZAÇÃO CABEAMENTO/CTO':   { bg:'#1f0f1a', color:'#f472b6', border:'#831843' },
+  'MUDANÇA DE ENDEREÇO':           { bg:'#1a2010', color:'#86efac', border:'#166534' },
   'MUDANÇA DE PONTO':     { bg:'#0f1f2a', color:'#7dd3fc', border:'#0c4a6e' },
   'INSTALAÇÃO WI-BINET':  { bg:'#12103a', color:'#818cf8', border:'#312e81' },
   'REPARO WI-BINET':      { bg:'#101828', color:'#67e8f9', border:'#164e63' },
@@ -74,6 +76,11 @@ export const Admin = () => {
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [newCollabName, setNewCollabName] = useState('');
   const [savingCollab, setSavingCollab] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(false);
+  const [showEditCollab, setShowEditCollab] = useState(false);
+  const [editCollab, setEditCollab] = useState(null);
+  const [editCollabName, setEditCollabName] = useState('');
+  const [savingEditCollab, setSavingEditCollab] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   const [tempServices, setTempServices] = useState([]);
   const [showWizard, setShowWizard] = useState(false);
@@ -143,7 +150,6 @@ export const Admin = () => {
         deleteCollaborator(id),
         deleteAllReportsByTechnician(name),
       ]);
-      zeroTechnicianInSheet(name); // zera linhas na planilha (best-effort)
       if (formData.technicianName === name) setFormData(p => ({ ...p, technicianName: '' }));
       await fetchCollaborators();
       toast.success('Colaborador e relatórios removidos');
@@ -151,15 +157,48 @@ export const Admin = () => {
   };
 
   const handleSaveCollab = async () => {
-    if (!newCollabName.trim()) return;
+    const name = formatName(newCollabName);
+    if (!name) return;
     setSavingCollab(true);
     try {
-      await addCollaborator(newCollabName);
+      await addCollaborator(name);
       toast.success('Colaborador adicionado!');
       setNewCollabName(''); setShowAddCollab(false);
       await fetchCollaborators();
     } catch { toast.error('Erro ao adicionar colaborador'); }
     finally { setSavingCollab(false); }
+  };
+
+  const handleEditCollab = async () => {
+    const newName = formatName(editCollabName);
+    if (!newName) return;
+    const oldName = editCollab.name;
+    if (newName === oldName) { setShowEditCollab(false); return; }
+    setSavingEditCollab(true);
+    try {
+      await updateCollaborator(editCollab.id, newName);
+      const renamedReports = await renameReportsByTechnician(oldName, newName);
+      if (formData.technicianName === oldName) setFormData(p => ({ ...p, technicianName: newName }));
+      // Sync sheets: apaga linhas do nome antigo e recria com nome novo (best-effort)
+      deleteTechnicianFromSheet(oldName);
+      if (renamedReports.length > 0) syncReportsToSheet(renamedReports);
+      await fetchCollaborators();
+      setShowEditCollab(false); setEditCollab(null); setEditCollabName('');
+      toast.success(`Renomeado para "${newName}"`);
+    } catch { toast.error('Erro ao renomear colaborador'); }
+    finally { setSavingEditCollab(false); }
+  };
+
+  const nextTechAfter = (name) => {
+    const idx = collaborators.findIndex(c => c.name === name);
+    if (idx >= 0 && idx < collaborators.length - 1) return collaborators[idx + 1].name;
+    return name;
+  };
+
+  const resetFormAfterSubmit = (submittedName, savedDate) => {
+    const next = autoScroll ? nextTechAfter(submittedName) : submittedName;
+    setFormData({ technicianName: next, totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
+    setTempServices([]); setWizardStep(0); setShowConfirmation(false);
   };
 
   const handleLogout = async () => { try { await logoutUser(); navigate('/fibra/login'); } catch { toast.error('Erro ao sair'); } };
@@ -210,14 +249,12 @@ export const Admin = () => {
         serviceTypes: tempServices,
       });
       toast.success('Relatório salvo com sucesso!');
-      setSavedName(formData.technicianName);
+      const submittedName = formData.technicianName;
+      const savedDate = formData.date;
+      setSavedName(submittedName);
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
-      const savedDate = formData.date;
-      // Mantém a data escolhida para lançar vários relatórios do mesmo dia em sequência.
-      // Só volta para "hoje" quando o usuário trocar manualmente ou recarregar (F5).
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
-      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+      resetFormAfterSubmit(submittedName, savedDate);
       fetchStatus(savedDate);
     } catch (err) { toast.error('Erro ao salvar relatório'); console.error(err); }
     finally { setLoading(false); }
@@ -326,13 +363,13 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, observations: 'Folga', serviceTypes: [],
       });
-      toast.success(`Folga registrada para ${formData.technicianName}`);
-      setSavedName(formData.technicianName); setShowSaved(true);
+      const submittedNameF = formData.technicianName;
+      const savedDateF = formData.date;
+      toast.success(`Folga registrada para ${submittedNameF}`);
+      setSavedName(submittedNameF); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
-      const savedDate = formData.date;
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
-      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
-      fetchStatus(savedDate);
+      resetFormAfterSubmit(submittedNameF, savedDateF);
+      fetchStatus(savedDateF);
     } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
     finally { setLoading(false); }
   };
@@ -358,14 +395,47 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, observations: 'Atestado', serviceTypes: [],
       });
-      toast.success(`Atestado registrado para ${formData.technicianName}`);
-      setSavedName(formData.technicianName); setShowSaved(true);
+      const submittedNameA = formData.technicianName;
+      const savedDateA = formData.date;
+      toast.success(`Atestado registrado para ${submittedNameA}`);
+      setSavedName(submittedNameA); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
-      const savedDate = formData.date;
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: savedDate });
-      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
-      fetchStatus(savedDate);
+      resetFormAfterSubmit(submittedNameA, savedDateA);
+      fetchStatus(savedDateA);
     } catch (err) { toast.error('Erro ao registrar atestado'); console.error(err); }
+    finally { setLoading(false); }
+  };
+
+  const handleFerias = async () => {
+    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar férias'); return; }
+    setLoading(true);
+    try {
+      const existing = await getReportsByTechnician(formData.technicianName, formData.date);
+      if (existing.docs.length > 0) {
+        const ex = existing.docs[0].data();
+        const hasData = (ex.totalOrders || 0) > 0 || (ex.serviceTypes || []).length > 0;
+        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar férias vai zerar. Continuar?`)) { setLoading(false); return; }
+      }
+      await upsertDailyReport({
+        technicianName: formData.technicianName, totalOrders: 0,
+        rescheduled: false, rescheduledCount: 0,
+        observations: 'Férias', serviceTypes: [],
+        date: formData.date, submissionTime: getCurrentTime(),
+        createdByNickname: profile?.nickname || 'Desconhecido',
+        createdByEmail: user?.email || '', createdByUid: user?.uid || '',
+      });
+      syncReportToSheet({
+        technicianName: formData.technicianName, date: formData.date,
+        rescheduledCount: 0, observations: 'Férias', serviceTypes: [],
+      });
+      const submittedNameFe = formData.technicianName;
+      const savedDateFe = formData.date;
+      toast.success(`Férias registradas para ${submittedNameFe}`);
+      setSavedName(submittedNameFe); setShowSaved(true);
+      setTimeout(() => setShowSaved(false), 2200);
+      resetFormAfterSubmit(submittedNameFe, savedDateFe);
+      fetchStatus(savedDateFe);
+    } catch (err) { toast.error('Erro ao registrar férias'); console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -445,7 +515,7 @@ const handleFileUpload = async (e) => {
                       <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
                     </div>
                   </div>
-                  {/* Atalhos Folga + Atestado */}
+                  {/* Atalhos Folga + Atestado + Férias */}
                   <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                     <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
                       title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
@@ -467,6 +537,16 @@ const handleFileUpload = async (e) => {
                         opacity: formData.technicianName ? 1 : 0.6 }}>
                       <CalendarDays size={14}/>Atestado
                     </button>
+                    <button type="button" onClick={handleFerias} disabled={!formData.technicianName || loading}
+                      title="Marcar o técnico selecionado como férias (zerado + observação Férias)"
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                        border: `1px solid ${formData.technicianName ? '#22c55e' : S.border}`,
+                        background: formData.technicianName ? 'rgba(34,197,94,0.15)' : 'transparent',
+                        color: formData.technicianName ? '#22c55e' : S.muted,
+                        boxShadow: formData.technicianName ? '0 0 14px rgba(34,197,94,0.35)' : 'none',
+                        opacity: formData.technicianName ? 1 : 0.6 }}>
+                      <CalendarDays size={14}/>Férias
+                    </button>
                   </div>
                 </div>
               </div>
@@ -476,18 +556,27 @@ const handleFileUpload = async (e) => {
                 {/* Técnico */}
                 <div>
                   <FieldLabel S={S}>Técnico <span style={{ color: S.red }}>*</span></FieldLabel>
-                  {/* Legenda de status */}
-                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                    {[
-                      { c: '#22c55e', t: 'Feito' },
-                      { c: '#3b82f6', t: 'Zerado c/ obs' },
-                      { c: '#f59e0b', t: 'Pendente hoje' },
-                      { c: '#ef4444', t: 'Faltou (dia passado)' },
-                    ].map(({ c, t }) => (
-                      <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: S.muted2 }}>
-                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, boxShadow: `0 0 5px ${c}` }} />{t}
-                      </span>
-                    ))}
+                  {/* Legenda de status + checkbox auto avançar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                      {[
+                        { c: '#22c55e', t: 'Feito' },
+                        { c: '#3b82f6', t: 'Zerado c/ obs' },
+                        { c: '#f59e0b', t: 'Pendente hoje' },
+                        { c: '#ef4444', t: 'Faltou (dia passado)' },
+                      ].map(({ c, t }) => (
+                        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: S.muted2 }}>
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, boxShadow: `0 0 5px ${c}` }} />{t}
+                        </span>
+                      ))}
+                    </div>
+                    <div onClick={() => setAutoScroll(v => !v)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none', flexShrink: 0 }}>
+                      <div style={{ width: '15px', height: '15px', borderRadius: '4px', border: `2px solid ${autoScroll ? S.blue : S.muted}`, background: autoScroll ? S.blue : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}>
+                        {autoScroll && <Check size={10} color="white" />}
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: autoScroll ? S.blue : S.muted }}>Auto avançar</span>
+                    </div>
                   </div>
                   <div style={{ position: 'relative' }} ref={dropdownRef}>
                     <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -704,12 +793,20 @@ const handleFileUpload = async (e) => {
                         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
                       </div>
-                      <button onClick={() => handleDeleteCollab(c.id, c.name)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = '#2d0f0f'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
-                        <Trash2 size={13} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => { setEditCollab(c); setEditCollabName(c.name); setShowEditCollab(true); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = S.blue; e.currentTarget.style.background = '#0d1d3a'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                          <Edit2 size={13} />
+                        </button>
+                        <button onClick={() => handleDeleteCollab(c.id, c.name)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = '#2d0f0f'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -727,7 +824,7 @@ const handleFileUpload = async (e) => {
       </main>
 
       {/* OVERLAY helper */}
-      {(showAddCollab || showWizard || showConfirmation) && (
+      {(showAddCollab || showEditCollab || showWizard || showConfirmation) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
 
@@ -760,6 +857,42 @@ const handleFileUpload = async (e) => {
                 <button onClick={handleSaveCollab} disabled={savingCollab || !newCollabName.trim()}
                   style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: savingCollab || !newCollabName.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: savingCollab || !newCollabName.trim() ? 0.5 : 1 }}>
                   {savingCollab ? <Spinner /> : <><Plus size={15}/>Adicionar</>}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL — EDITAR COLABORADOR */}
+      <AnimatePresence>
+        {showEditCollab && (
+          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
+            style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
+            <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Edit2 size={20} color={S.blue} />
+                  </div>
+                  <div>
+                    <div style={{ color: S.text, fontWeight: 800, fontSize: '16px' }}>Editar Colaborador</div>
+                    <div style={{ color: S.muted, fontSize: '12px', marginTop: '2px' }}>Renomeia o técnico e todos os relatórios</div>
+                  </div>
+                </div>
+                <button onClick={() => { setShowEditCollab(false); setEditCollab(null); setEditCollabName(''); }} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer', padding: '4px' }}>
+                  <X size={18} />
+                </button>
+              </div>
+              <DarkInput S={S} type="text" value={editCollabName} onChange={e => setEditCollabName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEditCollab()} placeholder="Novo nome" autoFocus style={{ marginBottom: '16px' }} />
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button onClick={() => { setShowEditCollab(false); setEditCollab(null); setEditCollabName(''); }}
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button onClick={handleEditCollab} disabled={savingEditCollab || !editCollabName.trim()}
+                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: savingEditCollab || !editCollabName.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: savingEditCollab || !editCollabName.trim() ? 0.5 : 1 }}>
+                  {savingEditCollab ? <Spinner /> : <><Edit2 size={15}/>Salvar</>}
                 </button>
               </div>
             </div>

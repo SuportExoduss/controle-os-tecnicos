@@ -10,6 +10,7 @@ import {
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
+import { formatName } from '../../../utils/formatName';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { logoutUser } from '../../../services/auth/authService';
 import {
@@ -366,6 +367,7 @@ export const NetworkAdmin = () => {
           time: `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`,
         };
       };
+      // transmissor/assunto são códigos (OLT, tipo) → MAIÚSCULO; tecnico é nome próprio.
       const normalize = (s) => String(s || '').trim().toUpperCase();
       const valid = rows.filter(r => r['ID OS'] && r['TECNICO RESPONSAVEL']);
       if (valid.length === 0) { toast.error('Nenhum registro válido encontrado'); setImporting(false); return; }
@@ -387,7 +389,7 @@ export const NetworkAdmin = () => {
         const payload = {
           data: fechamento.date || abertura.date || today,
           idOs: String(r['ID OS']).trim(),
-          tecnico: normalize(r['TECNICO RESPONSAVEL']),
+          tecnico: formatName(r['TECNICO RESPONSAVEL']),
           transmissor: normalize(r['TRANSMISSOR']),
           assunto: normalize(r['ASSUNTO']),
           dataAbertura: abertura.date, horaAbertura: abertura.time || null,

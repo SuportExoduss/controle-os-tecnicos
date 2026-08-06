@@ -38,6 +38,7 @@ const FIELD_ALIASES = {
 const TYPE_ALIASES = {
   'INSTALAÇÃO FIBRA':     ['instalacao fibra'],
   'MANUTENÇÃO FIBRA':     ['manutencao fibra'],
+  'PADRONIZAÇÃO CABEAMENTO/CTO': ['padronizacao cabeamento/cto', 'padronizacao cabeamento', 'padronizacao cto'],
   'MUDANÇA DE ENDEREÇO':  ['mudanca de endereco'],
   'MUDANÇA DE PONTO':     ['mudanca de ponto'],
   'INSTALAÇÃO WI-BINET':  ['instalacao wi-binet', 'instalacao wibinet', 'wi-binet'],
