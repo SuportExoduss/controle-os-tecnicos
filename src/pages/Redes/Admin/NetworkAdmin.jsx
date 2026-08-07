@@ -26,7 +26,7 @@ import {
   countNetworkOrdersInSheet, renameNetworkTechnicianInSheet,
 } from '../../../services/integrations/networkSheetSync';
 import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
-import { registerNewTechnician } from '../../../services/database/technicianService';
+import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -353,9 +353,11 @@ export const NetworkAdmin = () => {
 
   const handleDeleteCollab = async (id) => {
     try {
+      const nome = deleteCollabConfirm?.name;
       await deleteNetworkCollaborator(id);
-      if (form.tecnico === deleteCollabConfirm?.name) setForm(p => ({ ...p, tecnico: '' }));
-      toast.success('Técnico removido');
+      if (nome) await deactivateTechnician(nome); // identidade inativa; ordens preservadas
+      if (form.tecnico === nome) setForm(p => ({ ...p, tecnico: '' }));
+      toast.success('Técnico removido (histórico mantido)');
       setDeleteCollabConfirm(null);
       await fetchCollaborators();
     } catch { toast.error('Erro ao remover técnico'); }

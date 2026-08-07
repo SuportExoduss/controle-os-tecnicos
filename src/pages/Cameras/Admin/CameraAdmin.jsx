@@ -2,13 +2,13 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../../services/auth/authService';
-import { getCameraReportsByTechnician, deleteAllCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician } from '../../../services/database/cameraReportService';
+import { getCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician } from '../../../services/database/cameraReportService';
 import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators, updateCameraCollaborator } from '../../../services/database/cameraCollaboratorService';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
-import { registerNewTechnician } from '../../../services/database/technicianService';
+import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../../context/AuthContext';
 import { getCurrentTime } from '../../../utils/formatTime';
@@ -16,7 +16,7 @@ import { chipStyle } from '../../../utils/chipStyle';
 import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Edit2, Upload, FileSpreadsheet, AlertCircle, Gauge, MapPin } from 'lucide-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
-import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, zeroCameraTechnicianInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
+import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -130,16 +130,13 @@ export const CameraAdmin = () => {
   useEffect(() => { if (formData.date) fetchStatus(formData.date); }, [formData.date]);
 
   const handleDeleteCollab = async (id, name) => {
-    if (!window.confirm(`Remover "${name}" e todos os relatórios dele?`)) return;
+    if (!window.confirm(`Remover "${name}" da lista?\n\nO histórico de relatórios dele será MANTIDO — ele apenas sai do lançamento diário.`)) return;
     try {
-      await Promise.all([
-        deleteCameraCollaborator(id),
-        deleteAllCameraReportsByTechnician(name),
-      ]);
-      zeroCameraTechnicianInSheet(name); // zera linhas na planilha (best-effort)
+      await deleteCameraCollaborator(id);
+      await deactivateTechnician(name); // identidade inativa; relatórios preservados
       if (formData.technicianName === name) setFormData(p => ({ ...p, technicianName: '' }));
       await fetchCollaborators();
-      toast.success('Colaborador e relatórios removidos');
+      toast.success('Colaborador removido (histórico mantido)');
     } catch { toast.error('Erro ao remover'); }
   };
 

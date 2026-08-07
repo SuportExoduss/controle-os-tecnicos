@@ -57,6 +57,16 @@ export const getTechnicianSectors = async (fullName) => {
   return out;
 };
 
+// "Remover da lista" = marca a identidade como INATIVA (soft-delete). O histórico
+// de relatórios permanece; o técnico só some do dropdown de lançamento. Se for
+// re-adicionado depois, registerNewTechnician volta active:true.
+export const deactivateTechnician = async (fullName) => {
+  const name = formatName(fullName);
+  const snap = await getDocs(query(collection(db, 'technicians'), where('fullName', '==', name)));
+  await Promise.all(snap.docs.map((d) => updateDoc(doc(db, 'technicians', d.id), { active: false })));
+  return { ok: true, count: snap.size };
+};
+
 // Renomeia o técnico no CADASTRO ÚNICO e nas estruturas da Frota (fleet_config
 // e fleet_reports), mantendo o techId. Chamado junto da renomeação específica
 // de cada área (que cuida do doc de colaborador, relatórios e planilha), para

@@ -2,7 +2,7 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../services/auth/authService';
-import { getReportsByTechnician, deleteAllReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician } from '../../services/database/reportService';
+import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician } from '../../services/database/reportService';
 import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
@@ -17,7 +17,7 @@ import { parseExcelFile } from '../../services/reports/importService';
 import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, deleteTechnicianFromSheet } from '../../services/integrations/sheetSync';
 import { formatName } from '../../utils/formatName';
 import { CollaboratorEditModal } from '../../components/modals/CollaboratorEditModal';
-import { registerNewTechnician } from '../../services/database/technicianService';
+import { registerNewTechnician, deactivateTechnician } from '../../services/database/technicianService';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -144,15 +144,13 @@ export const Admin = () => {
   useEffect(() => { if (formData.date) fetchStatus(formData.date); }, [formData.date]);
 
   const handleDeleteCollab = async (id, name) => {
-    if (!window.confirm(`Remover "${name}" e todos os relatórios dele?`)) return;
+    if (!window.confirm(`Remover "${name}" da lista?\n\nO histórico de relatórios dele será MANTIDO — ele apenas sai do lançamento diário.`)) return;
     try {
-      await Promise.all([
-        deleteCollaborator(id),
-        deleteAllReportsByTechnician(name),
-      ]);
+      await deleteCollaborator(id);
+      await deactivateTechnician(name); // identidade inativa; relatórios preservados
       if (formData.technicianName === name) setFormData(p => ({ ...p, technicianName: '' }));
       await fetchCollaborators();
-      toast.success('Colaborador e relatórios removidos');
+      toast.success('Colaborador removido (histórico mantido)');
     } catch { toast.error('Erro ao remover'); }
   };
 
