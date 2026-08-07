@@ -8,6 +8,7 @@ import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
+import { registerNewTechnician } from '../../../services/database/technicianService';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../../context/AuthContext';
 import { getCurrentTime } from '../../../utils/formatTime';
@@ -155,7 +156,9 @@ export const CameraAdmin = () => {
     if (!newCollabName.trim()) return;
     setSavingCollab(true);
     try {
-      await addCameraCollaborator(newCollabName);
+      const name = newCollabName.trim();
+      await addCameraCollaborator(name);
+      await registerNewTechnician({ fullName: name, sector: 'cameras' }); // cria a identidade única
       toast.success('Colaborador adicionado!');
       setNewCollabName(''); setShowAddCollab(false);
       await fetchCollaborators();

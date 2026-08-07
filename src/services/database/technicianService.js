@@ -16,6 +16,36 @@ export const SECTOR_LABEL = { fibra: 'Fibra', redes: 'Redes', cameras: 'Câmeras
 export const SECTOR_COL = { fibra: 'collaborators', redes: 'network_collaborators', cameras: 'camera_collaborators' };
 const REPORT_SECTORS = ['fibra', 'redes', 'cameras'];
 
+// id estável e sem acento a partir do nome (mesmo padrão do cadastro criado na migração)
+const slugify = (s) => formatName(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+// Lê todo o cadastro (usado pelo import do Prolog para achar o dono do nome).
+export const getAllTechnicians = async () =>
+  (await getDocs(collection(db, 'technicians'))).docs.map((d) => ({ id: d.id, ...d.data() }));
+
+// Cria a identidade única de um técnico ao ADICIONAR num setor. Idempotente:
+// se já existir (mesmo id/nome), só garante o setor na lista. Nome canônico.
+export const registerNewTechnician = async ({ fullName, sector }) => {
+  const name = formatName(fullName);
+  if (!name) return { ok: false };
+  const id = slugify(name);
+  const ref = doc(db, 'technicians', id);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = snap.data();
+    const sectors = Array.from(new Set([...(data.sectors || []), sector]));
+    const aliases = Array.from(new Set([...(data.aliases || []), name]));
+    await updateDoc(ref, { sectors, aliases, active: true });
+    return { ok: true, id, created: false };
+  }
+  await setDoc(ref, {
+    fullName: name, aliases: [name], sectors: [sector], frotaGroup: sector,
+    plate: '', active: true, createdAt: new Date().toISOString(),
+  });
+  return { ok: true, id, created: true };
+};
+
 // Descobre em quais setores um técnico está hoje (pela presença na lista).
 export const getTechnicianSectors = async (fullName) => {
   const name = formatName(fullName);

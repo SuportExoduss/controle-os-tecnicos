@@ -11,6 +11,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { AuthContext } from '../../context/AuthContext';
 import { logoutUser } from '../../services/auth/authService';
 import { getFrotaCadastro, saveFrotaCadastro, saveFrotaMonth, saveFrotaManualEntry, saveFrotaAbsences } from '../../services/database/frotaService';
+import { getAllTechnicians } from '../../services/database/technicianService';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { parseProlog, buildSheetsPayload, cellFor, MESES, DEFAULT_TEAMS, initials } from './frotaCore';
 
@@ -67,11 +68,14 @@ export const FrotaAdmin = () => {
     } catch { /* */ }
   };
 
-  // Fase 1: apenas parseia e exibe confirmação
+  // Fase 1: apenas parseia e exibe confirmação. Carrega o cadastro único para o
+  // parser achar o dono de cada nome pelos aliases (nome canônico + setor).
   const importText = async (text, fname) => {
     setProg({ label: 'Analisando arquivo…', pct: 5 });
+    let registry = [];
+    try { registry = await getAllTechnicians(); } catch { /* segue sem cadastro (fallback) */ }
     let r;
-    try { r = parseProlog(text, teams); } catch (e) { setProg(null); setMsg('Erro: ' + e.message); toast.error(e.message); return; }
+    try { r = parseProlog(text, teams, registry); } catch (e) { setProg(null); setMsg('Erro: ' + e.message); toast.error(e.message); return; }
     setProg(null);
     setPreview({ ...r, fname });
   };

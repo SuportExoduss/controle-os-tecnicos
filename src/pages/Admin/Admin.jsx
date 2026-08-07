@@ -17,6 +17,7 @@ import { parseExcelFile } from '../../services/reports/importService';
 import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, deleteTechnicianFromSheet } from '../../services/integrations/sheetSync';
 import { formatName } from '../../utils/formatName';
 import { CollaboratorEditModal } from '../../components/modals/CollaboratorEditModal';
+import { registerNewTechnician } from '../../services/database/technicianService';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -161,6 +162,7 @@ export const Admin = () => {
     setSavingCollab(true);
     try {
       await addCollaborator(name);
+      await registerNewTechnician({ fullName: name, sector: 'fibra' }); // cria a identidade única
       toast.success('Colaborador adicionado!');
       setNewCollabName(''); setShowAddCollab(false);
       await fetchCollaborators();

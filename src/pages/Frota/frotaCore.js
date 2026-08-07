@@ -170,8 +170,12 @@ export const mergeFrotaMonth = (ex, payload) => {
 //   • cal só inclui quem TEM linha semanal no arquivo (o merge preserva a
 //     calibragem dos demais em vez de zerar todo mundo a cada import);
 //   • ocorrências carregam `day` (dedupe correto no merge do frotaService).
+// `registry` (opcional): lista de technicians ({fullName, aliases[], frotaGroup}).
+// Quando passado, o parser acha o DONO do nome pelos aliases (normalizados, sem
+// acento) e usa o nome canônico + o setor do cadastro — mesmo que o Prolog mande
+// uma grafia diferente. É o que garante "sempre encontrar o dono do relatório".
 // Retorna { teams, months: [{ano, mesIndex, data, cal, occ, period, count, people}], count, people, novos }.
-export const parseProlog = (text, teamsIn) => {
+export const parseProlog = (text, teamsIn, registry = []) => {
   // Deep copy: members são objetos, usar spread
   const teams = teamsIn.map((t) => ({ ...t, members: t.members.map((m) => ({ ...m })) }));
   const lines = text.split(/\r?\n/).filter((l) => l.trim().length);
@@ -186,6 +190,29 @@ export const parseProlog = (text, teamsIn) => {
   const find = (nm) => {
     const xs = new Set(norm(nm).split(' ').filter(Boolean)); let best = null, bl = 0;
     idxM.forEach((it) => { const mt = it.n.split(' ').filter(Boolean); if (mt.length < 2) return; if (mt.every((tok) => xs.has(tok)) && mt.length > bl) { best = it; bl = mt.length; } });
+    return best;
+  };
+
+  // Índice do cadastro por alias normalizado (sem acento). Acha o dono do nome
+  // mesmo com grafia diferente: match exato de alias, ou tokens do alias ⊆ nome
+  // do Prolog (ou vice-versa). Retorna { fullName, frotaGroup } | null.
+  const regIndex = (registry || []).map((t) => ({
+    fullName: t.fullName,
+    frotaGroup: t.frotaGroup || null,
+    aliasNorms: Array.from(new Set([t.fullName, ...(t.aliases || [])].map(norm).filter(Boolean))),
+  }));
+  const matchRegistry = (nm) => {
+    const n = norm(nm); if (!n) return null;
+    const nTokens = new Set(n.split(' ').filter(Boolean));
+    for (const r of regIndex) if (r.aliasNorms.includes(n)) return r; // match exato de alias
+    let best = null, bl = 0;
+    for (const r of regIndex) for (const a of r.aliasNorms) {
+      const at = a.split(' ').filter(Boolean);
+      if (at.length < 2) continue;
+      const aSet = new Set(at);
+      const sub = at.every((tok) => nTokens.has(tok)) || (nTokens.size >= 2 && [...nTokens].every((tok) => aSet.has(tok)));
+      if (sub && at.length > bl) { best = r; bl = at.length; }
+    }
     return best;
   };
 
@@ -215,19 +242,26 @@ export const parseProlog = (text, teamsIn) => {
     if (fm) {
       name = fm.m.name;
     } else if (isDiario) {
-      // Só o checklist DIÁRIO pode cadastrar um técnico novo — é o único modelo
+      // Só o checklist DIÁRIO pode cadastrar/resolver um técnico — é o único modelo
       // cujo "Colaborador" é sempre um técnico da frota. Isso impede que modelos
       // estranhos criem fantasmas mesmo que passem pela lista branca no futuro.
-      const key = groupOf(r[ci.equipe], r[ci.cargo]); name = nome;
-      const t = teams.find((x) => x.key === key) || teams[0];
-      if (!t.members.find((x) => norm(x.name) === norm(nome))) {
-        const newMember = { name: nome, plate: plate || '—' };
+      // 1º tenta o CADASTRO ÚNICO (aliases) — acha o dono mesmo com grafia diferente.
+      const reg = matchRegistry(nome);
+      name = reg ? reg.fullName : nome;
+      // Já é membro da frota (em qualquer equipe)? então só usa o nome canônico.
+      if (!idxM.find((it) => it.n === norm(name))) {
+        const key = (reg && reg.frotaGroup) || groupOf(r[ci.equipe], r[ci.cargo]); // setor do cadastro vence
+        const t = teams.find((x) => x.key === key) || teams[0];
+        const newMember = { name, plate: plate || '—' };
         t.members.push(newMember);
-        idxM.push({ m: newMember, t, n: norm(nome) });
+        idxM.push({ m: newMember, t, n: norm(name) });
         novos++;
       }
     } else {
-      return; // ocorrência/semanal de nome não reconhecido → ignora a linha
+      // ocorrência/semanal: tenta resolver o dono pelo cadastro; se não achar, ignora
+      const reg = matchRegistry(nome);
+      if (!reg || !idxM.find((it) => it.n === norm(reg.fullName))) return;
+      name = reg.fullName;
     }
     const bkey = anoRow + '-' + String(mesIdx + 1).padStart(2, '0');
     const b = buckets[bkey] = buckets[bkey] || { ano: anoRow, mesIdx, daily: {}, cal: {}, occ: [], minDaily: 99, maxDaily: 0, minAny: 99, maxAny: 0, count: 0, people: new Set() };

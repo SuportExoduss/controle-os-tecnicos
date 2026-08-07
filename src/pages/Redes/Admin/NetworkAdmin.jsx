@@ -26,6 +26,7 @@ import {
   countNetworkOrdersInSheet, renameNetworkTechnicianInSheet,
 } from '../../../services/integrations/networkSheetSync';
 import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
+import { registerNewTechnician } from '../../../services/database/technicianService';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -342,6 +343,7 @@ export const NetworkAdmin = () => {
     setSavingCollab(true);
     try {
       await addNetworkCollaborator(newCollabName);
+      await registerNewTechnician({ fullName: newCollabName, sector: 'redes' }); // cria a identidade única
       toast.success('Técnico adicionado!');
       setNewCollabName(''); setShowAddCollab(false);
       await fetchCollaborators();
