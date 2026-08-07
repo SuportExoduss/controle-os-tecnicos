@@ -83,6 +83,15 @@ const groupOf = (eq, cg) => {
 
 export const teamOf = (teams, name) => teams.find((t) => t.members.some((m) => m.name === name));
 
+// Retorna os teams com os MEMBROS em ordem alfabética (pt-BR, ignora acento/caixa).
+// Aplicado ao carregar/atualizar o cadastro para que a Frota sempre liste os
+// técnicos em ordem alfabética — independente de troca de setor ou novo cadastro.
+export const sortTeamsMembers = (teams) =>
+  (teams || []).map((t) => ({
+    ...t,
+    members: [...(t.members || [])].sort((a, b) => norm(a.name).localeCompare(norm(b.name), 'pt-BR')),
+  }));
+
 // Conta os estados de um colaborador no período. monthData[name] = { dia: {st,...}|null }
 export const statsOf = (monthData, name, d1, d2) => {
   const r = (monthData && monthData[name]) || {};

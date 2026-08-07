@@ -149,7 +149,7 @@ export const transferTechnicianSector = async ({ fullName, fromSector, toSector 
     });
     if (member) {
       const dest = teams.find((t) => t.key === toSector);
-      if (dest) dest.members.push(member);
+      if (dest) { dest.members.push(member); dest.members.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' })); }
       await setDoc(cfgRef, { ...cfg, teams, updatedAt: new Date().toISOString() });
       clearCache('fleet_config');
     }

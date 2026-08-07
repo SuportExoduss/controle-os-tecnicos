@@ -13,7 +13,7 @@ import { logoutUser } from '../../services/auth/authService';
 import { getFrotaCadastro, saveFrotaCadastro, saveFrotaMonth, saveFrotaManualEntry, saveFrotaAbsences } from '../../services/database/frotaService';
 import { getAllTechnicians } from '../../services/database/technicianService';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
-import { parseProlog, buildSheetsPayload, cellFor, MESES, DEFAULT_TEAMS, initials } from './frotaCore';
+import { parseProlog, buildSheetsPayload, cellFor, MESES, DEFAULT_TEAMS, initials, sortTeamsMembers } from './frotaCore';
 
 const SHEETS_URL = import.meta.env.VITE_FROTA_SHEETS_URL || '';
 const SHEETS_SECRET = import.meta.env.VITE_FROTA_SHEETS_SECRET || '';
@@ -31,7 +31,7 @@ export const FrotaAdmin = () => {
   const [hist, setHist] = useState([]);
   const [preview, setPreview] = useState(null); // dados parsed aguardando confirmação
 
-  useEffect(() => { getFrotaCadastro({ force: true }).then(setTeams).catch(() => {}); }, []);
+  useEffect(() => { getFrotaCadastro({ force: true }).then((t) => setTeams(sortTeamsMembers(t))).catch(() => {}); }, []);
 
   const handleLogout = async () => { try { await logoutUser(); } finally { navigate('/frota/dashboard'); } };
 
@@ -111,7 +111,7 @@ export const FrotaAdmin = () => {
         const res = await saveFrotaMonth(mo.ano, mo.mesIndex, { data: mo.data, cal: mo.cal, occ: mo.occ, period: mo.period }, by);
         sheetNote = await sendSheets(r.teams, (res.merged && res.merged.data) || mo.data, mo.ano, mo.mesIndex);
       }
-      setTeams(r.teams);
+      setTeams(sortTeamsMembers(r.teams));
       done = true;
       // 99→100 suavemente
       for (let i = 99; i <= 100; i++) { setProg({ pct: i, label: 'Concluído!' }); await sleep(30); }
@@ -159,15 +159,16 @@ export const FrotaAdmin = () => {
     const from = teams.find((t) => t.members.some((m) => m.name === name));
     const m = from?.members.find((x) => x.name === name); if (!m) return;
     next.find((t) => t.key === toKey).members.push(m);
-    setTeams(next);
-    try { await saveFrotaCadastro(next); toast.success('Área atualizada'); } catch { toast.error('Erro ao salvar'); }
+    const sorted = sortTeamsMembers(next);
+    setTeams(sorted);
+    try { await saveFrotaCadastro(sorted); toast.success('Área atualizada'); } catch { toast.error('Erro ao salvar'); }
   };
 
   // Remove um colaborador do cadastro (ex.: técnico fantasma de vistoria).
   // Depois de remover, use "Refazer planilhas" para apagar a linha dele no Sheets.
   const deleteMember = async (name) => {
     if (!window.confirm(`Remover "${name}" do cadastro?\n\nEle some da dashboard e, ao "Refazer planilhas", a linha dele é apagada do Google Sheets.`)) return;
-    const next = teams.map((t) => ({ ...t, members: t.members.filter((m) => m.name !== name) }));
+    const next = sortTeamsMembers(teams.map((t) => ({ ...t, members: t.members.filter((m) => m.name !== name) })));
     setTeams(next);
     try { await saveFrotaCadastro(next); toast.success('Colaborador removido'); } catch { toast.error('Erro ao remover'); }
   };

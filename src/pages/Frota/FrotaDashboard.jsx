@@ -17,7 +17,7 @@ import { getFrotaCadastro, getFrotaMonth, saveFrotaManualEntry, deleteFrotaDayEn
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
-import { MESES, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS } from './frotaCore';
+import { MESES, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS, sortTeamsMembers } from './frotaCore';
 import { buildTextoRelacao, exportExcelRelacao, exportPdfRelacao } from './frotaExport';
 
 const SHEETS_URL    = import.meta.env.VITE_FROTA_SHEETS_URL    || '';
@@ -46,7 +46,7 @@ export const FrotaDashboard = () => {
   const { user, profile, refreshProfile } = useContext(AuthContext);
   const isLogged = !!user && !!profile?.nickname;
 
-  const [teams, setTeams] = useState(DEFAULT_TEAMS);
+  const [teams, setTeams] = useState(() => sortTeamsMembers(DEFAULT_TEAMS));
   const [month, setMonth] = useState(new Date().getMonth());
   const [doc, setDoc] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +65,7 @@ export const FrotaDashboard = () => {
   const [exportTask, setExportTask] = useState(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => { getFrotaCadastro().then(setTeams).catch(() => {}); }, []);
+  useEffect(() => { getFrotaCadastro().then((t) => setTeams(sortTeamsMembers(t))).catch(() => {}); }, []);
   useEffect(() => {
     setLoading(true);
     getFrotaMonth(YEAR, month).then((d) => { setDoc(d); setLoading(false); }).catch(() => { setDoc(null); setLoading(false); });
