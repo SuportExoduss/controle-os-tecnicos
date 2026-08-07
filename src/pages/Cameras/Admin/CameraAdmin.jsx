@@ -63,6 +63,7 @@ export const CameraAdmin = () => {
   const [collaborators, setCollaborators] = useState([]);
   const [loadingCollabs, setLoadingCollabs] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true); // já vem ativado
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [newCollabName, setNewCollabName] = useState('');
   const [showEditCollab, setShowEditCollab] = useState(false);
@@ -165,6 +166,19 @@ export const CameraAdmin = () => {
 
   const handleLogout = async () => { try { await logoutUser(); navigate('/cameras/login'); } catch { toast.error('Erro ao sair'); } };
   const handleChange = (e) => { const { name, value, type, checked } = e.target; setFormData(p => ({ ...p, [name]: type === 'checkbox' ? checked : value })); };
+
+  // Auto avançar: após salvar, pula para o próximo técnico da lista (ou mantém o
+  // mesmo se desativado). Mesmo comportamento da Fibra.
+  const nextTechAfter = (name) => {
+    const idx = collaborators.findIndex(c => c.name === name);
+    if (idx >= 0 && idx < collaborators.length - 1) return collaborators[idx + 1].name;
+    return name;
+  };
+  const resetFormAfterSubmit = (submittedName, savedDate) => {
+    const next = autoScroll ? nextTechAfter(submittedName) : submittedName;
+    setFormData({ technicianName: next, totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: savedDate });
+    setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+  };
   const handleOpenWizard = () => {
     if (!formData.technicianName) { toast.error('Selecione um técnico'); return; }
     const qty = parseInt(formData.totalOrders);
@@ -225,11 +239,11 @@ export const CameraAdmin = () => {
       setSavedName(formData.technicianName);
       setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
+      const submitted = formData.technicianName;
       const savedDate = formData.date;
       // Mantém a data escolhida para lançar vários relatórios do mesmo dia em sequência.
-      // Só volta para "hoje" quando o usuário trocar manualmente ou recarregar (F5).
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: savedDate });
-      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+      // Auto avançar: pula para o próximo técnico (ou mantém, se desativado).
+      resetFormAfterSubmit(submitted, savedDate);
       fetchStatus(savedDate);
     } catch (err) { toast.error('Erro ao salvar relatório'); console.error(err); }
     finally { setLoading(false); }
@@ -350,9 +364,9 @@ const handleFileUpload = async (e) => {
       toast.success(`Folga registrada para ${formData.technicianName}`);
       setSavedName(formData.technicianName); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
+      const submitted = formData.technicianName;
       const savedDate = formData.date;
-      setFormData({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', kmInicial: '', kmFinal: '', pontosInstalados: '', pontosCancelados: '', observations: '', date: savedDate });
-      setTempServices([]); setWizardStep(0); setShowConfirmation(false);
+      resetFormAfterSubmit(submitted, savedDate);
       fetchStatus(savedDate);
     } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
     finally { setLoading(false); }
@@ -452,17 +466,26 @@ const handleFileUpload = async (e) => {
                 {/* Técnico */}
                 <div>
                   <FieldLabel S={S}>Técnico <span style={{ color: S.red }}>*</span></FieldLabel>
-                  {/* Legenda de status */}
-                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                    {[
-                      { c: '#22c55e', t: 'Feito' },
-                      { c: '#f59e0b', t: 'Pendente hoje' },
-                      { c: '#ef4444', t: 'Faltou (dia passado)' },
-                    ].map(({ c, t }) => (
-                      <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: S.muted2 }}>
-                        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, boxShadow: `0 0 5px ${c}` }} />{t}
-                      </span>
-                    ))}
+                  {/* Legenda de status + checkbox auto avançar */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                      {[
+                        { c: '#22c55e', t: 'Feito' },
+                        { c: '#f59e0b', t: 'Pendente hoje' },
+                        { c: '#ef4444', t: 'Faltou (dia passado)' },
+                      ].map(({ c, t }) => (
+                        <span key={t} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: S.muted2 }}>
+                          <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, boxShadow: `0 0 5px ${c}` }} />{t}
+                        </span>
+                      ))}
+                    </div>
+                    <div onClick={() => setAutoScroll(v => !v)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none', flexShrink: 0 }}>
+                      <div style={{ width: '15px', height: '15px', borderRadius: '4px', border: `2px solid ${autoScroll ? S.blue : S.muted}`, background: autoScroll ? S.blue : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}>
+                        {autoScroll && <Check size={10} color="white" />}
+                      </div>
+                      <span style={{ fontSize: '11px', fontWeight: 600, color: autoScroll ? S.blue : S.muted }}>Auto avançar</span>
+                    </div>
                   </div>
                   <div style={{ position: 'relative' }} ref={dropdownRef}>
                     <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)}

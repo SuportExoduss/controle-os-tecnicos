@@ -85,7 +85,7 @@ export const Admin = () => {
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [newCollabName, setNewCollabName] = useState('');
   const [savingCollab, setSavingCollab] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true); // já vem ativado
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
   const [wizardStep, setWizardStep] = useState(0);
@@ -192,8 +192,10 @@ export const Admin = () => {
   };
 
   const nextTechAfter = (name) => {
-    const idx = collaborators.findIndex(c => c.name === name);
-    if (idx >= 0 && idx < collaborators.length - 1) return collaborators[idx + 1].name;
+    // Segue a ORDEM EXIBIDA (terceirizados no topo, depois alfabético).
+    const ordered = [...collaborators].sort((a, b) => (terceirizados.has(b.name) ? 1 : 0) - (terceirizados.has(a.name) ? 1 : 0));
+    const idx = ordered.findIndex(c => c.name === name);
+    if (idx >= 0 && idx < ordered.length - 1) return ordered[idx + 1].name;
     return name;
   };
 
