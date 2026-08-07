@@ -445,6 +445,9 @@ const handleFileUpload = async (e) => {
 
   // Selo "Terceirizado" (lê o flag do cadastro único; nome fica limpo).
   const isTerc = (name) => terceirizados.has(name);
+  // Terceirizados no TOPO (como era com o prefixo antigo); resto segue alfabético.
+  // Sort estável sobre a lista já ordenada por nome (Firestore orderBy).
+  const orderedCollabs = [...collaborators].sort((a, b) => (isTerc(b.name) ? 1 : 0) - (isTerc(a.name) ? 1 : 0));
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
@@ -616,9 +619,9 @@ const handleFileUpload = async (e) => {
                                 onBlur={e => e.target.style.borderColor = S.border} />
                             </div>
                             <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                              {collaborators.filter(c => c.name.toLowerCase().includes(techSearch.toLowerCase())).length === 0 ? (
+                              {orderedCollabs.filter(c => c.name.toLowerCase().includes(techSearch.toLowerCase())).length === 0 ? (
                                 <div style={{ padding: '16px', textAlign: 'center', color: S.muted, fontSize: '13px' }}>Nenhum técnico encontrado</div>
-                              ) : collaborators.filter(c => c.name.toLowerCase().includes(techSearch.toLowerCase())).map(c => {
+                              ) : orderedCollabs.filter(c => c.name.toLowerCase().includes(techSearch.toLowerCase())).map(c => {
                                 const st = techStatus(c.name);
                                 return (
                                 <button key={c.id} type="button" onClick={() => { setFormData(p => ({ ...p, technicianName: c.name })); setDropdownOpen(false); setTechSearch(''); }}
@@ -796,7 +799,7 @@ const handleFileUpload = async (e) => {
                 <p style={{ color: S.muted, fontSize: '12px', marginBottom: '12px' }}>Nenhum colaborador cadastrado.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '12px', maxHeight: '180px', overflowY: 'auto' }}>
-                  {collaborators.map(c => (
+                  {orderedCollabs.map(c => (
                     <div key={c.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: '8px', background: S.input, border: `1px solid ${S.border}` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
