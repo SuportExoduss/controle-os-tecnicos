@@ -2,19 +2,20 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../../services/auth/authService';
-import { getCameraReportsByTechnician, deleteAllCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw } from '../../../services/database/cameraReportService';
-import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators } from '../../../services/database/cameraCollaboratorService';
+import { getCameraReportsByTechnician, deleteAllCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician } from '../../../services/database/cameraReportService';
+import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators, updateCameraCollaborator } from '../../../services/database/cameraCollaboratorService';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
+import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../../context/AuthContext';
 import { getCurrentTime } from '../../../utils/formatTime';
 import { chipStyle } from '../../../utils/chipStyle';
-import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Upload, FileSpreadsheet, AlertCircle, Gauge, MapPin } from 'lucide-react';
+import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Edit2, Upload, FileSpreadsheet, AlertCircle, Gauge, MapPin } from 'lucide-react';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
-import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, zeroCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
+import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, zeroCameraTechnicianInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -63,6 +64,8 @@ export const CameraAdmin = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAddCollab, setShowAddCollab] = useState(false);
   const [newCollabName, setNewCollabName] = useState('');
+  const [showEditCollab, setShowEditCollab] = useState(false);
+  const [editCollab, setEditCollab] = useState(null);
   const [savingCollab, setSavingCollab] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   const [tempServices, setTempServices] = useState([]);
@@ -137,6 +140,15 @@ export const CameraAdmin = () => {
       await fetchCollaborators();
       toast.success('Colaborador e relatórios removidos');
     } catch { toast.error('Erro ao remover'); }
+  };
+
+  // Renomeação específica de Câmeras (usada pelo modal compartilhado)
+  const cameraRenameFn = async (oldName, newName) => {
+    await updateCameraCollaborator(editCollab.id, newName);
+    const renamed = await renameCameraReportsByTechnician(oldName, newName);
+    if (formData.technicianName === oldName) setFormData(p => ({ ...p, technicianName: newName }));
+    renameCameraTechnicianInSheet(oldName, newName);
+    if (renamed.length > 0) syncCameraReportsToSheet(renamed);
   };
 
   const handleSaveCollab = async () => {
@@ -702,12 +714,20 @@ const handleFileUpload = async (e) => {
                         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
                       </div>
-                      <button onClick={() => handleDeleteCollab(c.id, c.name)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = '#2d0f0f'; }}
-                        onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
-                        <Trash2 size={13} />
-                      </button>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => { setEditCollab(c); setShowEditCollab(true); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = S.accent; e.currentTarget.style.background = S.accentSoft; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                          <Edit2 size={13} />
+                        </button>
+                        <button onClick={() => handleDeleteCollab(c.id, c.name)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = '#2d0f0f'; }}
+                          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -725,9 +745,19 @@ const handleFileUpload = async (e) => {
       </main>
 
       {/* OVERLAY helper */}
-      {(showAddCollab || showWizard || showConfirmation) && (
+      {(showAddCollab || showEditCollab || showWizard || showConfirmation) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
+
+      {/* MODAL — EDITAR COLABORADOR (nome + transferência de setor) */}
+      <AnimatePresence>
+        {showEditCollab && editCollab && (
+          <CollaboratorEditModal S={S} collab={editCollab} currentSector="cameras"
+            renameFn={cameraRenameFn}
+            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+            onDone={fetchCollaborators} />
+        )}
+      </AnimatePresence>
 
       {/* MODAL — ADICIONAR COLABORADOR */}
       <AnimatePresence>

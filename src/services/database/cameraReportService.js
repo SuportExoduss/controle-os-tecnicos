@@ -84,6 +84,19 @@ export const deleteCameraReport = async (reportId) => {
   clearCache(COLLECTION_NAME);
 };
 
+// Renomeia TODOS os relatórios de um técnico (nome faz parte do ID → recria doc).
+export const renameCameraReportsByTechnician = async (oldName, newName) => {
+  const snap = await getDocs(query(collection(db, COLLECTION_NAME), where('technicianName', '==', oldName)));
+  await Promise.all(snap.docs.map(async (d) => {
+    const data = d.data();
+    const newId = cameraReportIdFor(data.date, newName);
+    await setDoc(doc(db, COLLECTION_NAME, newId), { ...data, technicianName: newName });
+    if (d.id !== newId) await deleteDoc(doc(db, COLLECTION_NAME, d.id));
+  }));
+  clearCache(COLLECTION_NAME);
+  return snap.docs.map(d => ({ ...d.data(), technicianName: newName }));
+};
+
 export const deleteAllCameraReportsByTechnician = async (technicianName) => {
   const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName));
   const snap = await getDocs(q);

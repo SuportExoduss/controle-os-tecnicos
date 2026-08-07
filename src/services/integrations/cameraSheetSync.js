@@ -50,3 +50,7 @@ export const zeroCameraTechnicianInSheet = (technicianName) =>
 // Excluir = REMOVE a linha (técnico + dia) da planilha de verdade (não zera).
 export const deleteCameraRowInSheet = (date, technicianName) =>
   post({ action: 'deleteRow', date, technician: technicianName });
+
+// Renomeia o técnico in-place em todas as abas (usado ao renomear colaborador).
+export const renameCameraTechnicianInSheet = (from, to) =>
+  post({ action: 'renameTechnicians', pairs: [{ from, to }] });

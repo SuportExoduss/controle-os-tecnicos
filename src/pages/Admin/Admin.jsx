@@ -16,6 +16,7 @@ import { ThemeContext } from '../../context/ThemeContext';
 import { parseExcelFile } from '../../services/reports/importService';
 import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, deleteTechnicianFromSheet } from '../../services/integrations/sheetSync';
 import { formatName } from '../../utils/formatName';
+import { CollaboratorEditModal } from '../../components/modals/CollaboratorEditModal';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -79,8 +80,6 @@ export const Admin = () => {
   const [autoScroll, setAutoScroll] = useState(false);
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
-  const [editCollabName, setEditCollabName] = useState('');
-  const [savingEditCollab, setSavingEditCollab] = useState(false);
   const [wizardStep, setWizardStep] = useState(0);
   const [tempServices, setTempServices] = useState([]);
   const [showWizard, setShowWizard] = useState(false);
@@ -169,24 +168,14 @@ export const Admin = () => {
     finally { setSavingCollab(false); }
   };
 
-  const handleEditCollab = async () => {
-    const newName = formatName(editCollabName);
-    if (!newName) return;
-    const oldName = editCollab.name;
-    if (newName === oldName) { setShowEditCollab(false); return; }
-    setSavingEditCollab(true);
-    try {
-      await updateCollaborator(editCollab.id, newName);
-      const renamedReports = await renameReportsByTechnician(oldName, newName);
-      if (formData.technicianName === oldName) setFormData(p => ({ ...p, technicianName: newName }));
-      // Sync sheets: apaga linhas do nome antigo e recria com nome novo (best-effort)
-      deleteTechnicianFromSheet(oldName);
-      if (renamedReports.length > 0) syncReportsToSheet(renamedReports);
-      await fetchCollaborators();
-      setShowEditCollab(false); setEditCollab(null); setEditCollabName('');
-      toast.success(`Renomeado para "${newName}"`);
-    } catch { toast.error('Erro ao renomear colaborador'); }
-    finally { setSavingEditCollab(false); }
+  // Renomeação específica da Fibra (usada pelo modal compartilhado): renomeia o
+  // colaborador, reescreve os relatórios e espelha na planilha.
+  const fibraRenameFn = async (oldName, newName) => {
+    await updateCollaborator(editCollab.id, newName);
+    const renamedReports = await renameReportsByTechnician(oldName, newName);
+    if (formData.technicianName === oldName) setFormData(p => ({ ...p, technicianName: newName }));
+    deleteTechnicianFromSheet(oldName);
+    if (renamedReports.length > 0) syncReportsToSheet(renamedReports);
   };
 
   const nextTechAfter = (name) => {
@@ -794,7 +783,7 @@ const handleFileUpload = async (e) => {
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <button onClick={() => { setEditCollab(c); setEditCollabName(c.name); setShowEditCollab(true); }}
+                        <button onClick={() => { setEditCollab(c); setShowEditCollab(true); }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
                           onMouseEnter={e => { e.currentTarget.style.color = S.blue; e.currentTarget.style.background = '#0d1d3a'; }}
                           onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
@@ -864,39 +853,13 @@ const handleFileUpload = async (e) => {
         )}
       </AnimatePresence>
 
-      {/* MODAL — EDITAR COLABORADOR */}
+      {/* MODAL — EDITAR COLABORADOR (nome + transferência de setor) */}
       <AnimatePresence>
-        {showEditCollab && (
-          <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
-            style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
-            <div style={{ width: '100%', maxWidth: '400px', background: S.surface, border: `1px solid ${S.border}`, borderRadius: '20px', padding: 'clamp(16px, 5vw, 28px)', boxShadow: '0 40px 100px rgba(0,0,0,0.8)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Edit2 size={20} color={S.blue} />
-                  </div>
-                  <div>
-                    <div style={{ color: S.text, fontWeight: 800, fontSize: '16px' }}>Editar Colaborador</div>
-                    <div style={{ color: S.muted, fontSize: '12px', marginTop: '2px' }}>Renomeia o técnico e todos os relatórios</div>
-                  </div>
-                </div>
-                <button onClick={() => { setShowEditCollab(false); setEditCollab(null); setEditCollabName(''); }} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer', padding: '4px' }}>
-                  <X size={18} />
-                </button>
-              </div>
-              <DarkInput S={S} type="text" value={editCollabName} onChange={e => setEditCollabName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEditCollab()} placeholder="Novo nome" autoFocus style={{ marginBottom: '16px' }} />
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button onClick={() => { setShowEditCollab(false); setEditCollab(null); setEditCollabName(''); }}
-                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted2, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>
-                  Cancelar
-                </button>
-                <button onClick={handleEditCollab} disabled={savingEditCollab || !editCollabName.trim()}
-                  style={{ flex: 1, padding: '12px', borderRadius: '10px', background: 'linear-gradient(135deg, #3b82f6, #6366f1)', border: 'none', color: '#fff', fontSize: '14px', fontWeight: 700, cursor: savingEditCollab || !editCollabName.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: savingEditCollab || !editCollabName.trim() ? 0.5 : 1 }}>
-                  {savingEditCollab ? <Spinner /> : <><Edit2 size={15}/>Salvar</>}
-                </button>
-              </div>
-            </div>
-          </motion.div>
+        {showEditCollab && editCollab && (
+          <CollaboratorEditModal S={S} collab={editCollab} currentSector="fibra"
+            renameFn={fibraRenameFn}
+            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+            onDone={fetchCollaborators} />
         )}
       </AnimatePresence>
 

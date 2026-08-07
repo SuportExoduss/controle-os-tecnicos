@@ -86,6 +86,10 @@ export const syncNetworkOrdersChunked = async (orders, onProgress) => {
 export const deleteNetworkOrderInSheet = (idOs) =>
   post({ action: 'delete', idOs: String(idOs) });
 
+// Renomeia o técnico in-place em todas as abas (usado ao renomear colaborador).
+export const renameNetworkTechnicianInSheet = (from, to) =>
+  post({ action: 'renameTechnicians', pairs: [{ from, to }] });
+
 // Conta quantas O.S existem na aba "Lancamentos Redes" (para verificar se está populada).
 // Retorna { ok, count } ou null se não conseguir ler a resposta.
 export const countNetworkOrdersInSheet = () => post({ action: 'count' });

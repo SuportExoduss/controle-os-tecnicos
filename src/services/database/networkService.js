@@ -43,6 +43,14 @@ export const updateNetworkOrder = async (id, data) => {
   return res;
 };
 
+// Renomeia o técnico em todas as ordens (id aleatório → só atualiza o campo).
+export const renameOrdersByTechnician = async (oldName, newName) => {
+  const snap = await getDocs(query(collection(db, COL), where('tecnico', '==', oldName)));
+  await Promise.all(snap.docs.map((d) => updateDoc(doc(db, COL, d.id), { tecnico: newName })));
+  clearCache(COL);
+  return snap.size;
+};
+
 export const deleteNetworkOrder = async (id) => {
   const res = await deleteDoc(doc(db, COL, id));
   clearCache(COL);

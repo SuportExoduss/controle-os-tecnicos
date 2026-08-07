@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { formatName } from '../../utils/formatName';
 
@@ -15,6 +15,9 @@ export const getNetworkCollaborators = () =>
 // Nome próprio canônico (Title Case) — sem MAIÚSCULO (padronização de identidade)
 export const addNetworkCollaborator = (name) =>
   addDoc(collection(db, COL), { name: formatName(name), createdAt: new Date().toISOString() });
+
+export const updateNetworkCollaborator = (id, newName) =>
+  updateDoc(doc(db, COL, id), { name: formatName(newName) });
 
 export const deleteNetworkCollaborator = (id) =>
   deleteDoc(doc(db, COL, id));

@@ -15,16 +15,17 @@ import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { logoutUser } from '../../../services/auth/authService';
 import {
   saveNetworkOrder, getNetworkOrdersCached,
-  updateNetworkOrder, deleteNetworkOrder,
+  updateNetworkOrder, deleteNetworkOrder, renameOrdersByTechnician,
 } from '../../../services/database/networkService';
 import {
   getNetworkCollaborators, addNetworkCollaborator,
-  deleteNetworkCollaborator, seedNetworkCollaborators,
+  deleteNetworkCollaborator, seedNetworkCollaborators, updateNetworkCollaborator,
 } from '../../../services/database/networkCollaboratorService';
 import {
   syncNetworkOrderToSheet, syncNetworkOrdersToSheet, deleteNetworkOrderInSheet,
-  countNetworkOrdersInSheet,
+  countNetworkOrdersInSheet, renameNetworkTechnicianInSheet,
 } from '../../../services/integrations/networkSheetSync';
+import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -169,6 +170,9 @@ export const NetworkAdmin = () => {
 
   // Delete collab
   const [deleteCollabConfirm, setDeleteCollabConfirm] = useState(null);
+  // Edit collab (nome + transferência de setor)
+  const [showEditCollab, setShowEditCollab] = useState(false);
+  const [editCollab, setEditCollab] = useState(null);
 
   const today = localDate();
 
@@ -324,6 +328,15 @@ export const NetworkAdmin = () => {
   };
 
   // ── Colaboradores ────────────────────────────────────────────────────────────
+  // Renomeação específica de Redes (usada pelo modal compartilhado)
+  const redesRenameFn = async (oldName, newName) => {
+    await updateNetworkCollaborator(editCollab.id, newName);
+    await renameOrdersByTechnician(oldName, newName);
+    if (form.tecnico === oldName) setForm(p => ({ ...p, tecnico: newName }));
+    renameNetworkTechnicianInSheet(oldName, newName);
+    await fetchOrders();
+  };
+
   const handleSaveCollab = async () => {
     if (!newCollabName.trim()) return;
     setSavingCollab(true);
@@ -882,12 +895,20 @@ export const NetworkAdmin = () => {
                           <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800, flexShrink: 0 }}>{c.name.charAt(0)}</div>
                           <span style={{ color: S.muted2, fontSize: '12px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
                         </div>
-                        <button onClick={() => setDeleteCollabConfirm(c)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s', flexShrink: 0 }}
-                          onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = '#2d0f0f'; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
-                          <Trash2 size={13} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                          <button onClick={() => { setEditCollab(c); setShowEditCollab(true); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = S.accent; e.currentTarget.style.background = S.accentSoft; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                            <Edit2 size={13} />
+                          </button>
+                          <button onClick={() => setDeleteCollabConfirm(c)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = '#2d0f0f'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -906,9 +927,19 @@ export const NetworkAdmin = () => {
       </main>
 
       {/* ── OVERLAYS ── */}
-      {(showAddCollab || closeModal || deleteConfirm || deleteCollabConfirm) && (
+      {(showAddCollab || showEditCollab || closeModal || deleteConfirm || deleteCollabConfirm) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
+
+      {/* ── MODAL — EDITAR COLABORADOR (nome + transferência de setor) ── */}
+      <AnimatePresence>
+        {showEditCollab && editCollab && (
+          <CollaboratorEditModal S={S} collab={editCollab} currentSector="redes"
+            renameFn={redesRenameFn}
+            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+            onDone={fetchCollaborators} />
+        )}
+      </AnimatePresence>
 
       {/* ── MODAL DE VERIFICAÇÃO PLANILHA x FIREBASE ── */}
       <AnimatePresence>

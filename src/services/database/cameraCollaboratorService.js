@@ -1,4 +1,4 @@
-import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { formatName } from '../../utils/formatName';
 
@@ -24,6 +24,9 @@ export const addCameraCollaborator = (name) => {
     createdAt: new Date().toISOString(),
   });
 };
+
+export const updateCameraCollaborator = (id, newName) =>
+  updateDoc(doc(db, COLLECTION, id), { name: formatName(newName) });
 
 export const deleteCameraCollaborator = (id) => {
   return deleteDoc(doc(db, COLLECTION, id));

@@ -48,3 +48,8 @@ export const deleteRowInSheet = (date, technicianName) =>
 // Remove TODAS as linhas de um técnico (usado ao renomear — limpa as linhas do nome antigo).
 export const deleteTechnicianFromSheet = (technicianName) =>
   post({ action: 'deleteTechnician', technician: technicianName });
+
+// Renomeia o técnico IN-PLACE em todas as abas (Fibra/Câmeras/Redes) — troca só
+// a célula do nome. Best-effort; usado ao renomear colaborador de Câmeras/Redes.
+export const renameTechnicianInSheet = (from, to) =>
+  post({ action: 'renameTechnicians', pairs: [{ from, to }] });
