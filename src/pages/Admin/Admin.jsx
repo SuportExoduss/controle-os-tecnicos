@@ -17,7 +17,7 @@ import { parseExcelFile } from '../../services/reports/importService';
 import { syncReportToSheet, syncReportsToSheet, zeroDayInSheet, deleteTechnicianFromSheet } from '../../services/integrations/sheetSync';
 import { formatName } from '../../utils/formatName';
 import { CollaboratorEditModal } from '../../components/modals/CollaboratorEditModal';
-import { registerNewTechnician, deactivateTechnician } from '../../services/database/technicianService';
+import { registerNewTechnician, deactivateTechnician, getAllTechnicians } from '../../services/database/technicianService';
 
 const localDate = (d = new Date()) => {
   const y = d.getFullYear();
@@ -56,6 +56,12 @@ const Glass = ({ S, children, style = {}, ...props }) => (
     {children}
   </div>
 );
+// Selo "Terceirizado" (cores fixas âmbar; independe do tema).
+const TercBadge = ({ small }) => (
+  <span style={{ flexShrink: 0, fontSize: small ? '9px' : '10px', fontWeight: 800, letterSpacing: '0.4px', textTransform: 'uppercase', padding: small ? '1px 6px' : '2px 8px', borderRadius: '999px', background: '#78350f26', color: '#fbbf24', border: '1px solid #78350f88' }}>
+    Terceirizado
+  </span>
+);
 const FieldLabel = ({ S, children }) => (
   <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '8px' }}>
     {children}
@@ -73,6 +79,7 @@ export const Admin = () => {
 
   const [formData, setFormData] = useState({ technicianName: '', totalOrders: '', rescheduled: false, rescheduledCount: '', observations: '', date: localDate() });
   const [collaborators, setCollaborators] = useState([]);
+  const [terceirizados, setTerceirizados] = useState(new Set()); // nomes com terceirizado:true no cadastro
   const [loadingCollabs, setLoadingCollabs] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showAddCollab, setShowAddCollab] = useState(false);
@@ -139,7 +146,13 @@ export const Admin = () => {
     finally { setLoadingCollabs(false); }
   };
 
-  useEffect(() => { fetchCollaborators(); }, []);
+  // Carrega quem é terceirizado (flag no cadastro único) p/ exibir o selo
+  const fetchTerceirizados = async () => {
+    try { const techs = await getAllTechnicians(); setTerceirizados(new Set(techs.filter(t => t.terceirizado === true).map(t => t.fullName))); }
+    catch { /* segue sem selo */ }
+  };
+
+  useEffect(() => { fetchCollaborators(); fetchTerceirizados(); }, []);
   // Recalcula status sempre que a data selecionada muda
   useEffect(() => { if (formData.date) fetchStatus(formData.date); }, [formData.date]);
 
@@ -430,6 +443,9 @@ const handleFileUpload = async (e) => {
 
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
 
+  // Selo "Terceirizado" (lê o flag do cadastro único; nome fica limpo).
+  const isTerc = (name) => terceirizados.has(name);
+
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', flexDirection: 'column', background: S.bg }}>
 
@@ -570,8 +586,11 @@ const handleFileUpload = async (e) => {
                   <div style={{ position: 'relative' }} ref={dropdownRef}>
                     <button type="button" onClick={() => setDropdownOpen(!dropdownOpen)}
                       style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderRadius: '10px', background: S.input, border: `1px solid ${dropdownOpen ? S.blue : S.border}`, color: formData.technicianName ? S.text : S.muted, fontSize: '14px', cursor: 'pointer', transition: 'all 0.2s', boxSizing: 'border-box' }}>
-                      <span>{formData.technicianName || 'Selecione o técnico...'}</span>
-                      <ChevronDown size={15} style={{ color: S.muted, transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formData.technicianName || 'Selecione o técnico...'}</span>
+                        {formData.technicianName && isTerc(formData.technicianName) && <TercBadge small />}
+                      </span>
+                      <ChevronDown size={15} style={{ color: S.muted, transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
                     </button>
                     <AnimatePresence>
                       {dropdownOpen && (
@@ -610,6 +629,7 @@ const handleFileUpload = async (e) => {
                                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: st.color, flexShrink: 0, boxShadow: `0 0 6px ${st.color}` }} title={st.label} />
                                     <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0 }}>{c.name.charAt(0)}</div>
                                     <span style={{ color: formData.technicianName === c.name ? S.blue : S.text, fontSize: '14px', fontWeight: formData.technicianName === c.name ? 700 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                                    {isTerc(c.name) && <TercBadge small />}
                                   </div>
                                   {formData.technicianName === c.name && <Check size={14} color={S.blue} style={{ flexShrink: 0 }} />}
                                 </button>
@@ -781,6 +801,7 @@ const handleFileUpload = async (e) => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: S.accentSoft, color: S.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 800 }}>{c.name.charAt(0)}</div>
                         <span style={{ color: S.muted2, fontSize: '13px', fontWeight: 500 }}>{c.name}</span>
+                        {isTerc(c.name) && <TercBadge small />}
                       </div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button onClick={() => { setEditCollab(c); setShowEditCollab(true); }}
