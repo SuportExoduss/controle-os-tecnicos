@@ -1,6 +1,7 @@
-import { collection, query, where, getDocs, updateDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
+import { eachDayISO } from './reportService';
 
 // Relatórios diários da equipe de câmeras (WIBICAM).
 const COLLECTION_NAME = 'camera_reports';
@@ -82,6 +83,30 @@ export const updateCameraReport = async (reportId, updateData) => {
 export const deleteCameraReport = async (reportId) => {
   await deleteDoc(doc(db, COLLECTION_NAME, reportId));
   clearCache(COLLECTION_NAME);
+};
+
+// Marca um PERÍODO como ausência (mesma lógica da Fibra; campos de KM/pontos
+// nulos). Preserva dias com O.S; grava em lote; retorna os registros criados.
+export const saveCameraAbsencePeriod = async (technicianName, start, end, motivo, meta = {}) => {
+  const all = await getCameraReportsByTechnicianAll(technicianName, { force: true });
+  const comOS = new Set(all.filter(r => r.date >= start && r.date <= end && (r.totalOrders || 0) > 0).map(r => r.date));
+  const prevByDate = {}; all.forEach(r => { prevByDate[r.date] = r; });
+  const now = new Date().toISOString();
+  const records = eachDayISO(start, end).filter(ds => !comOS.has(ds)).map(ds => ({
+    technicianName, totalOrders: 0, rescheduled: false, rescheduledCount: 0,
+    kmInicial: null, kmFinal: null, kmRodado: null, pontosInstalados: null, pontosCancelados: null,
+    observations: motivo, serviceTypes: [], date: ds, submissionTime: '00:00:00',
+    createdByNickname: meta.nickname || 'Desconhecido', createdByEmail: meta.email || '', createdByUid: meta.uid || '',
+    createdAt: prevByDate[ds]?.createdAt || now,
+  }));
+  const CHUNK = 400;
+  for (let i = 0; i < records.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    records.slice(i, i + CHUNK).forEach(r => batch.set(doc(db, COLLECTION_NAME, cameraReportIdFor(r.date, r.technicianName)), r));
+    await batch.commit();
+  }
+  clearCache(COLLECTION_NAME);
+  return records;
 };
 
 // Renomeia TODOS os relatórios de um técnico (nome faz parte do ID → recria doc).

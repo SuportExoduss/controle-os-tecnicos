@@ -93,6 +93,37 @@ export const saveFrotaAbsences = async (ano, mesIndex, day, names, by) => {
   return { ok: true };
 };
 
+// Marca UM colaborador como 'ausente' num PERÍODO (start..end 'YYYY-MM-DD').
+// Atravessa meses (1 doc por mês). NÃO sobrescreve checklist real (feito/atrasado/
+// troca) — a produção do técnico é preservada, a ausência só preenche os dias vazios.
+export const saveFrotaAbsencesRange = async (name, start, end, by) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const byMonth = {}; // 'YYYY-MM' → { ano, mesIndex, days: [] }
+  const cur = new Date(start + 'T00:00:00'); const last = new Date(end + 'T00:00:00');
+  while (cur <= last) {
+    const ano = cur.getFullYear(), mesIndex = cur.getMonth();
+    const id = `${ano}-${pad(mesIndex + 1)}`;
+    (byMonth[id] = byMonth[id] || { ano, mesIndex, days: [] }).days.push(cur.getDate());
+    cur.setDate(cur.getDate() + 1);
+  }
+  for (const m of Object.values(byMonth)) {
+    const id = monthId(m.ano, m.mesIndex);
+    const ref = doc(db, COL, id);
+    const snap = await getDoc(ref);
+    const base = snap.exists() ? snap.data() : { month: id, data: {} };
+    if (!base.data) base.data = {};
+    if (!base.data[name]) base.data[name] = {};
+    m.days.forEach((d) => {
+      const c = base.data[name][d];
+      if (c && (c.st === 'feito' || c.st === 'atrasado')) return; // preserva checklist real
+      base.data[name][d] = { st: 'ausente' };
+    });
+    await setDoc(ref, { ...base, updatedAt: new Date().toISOString(), by: by || null });
+  }
+  clearCache(COL);
+  return { ok: true };
+};
+
 // Apaga a entrada de um colaborador num dia específico (edit delete).
 export const deleteFrotaDayEntry = async (ano, mesIndex, name, day) => {
   const id = monthId(ano, mesIndex);

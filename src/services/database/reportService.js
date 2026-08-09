@@ -1,8 +1,16 @@
-import { collection, query, where, getDocs, updateDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
 
 const COLLECTION_NAME = 'daily_reports';
+
+// Enumera os dias 'YYYY-MM-DD' de start..end (inclusive), todos os dias.
+export const eachDayISO = (start, end) => {
+  const pad = (n) => String(n).padStart(2, '0');
+  const out = []; const cur = new Date(start + 'T00:00:00'); const last = new Date(end + 'T00:00:00');
+  while (cur <= last) { out.push(`${cur.getFullYear()}-${pad(cur.getMonth() + 1)}-${pad(cur.getDate())}`); cur.setDate(cur.getDate() + 1); }
+  return out;
+};
 
 // ID determinístico: 1 documento por técnico+dia POR CONSTRUÇÃO — duplicar é
 // impossível (auditoria 2026-07-02 achou 185 pares duplicados criados pelo
@@ -41,6 +49,31 @@ export const getReportsByTechnicianAll = async (technicianName, { force = false 
   const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   writeCache(key, arr);
   return arr;
+};
+
+// Marca um PERÍODO (start..end 'YYYY-MM-DD') como ausência (motivo: 'Férias' |
+// 'Atestado' | ...). Cria 1 doc zerado por dia, PRESERVANDO os dias que já têm
+// O.S (não sobrescreve produção — o tec que trabalhou e depois saiu mantém os
+// dias). Grava em lote (idempotente pelo ID determinístico). Retorna os criados.
+export const saveAbsencePeriod = async (technicianName, start, end, motivo, meta = {}) => {
+  const all = await getReportsByTechnicianAll(technicianName, { force: true });
+  const comOS = new Set(all.filter(r => r.date >= start && r.date <= end && (r.totalOrders || 0) > 0).map(r => r.date));
+  const prevByDate = {}; all.forEach(r => { prevByDate[r.date] = r; });
+  const now = new Date().toISOString();
+  const records = eachDayISO(start, end).filter(ds => !comOS.has(ds)).map(ds => ({
+    technicianName, totalOrders: 0, rescheduled: false, rescheduledCount: 0,
+    observations: motivo, serviceTypes: [], date: ds, submissionTime: '00:00:00',
+    createdByNickname: meta.nickname || 'Desconhecido', createdByEmail: meta.email || '', createdByUid: meta.uid || '',
+    createdAt: prevByDate[ds]?.createdAt || now,
+  }));
+  const CHUNK = 400;
+  for (let i = 0; i < records.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    records.slice(i, i + CHUNK).forEach(r => batch.set(doc(db, COLLECTION_NAME, reportIdFor(r.date, r.technicianName)), r));
+    await batch.commit();
+  }
+  clearCache(COLLECTION_NAME);
+  return records;
 };
 
 // Cria OU atualiza o relatório de um técnico+data no ID determinístico.
