@@ -78,8 +78,8 @@ export const AbsencePeriodModal = ({ S, collaborators, motivo, accent, onClose, 
           </div>
 
           {/* Aviso */}
-          <div style={{ display: 'flex', gap: '8px', padding: '10px 12px', background: cor + '14', border: `1px solid ${cor}40`, borderRadius: '10px', marginBottom: '20px', fontSize: '12.5px', color: S.muted2 }}>
-            Todos os dias do intervalo viram <b style={{ color: cor }}>{motivo}</b>. Dias que já têm O.S são <b style={{ color: S.text }}>preservados</b>. Também marca <b style={{ color: S.text }}>ausente</b> na Frota.
+          <div style={{ padding: '11px 13px', background: cor + '14', border: `1px solid ${cor}40`, borderRadius: '10px', marginBottom: '20px', fontSize: '12.5px', lineHeight: 1.55, color: S.muted2 }}>
+            Marca <b style={{ color: cor }}>{motivo.toLowerCase()}</b> em todos os dias do intervalo. Os dias que já têm O.S são <b style={{ color: S.text }}>preservados</b>, e o período fica como <b style={{ color: S.text }}>ausente</b> na Frota.
           </div>
 
           <div style={{ display: 'flex', gap: '12px' }}>
