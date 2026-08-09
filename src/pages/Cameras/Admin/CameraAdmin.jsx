@@ -2,7 +2,9 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../../services/auth/authService';
-import { getCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician } from '../../../services/database/cameraReportService';
+import { getCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician, saveCameraAbsencePeriod } from '../../../services/database/cameraReportService';
+import { saveFrotaAbsencesRange } from '../../../services/database/frotaService';
+import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModal';
 import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators, updateCameraCollaborator } from '../../../services/database/cameraCollaboratorService';
 import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
@@ -335,22 +337,23 @@ const handleFileUpload = async (e) => {
 
   // Atalho: marca o técnico selecionado como FOLGA (zerado + obs "Folga"), KM/pontos vazios.
   // Grava no Firestore e espelha na planilha. Não passa pelo wizard.
-  const handleFolga = async () => {
-    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar folga'); return; }
+  // Ausência de UM dia (Folga / Atestado / Feriado) — zera + observação.
+  const markCameraAbsence = async (motivo) => {
+    if (!formData.technicianName) { toast.error(`Selecione um técnico para marcar ${motivo.toLowerCase()}`); return; }
     setLoading(true);
     try {
       const existing = await getCameraReportsByTechnician(formData.technicianName, formData.date);
       if (existing.docs.length > 0) {
         const ex = existing.docs[0].data();
         const hasData = (ex.totalOrders || 0) > 0 || (ex.serviceTypes || []).length > 0;
-        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar folga vai zerar. Continuar?`)) { setLoading(false); return; }
+        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar ${motivo.toLowerCase()} vai zerar. Continuar?`)) { setLoading(false); return; }
       }
       await upsertCameraReport({
         technicianName: formData.technicianName, totalOrders: 0,
         rescheduled: false, rescheduledCount: 0,
         kmInicial: null, kmFinal: null, kmRodado: null,
         pontosInstalados: null, pontosCancelados: null,
-        observations: 'Folga', serviceTypes: [],
+        observations: motivo, serviceTypes: [],
         date: formData.date, submissionTime: getCurrentTime(),
         createdByNickname: profile?.nickname || 'Desconhecido',
         createdByEmail: user?.email || '', createdByUid: user?.uid || '',
@@ -359,17 +362,27 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, kmInicial: null, kmFinal: null, kmRodado: null,
         pontosInstalados: null, pontosCancelados: null,
-        observations: 'Folga', serviceTypes: [],
+        observations: motivo, serviceTypes: [],
       });
-      toast.success(`Folga registrada para ${formData.technicianName}`);
+      toast.success(`${motivo} registrado para ${formData.technicianName}`);
       setSavedName(formData.technicianName); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
       const submitted = formData.technicianName;
       const savedDate = formData.date;
       resetFormAfterSubmit(submitted, savedDate);
       fetchStatus(savedDate);
-    } catch (err) { toast.error('Erro ao registrar folga'); console.error(err); }
+    } catch (err) { toast.error(`Erro ao registrar ${motivo.toLowerCase()}`); console.error(err); }
     finally { setLoading(false); }
+  };
+
+  // Ausência POR PERÍODO (Férias/Atestado) — grava relatórios do intervalo + Frota + planilha.
+  const [absenceModal, setAbsenceModal] = useState(null);
+  const handleAbsencePeriod = async (name, start, end, motivo) => {
+    const records = await saveCameraAbsencePeriod(name, start, end, motivo, { nickname: profile?.nickname, email: user?.email, uid: user?.uid });
+    await saveFrotaAbsencesRange(name, start, end, profile?.nickname || 'admin');
+    if (records.length) syncCameraReportsToSheet(records);
+    fetchStatus(formData.date);
+    return { count: records.length };
   };
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
 
@@ -447,17 +460,25 @@ const handleFileUpload = async (e) => {
                       <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Lançamento da produção diária da equipe de câmeras</div>
                     </div>
                   </div>
-                  {/* Atalho Folga — fica notável após escolher o técnico */}
-                  <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
-                    title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
-                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                      border: `1px solid ${formData.technicianName ? S.red : S.border}`,
-                      background: formData.technicianName ? 'rgba(239,68,68,0.15)' : 'transparent',
-                      color: formData.technicianName ? S.red : S.muted,
-                      boxShadow: formData.technicianName ? '0 0 14px rgba(239,68,68,0.35)' : 'none',
-                      opacity: formData.technicianName ? 1 : 0.6 }}>
-                    <CalendarDays size={14}/>Folga
-                  </button>
+                  {/* Atalhos de UM dia: Folga, Feriado, Atestado */}
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                    {[
+                      { m: 'Folga', c: '#ef4444' },
+                      { m: 'Feriado', c: '#a78bfa' },
+                      { m: 'Atestado', c: '#3b82f6' },
+                    ].map(({ m, c }) => (
+                      <button key={m} type="button" onClick={() => markCameraAbsence(m)} disabled={!formData.technicianName || loading}
+                        title={`Marcar o técnico selecionado como ${m.toLowerCase()} neste dia (zerado + observação ${m})`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                          border: `1px solid ${formData.technicianName ? c : S.border}`,
+                          background: formData.technicianName ? c + '26' : 'transparent',
+                          color: formData.technicianName ? c : S.muted,
+                          boxShadow: formData.technicianName ? `0 0 14px ${c}59` : 'none',
+                          opacity: formData.technicianName ? 1 : 0.6 }}>
+                        <CalendarDays size={14}/>{m}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -726,6 +747,17 @@ const handleFileUpload = async (e) => {
                   <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
                 </div>
               </div>
+              {/* Ausência POR PERÍODO (mais de 1 dia) */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                <button type="button" onClick={() => setAbsenceModal('Férias')}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #22c55e66', background: 'rgba(34,197,94,0.12)', color: '#22c55e', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                  <CalendarDays size={14}/>Férias (período)
+                </button>
+                <button type="button" onClick={() => setAbsenceModal('Atestado')}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #3b82f666', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                  <CalendarDays size={14}/>Atestado (período)
+                </button>
+              </div>
 
               {collaborators.length === 0 ? (
                 <p style={{ color: S.muted, fontSize: '12px', marginBottom: '12px' }}>Nenhum colaborador cadastrado.</p>
@@ -771,6 +803,16 @@ const handleFileUpload = async (e) => {
       {(showAddCollab || showEditCollab || showWizard || showConfirmation) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
+
+      {/* MODAL — AUSÊNCIA POR PERÍODO (Férias / Atestado) */}
+      <AnimatePresence>
+        {absenceModal && (
+          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+            onClose={() => setAbsenceModal(null)}
+            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
+        )}
+      </AnimatePresence>
 
       {/* MODAL — EDITAR COLABORADOR (nome + transferência de setor) */}
       <AnimatePresence>

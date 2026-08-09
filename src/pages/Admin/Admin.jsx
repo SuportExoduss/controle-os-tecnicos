@@ -2,7 +2,9 @@ import { useState, useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../services/auth/authService';
-import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician } from '../../services/database/reportService';
+import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician, saveAbsencePeriod } from '../../services/database/reportService';
+import { saveFrotaAbsencesRange } from '../../services/database/frotaService';
+import { AbsencePeriodModal } from '../../components/modals/AbsencePeriodModal';
 import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
@@ -410,37 +412,48 @@ const handleFileUpload = async (e) => {
     finally { setLoading(false); }
   };
 
-  const handleFerias = async () => {
-    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar férias'); return; }
+  // FERIADO — marca o dia selecionado (único) do técnico. Férias virou por período.
+  const handleFeriado = async () => {
+    if (!formData.technicianName) { toast.error('Selecione um técnico para marcar feriado'); return; }
     setLoading(true);
     try {
       const existing = await getReportsByTechnician(formData.technicianName, formData.date);
       if (existing.docs.length > 0) {
         const ex = existing.docs[0].data();
         const hasData = (ex.totalOrders || 0) > 0 || (ex.serviceTypes || []).length > 0;
-        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar férias vai zerar. Continuar?`)) { setLoading(false); return; }
+        if (hasData && !window.confirm(`Já existe registro com O.S para ${formData.technicianName} nesta data. Marcar feriado vai zerar. Continuar?`)) { setLoading(false); return; }
       }
       await upsertDailyReport({
         technicianName: formData.technicianName, totalOrders: 0,
         rescheduled: false, rescheduledCount: 0,
-        observations: 'Férias', serviceTypes: [],
+        observations: 'Feriado', serviceTypes: [],
         date: formData.date, submissionTime: getCurrentTime(),
         createdByNickname: profile?.nickname || 'Desconhecido',
         createdByEmail: user?.email || '', createdByUid: user?.uid || '',
       });
       syncReportToSheet({
         technicianName: formData.technicianName, date: formData.date,
-        rescheduledCount: 0, observations: 'Férias', serviceTypes: [],
+        rescheduledCount: 0, observations: 'Feriado', serviceTypes: [],
       });
       const submittedNameFe = formData.technicianName;
       const savedDateFe = formData.date;
-      toast.success(`Férias registradas para ${submittedNameFe}`);
+      toast.success(`Feriado registrado para ${submittedNameFe}`);
       setSavedName(submittedNameFe); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
       resetFormAfterSubmit(submittedNameFe, savedDateFe);
       fetchStatus(savedDateFe);
-    } catch (err) { toast.error('Erro ao registrar férias'); console.error(err); }
+    } catch (err) { toast.error('Erro ao registrar feriado'); console.error(err); }
     finally { setLoading(false); }
+  };
+
+  // Ausência POR PERÍODO (Férias/Atestado): grava relatórios do intervalo + Frota + planilha.
+  const [absenceModal, setAbsenceModal] = useState(null); // null | 'Férias' | 'Atestado'
+  const handleAbsencePeriod = async (name, start, end, motivo) => {
+    const records = await saveAbsencePeriod(name, start, end, motivo, { nickname: profile?.nickname, email: user?.email, uid: user?.uid });
+    await saveFrotaAbsencesRange(name, start, end, profile?.nickname || 'admin');
+    if (records.length) syncReportsToSheet(records);
+    fetchStatus(formData.date);
+    return { count: records.length };
   };
 
   const progress = totalQty > 0 ? (tempServices.length / totalQty) * 100 : 0;
@@ -547,15 +560,15 @@ const handleFileUpload = async (e) => {
                         opacity: formData.technicianName ? 1 : 0.6 }}>
                       <CalendarDays size={14}/>Atestado
                     </button>
-                    <button type="button" onClick={handleFerias} disabled={!formData.technicianName || loading}
-                      title="Marcar o técnico selecionado como férias (zerado + observação Férias)"
+                    <button type="button" onClick={handleFeriado} disabled={!formData.technicianName || loading}
+                      title="Marcar o técnico selecionado como feriado neste dia (zerado + observação Feriado)"
                       style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                        border: `1px solid ${formData.technicianName ? '#22c55e' : S.border}`,
-                        background: formData.technicianName ? 'rgba(34,197,94,0.15)' : 'transparent',
-                        color: formData.technicianName ? '#22c55e' : S.muted,
-                        boxShadow: formData.technicianName ? '0 0 14px rgba(34,197,94,0.35)' : 'none',
+                        border: `1px solid ${formData.technicianName ? '#a78bfa' : S.border}`,
+                        background: formData.technicianName ? 'rgba(167,139,250,0.15)' : 'transparent',
+                        color: formData.technicianName ? '#a78bfa' : S.muted,
+                        boxShadow: formData.technicianName ? '0 0 14px rgba(167,139,250,0.35)' : 'none',
                         opacity: formData.technicianName ? 1 : 0.6 }}>
-                      <CalendarDays size={14}/>Férias
+                      <CalendarDays size={14}/>Feriado
                     </button>
                   </div>
                 </div>
@@ -789,12 +802,23 @@ const handleFileUpload = async (e) => {
 
             {/* Colaboradores */}
             <Glass S={S} style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
                   <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Colaboradores</span>
                   <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
                 </div>
+              </div>
+              {/* Ausência POR PERÍODO (mais de 1 dia) */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                <button type="button" onClick={() => setAbsenceModal('Férias')}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #22c55e66', background: 'rgba(34,197,94,0.12)', color: '#22c55e', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                  <CalendarDays size={14}/>Férias (período)
+                </button>
+                <button type="button" onClick={() => setAbsenceModal('Atestado')}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #3b82f666', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                  <CalendarDays size={14}/>Atestado (período)
+                </button>
               </div>
 
               {collaborators.length === 0 ? (
@@ -1146,6 +1170,16 @@ const handleFileUpload = async (e) => {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* MODAL — AUSÊNCIA POR PERÍODO (Férias / Atestado) */}
+      <AnimatePresence>
+        {absenceModal && (
+          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+            onClose={() => setAbsenceModal(null)}
+            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
         )}
       </AnimatePresence>
 
