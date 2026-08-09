@@ -453,7 +453,7 @@ const handleFileUpload = async (e) => {
             <Glass S={S} style={{ overflow: 'hidden' }}>
               {/* Card header */}
               <div style={{ padding: '24px 28px', background: mode === 'light' ? 'linear-gradient(135deg, #dbeafe 0%, #eceef4 100%)' : 'linear-gradient(135deg, #0d1e3d 0%, #0f1117 100%)', borderBottom: `1px solid ${S.border}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                     <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <ClipboardList size={18} color={S.blue} />

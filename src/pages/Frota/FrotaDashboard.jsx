@@ -158,7 +158,7 @@ export const FrotaDashboard = () => {
               <button key={k} onClick={() => setTab(k)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '999px', border: `1px solid ${tab === k ? c : S.border}`, background: S.card, color: tab === k ? S.text : S.muted2, fontSize: '12.5px', cursor: 'pointer' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c }} />{l}</button>
             ))}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '16px' }}>
+          <div className="r-frota-kp" style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
             {KP.map(({ k, I, c, v, l }) => (
               <button key={k} onClick={() => setTab(k)} style={{ ...card, padding: '12px 10px', textAlign: 'left', cursor: 'pointer', borderColor: tab === k ? c : S.border, position: 'relative', overflow: 'hidden' }}>
                 <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: c + '22', color: c, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}><I size={14} /></div>

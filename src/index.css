@@ -52,8 +52,23 @@ body {
 .r-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 1024px) { .r-metrics { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; } }
 
+/* Mobile (2 colunas): o último card de contagem ÍMPAR ocupa a linha inteira,
+   em vez de ficar sozinho numa meia-coluna. Vale p/ r-metrics e r-metrics3. */
+@media (max-width: 1023px) {
+  .r-metrics  > :last-child:nth-child(odd),
+  .r-metrics3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+/* Cards de métrica mais compactos no celular (menos altura desperdiçada). */
+@media (max-width: 640px) {
+  .r-metrics > *, .r-metrics3 > * { padding: 15px !important; }
+}
+
 .r-month-nav { display: flex; gap: 10px; }
 @media (min-width: 1024px) { .r-month-nav { gap: 16px; } }
+
+/* Frota — visão geral (6 KPIs): 3 col no mobile (rótulos numa linha só), 6 col no desktop */
+.r-frota-kp { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 640px) { .r-frota-kp { grid-template-columns: repeat(6, 1fr); } }
 
 /* Logo no topo (wordmark IbiúNET Multiplay) */
 .r-logo { height: 24px; }
