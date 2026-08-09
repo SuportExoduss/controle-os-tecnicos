@@ -48,18 +48,16 @@ body {
 @media (min-width: 640px)  { .r-page-pad { padding: 20px; } }
 @media (min-width: 1024px) { .r-page-pad { padding: 24px; } }
 
-/* Grid de métricas: 2 col no mobile → auto-fit (acomoda 4..7 cards sem órfão) */
+/* Grid de métricas: 2 col (celular) → 3 col (tablet) → auto-fit (desktop). */
 .r-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 640px)  { .r-metrics { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1024px) { .r-metrics { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; } }
 
-/* Mobile (2 colunas): o último card de contagem ÍMPAR ocupa a linha inteira,
-   em vez de ficar sozinho numa meia-coluna. Vale p/ r-metrics e r-metrics3. */
-@media (max-width: 1023px) {
+/* SÓ no celular (2 col): último card de contagem ÍMPAR ocupa a linha inteira,
+   em vez de ficar sozinho numa meia-coluna. Cards também mais compactos. */
+@media (max-width: 639px) {
   .r-metrics  > :last-child:nth-child(odd),
   .r-metrics3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
-}
-/* Cards de métrica mais compactos no celular (menos altura desperdiçada). */
-@media (max-width: 640px) {
   .r-metrics > *, .r-metrics3 > * { padding: 15px !important; }
 }
 
@@ -241,8 +239,9 @@ body {
 @media (min-width: 1000px) { .r-redes-outer { grid-template-columns: minmax(0,2.4fr) minmax(0,1fr); } }
 .r-redes-left { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
-/* Métricas em 3 colunas (dentro da coluna esquerda) */
+/* Métricas em 3 colunas (dentro da coluna esquerda): 2 col celular → 3 col tablet+ */
 .r-metrics3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 640px)  { .r-metrics3 { grid-template-columns: repeat(3,1fr); } }
 @media (min-width: 1024px) { .r-metrics3 { grid-template-columns: repeat(3,1fr); gap: 16px; } }
 
 /* Painel da pizza: padding e gap menores no mobile */
