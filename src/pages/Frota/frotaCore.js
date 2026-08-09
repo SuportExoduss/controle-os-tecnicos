@@ -170,6 +170,31 @@ export const mergeFrotaMonth = (ex, payload) => {
   return { ...ex, data: mergedData, cal: mergedCal, occ: Object.values(occMap), period: mergedPeriod };
 };
 
+// Reconciliação Frota × justificativas (PURO/testável).
+// Um dia marcado 'naofez' no checklist, MAS com justificativa registrada no
+// índice de ausências (Férias/Atestado/Folga/Feriado vindos dos relatórios de
+// Fibra/Câmeras), vira 'ausente'. Não toca em feito/atrasado/troca nem em dias
+// sem justificativa. Casa por nome normalizado (robusto a pequenas grafias).
+// `indexData` = { [nome]: { [dia]: motivo } }. Retorna um NOVO objeto data.
+export const reconcileAbsences = (data, indexData) => {
+  if (!indexData || !data) return data;
+  const idxByNorm = {};
+  for (const nm in indexData) idxByNorm[norm(nm)] = indexData[nm];
+  const out = {};
+  for (const name in data) {
+    const days = { ...(data[name] || {}) };
+    const idx = idxByNorm[norm(name)];
+    if (idx) {
+      for (const d in days) {
+        const cell = days[d];
+        if (cell && cell.st === 'naofez' && idx[d]) days[d] = { st: 'ausente' };
+      }
+    }
+    out[name] = days;
+  }
+  return out;
+};
+
 // Parser do CSV do Prolog. Recebe o texto e o cadastro atual de equipes.
 // MULTI-MÊS: as linhas são agrupadas por mês/ano — um export que cruza a
 // virada do mês gera um payload POR MÊS (cada um vai pro seu doc fleet_reports,

@@ -61,6 +61,13 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Índice de ausências (reconciliação Frota × relatório): 1 doc por mês com as
+    // justificativas (Férias/Atestado/Folga/Feriado). Leitura pública, escrita só autenticado.
+    match /absence_index/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Cadastro único de técnicos (identidade entre áreas): leitura pública
     // (dropdowns/dashboards leem), escrita só autenticado.
     match /technicians/{docId} {

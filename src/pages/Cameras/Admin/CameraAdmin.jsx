@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../../services/auth/authService';
 import { getCameraReportsByTechnician, deleteAllCameraReportsByDate, upsertCameraReport, getCameraReportsByDateRaw, renameCameraReportsByTechnician, saveCameraAbsencePeriod } from '../../../services/database/cameraReportService';
-import { saveFrotaAbsencesRange } from '../../../services/database/frotaService';
+import { syncAbsenceDays } from '../../../services/database/frotaService';
 import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModal';
 import { getCameraCollaborators, addCameraCollaborator, deleteCameraCollaborator, seedCameraCollaborators, updateCameraCollaborator } from '../../../services/database/cameraCollaboratorService';
 import { Spinner } from '../../../components/common/Spinner';
@@ -364,6 +364,8 @@ const handleFileUpload = async (e) => {
         pontosInstalados: null, pontosCancelados: null,
         observations: motivo, serviceTypes: [],
       });
+      // Reconciliação: marca 'ausente' na Frota + registra no índice de ausências.
+      await syncAbsenceDays(formData.technicianName, [formData.date], motivo, profile?.nickname || 'admin');
       toast.success(`${motivo} registrado para ${formData.technicianName}`);
       setSavedName(formData.technicianName); setShowSaved(true);
       setTimeout(() => setShowSaved(false), 2200);
@@ -379,7 +381,8 @@ const handleFileUpload = async (e) => {
   const [absenceModal, setAbsenceModal] = useState(null);
   const handleAbsencePeriod = async (name, start, end, motivo) => {
     const records = await saveCameraAbsencePeriod(name, start, end, motivo, { nickname: profile?.nickname, email: user?.email, uid: user?.uid });
-    await saveFrotaAbsencesRange(name, start, end, profile?.nickname || 'admin');
+    // Só os dias EFETIVAMENTE marcados como ausência (sem O.S) espelham na Frota/índice.
+    await syncAbsenceDays(name, records.map(r => r.date), motivo, profile?.nickname || 'admin');
     if (records.length) syncCameraReportsToSheet(records);
     fetchStatus(formData.date);
     return { count: records.length };

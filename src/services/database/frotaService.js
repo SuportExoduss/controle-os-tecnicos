@@ -11,10 +11,11 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
-import { DEFAULT_TEAMS, mergeFrotaMonth } from '../../pages/Frota/frotaCore';
+import { DEFAULT_TEAMS, mergeFrotaMonth, reconcileAbsences } from '../../pages/Frota/frotaCore';
 
 const COL = 'fleet_reports';
 const CFG = 'fleet_config';
+const IDX = 'absence_index'; // 1 doc por mês: { month, data: { nome: { dia: motivo } } }
 export const monthId = (ano, mesIndex) => `${ano}-${String(mesIndex + 1).padStart(2, '0')}`; // mesIndex 0-11
 
 // Cadastro de equipes (com fallback para o padrão quando ainda não existe).
@@ -93,20 +94,26 @@ export const saveFrotaAbsences = async (ano, mesIndex, day, names, by) => {
   return { ok: true };
 };
 
-// Marca UM colaborador como 'ausente' num PERÍODO (start..end 'YYYY-MM-DD').
-// Atravessa meses (1 doc por mês). NÃO sobrescreve checklist real (feito/atrasado/
-// troca) — a produção do técnico é preservada, a ausência só preenche os dias vazios.
-export const saveFrotaAbsencesRange = async (name, start, end, by) => {
-  const pad = (n) => String(n).padStart(2, '0');
-  const byMonth = {}; // 'YYYY-MM' → { ano, mesIndex, days: [] }
-  const cur = new Date(start + 'T00:00:00'); const last = new Date(end + 'T00:00:00');
-  while (cur <= last) {
-    const ano = cur.getFullYear(), mesIndex = cur.getMonth();
-    const id = `${ano}-${pad(mesIndex + 1)}`;
-    (byMonth[id] = byMonth[id] || { ano, mesIndex, days: [] }).days.push(cur.getDate());
-    cur.setDate(cur.getDate() + 1);
-  }
-  for (const m of Object.values(byMonth)) {
+// Agrupa uma lista de datas 'YYYY-MM-DD' por mês → { 'YYYY-MM': { ano, mesIndex, days:[] } }.
+const groupDatesByMonth = (dates) => {
+  const byMonth = {};
+  (dates || []).forEach((ds) => {
+    const [y, m, d] = String(ds).split('-').map(Number);
+    if (!y || !m || !d) return;
+    const id = `${y}-${String(m).padStart(2, '0')}`;
+    (byMonth[id] = byMonth[id] || { ano: y, mesIndex: m - 1, days: [] }).days.push(d);
+  });
+  return byMonth;
+};
+
+// Marca 'ausente' SÓ nos dias informados (lista, não range) — dirigido pelos
+// relatórios de ausência (dias SEM O.S). NÃO rebaixa checklist real (feito/
+// atrasado). É a reconciliação relatório → Frota no momento em que a ausência
+// é lançada (funciona mesmo que o checklist tenha subido antes, virando o
+// 'naofez' daquele dia em 'ausente').
+export const markFrotaAbsentDays = async (name, dates, by) => {
+  if (!name || !dates?.length) return { ok: true };
+  for (const m of Object.values(groupDatesByMonth(dates))) {
     const id = monthId(m.ano, m.mesIndex);
     const ref = doc(db, COL, id);
     const snap = await getDoc(ref);
@@ -121,6 +128,49 @@ export const saveFrotaAbsencesRange = async (name, start, end, by) => {
     await setDoc(ref, { ...base, updatedAt: new Date().toISOString(), by: by || null });
   }
   clearCache(COL);
+  return { ok: true };
+};
+
+// Índice de ausências (justificativas) — 1 doc por mês, alimentado por TODA
+// ausência lançada (Fibra/Câmeras, dia único ou período). É a "memória" que
+// permite a reconciliação Frota → relatório na direção inversa: quando um
+// checklist com 'naofez' é importado DEPOIS, o import consulta este índice e
+// resolve o dia como 'ausente'. dates: array 'YYYY-MM-DD'; motivo: string.
+export const recordAbsenceIndex = async (name, dates, motivo) => {
+  if (!name || !dates?.length) return { ok: true };
+  for (const m of Object.values(groupDatesByMonth(dates))) {
+    const id = monthId(m.ano, m.mesIndex);
+    const ref = doc(db, IDX, id);
+    const snap = await getDoc(ref);
+    const base = snap.exists() ? snap.data() : { month: id, data: {} };
+    if (!base.data) base.data = {};
+    if (!base.data[name]) base.data[name] = {};
+    m.days.forEach((d) => { base.data[name][d] = motivo; });
+    await setDoc(ref, { ...base, updatedAt: new Date().toISOString() });
+  }
+  clearCache(IDX);
+  return { ok: true };
+};
+
+// Lê o índice de ausências do mês (1 leitura, cacheada). null se não existe.
+export const getAbsenceIndexMonth = async (ano, mesIndex, { force = false } = {}) => {
+  const id = monthId(ano, mesIndex);
+  const key = `${IDX}:${id}`;
+  if (!force) { const c = readCache(key); if (c) return c; }
+  const snap = await getDoc(doc(db, IDX, id));
+  const data = snap.exists() ? snap.data() : null;
+  writeCache(key, data);
+  return data;
+};
+
+// Efeitos colaterais de UMA ausência lançada nos relatórios: (1) marca 'ausente'
+// nos dias na Frota e (2) grava no índice para reconciliar imports futuros.
+// Chamado pelos handlers de Folga/Feriado/Atestado (dia único) e Férias/Atestado
+// (período) da Fibra e das Câmeras — as duas informações passam a conversar.
+export const syncAbsenceDays = async (name, dates, motivo, by) => {
+  if (!name || !dates?.length) return { ok: true };
+  await markFrotaAbsentDays(name, dates, by);
+  await recordAbsenceIndex(name, dates, motivo);
   return { ok: true };
 };
 
@@ -150,6 +200,12 @@ export const saveFrotaMonth = async (ano, mesIndex, payload, by) => {
   const merged = snap.exists()
     ? { ...mergeFrotaMonth(snap.data(), payload), updatedAt: new Date().toISOString(), by: by || null }
     : { month: id, updatedAt: new Date().toISOString(), by: by || null, ...payload };
+
+  // Reconciliação Frota → relatório: se o checklist trouxe 'naofez' num dia que
+  // JÁ tem justificativa no índice de ausências, resolve como 'ausente' (cobre o
+  // caso "checklist subiu depois da ausência" mesmo se a Frota não foi pré-marcada).
+  const idx = await getAbsenceIndexMonth(ano, mesIndex, { force: true });
+  if (idx?.data) merged.data = reconcileAbsences(merged.data, idx.data);
 
   await setDoc(ref, merged);
   clearCache(COL);

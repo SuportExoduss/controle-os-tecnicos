@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logoutUser } from '../../services/auth/authService';
 import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician, saveAbsencePeriod } from '../../services/database/reportService';
-import { saveFrotaAbsencesRange } from '../../services/database/frotaService';
+import { syncAbsenceDays } from '../../services/database/frotaService';
 import { AbsencePeriodModal } from '../../components/modals/AbsencePeriodModal';
 import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
@@ -369,6 +369,8 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, observations: 'Folga', serviceTypes: [],
       });
+      // Reconciliação: marca 'ausente' na Frota + registra no índice de ausências.
+      await syncAbsenceDays(formData.technicianName, [formData.date], 'Folga', profile?.nickname || 'admin');
       const submittedNameF = formData.technicianName;
       const savedDateF = formData.date;
       toast.success(`Folga registrada para ${submittedNameF}`);
@@ -401,6 +403,7 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, observations: 'Atestado', serviceTypes: [],
       });
+      await syncAbsenceDays(formData.technicianName, [formData.date], 'Atestado', profile?.nickname || 'admin');
       const submittedNameA = formData.technicianName;
       const savedDateA = formData.date;
       toast.success(`Atestado registrado para ${submittedNameA}`);
@@ -435,6 +438,7 @@ const handleFileUpload = async (e) => {
         technicianName: formData.technicianName, date: formData.date,
         rescheduledCount: 0, observations: 'Feriado', serviceTypes: [],
       });
+      await syncAbsenceDays(formData.technicianName, [formData.date], 'Feriado', profile?.nickname || 'admin');
       const submittedNameFe = formData.technicianName;
       const savedDateFe = formData.date;
       toast.success(`Feriado registrado para ${submittedNameFe}`);
@@ -450,7 +454,8 @@ const handleFileUpload = async (e) => {
   const [absenceModal, setAbsenceModal] = useState(null); // null | 'Férias' | 'Atestado'
   const handleAbsencePeriod = async (name, start, end, motivo) => {
     const records = await saveAbsencePeriod(name, start, end, motivo, { nickname: profile?.nickname, email: user?.email, uid: user?.uid });
-    await saveFrotaAbsencesRange(name, start, end, profile?.nickname || 'admin');
+    // Só os dias EFETIVAMENTE marcados como ausência (sem O.S) espelham na Frota/índice.
+    await syncAbsenceDays(name, records.map(r => r.date), motivo, profile?.nickname || 'admin');
     if (records.length) syncReportsToSheet(records);
     fetchStatus(formData.date);
     return { count: records.length };
