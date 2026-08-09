@@ -20,7 +20,7 @@ import {
   ChevronDown, ChevronUp, FileText, Download, Users, ClipboardList,
   CalendarClock, TrendingUp, SearchX, Calendar, Search, Edit2, X,
   Check, BarChart3, FileSpreadsheet, History, Copy, CheckCheck, PieChart as PieIcon,
-  Info, LogIn, RotateCcw, Gauge, MapPin, Trash2,
+  Info, LogIn, RotateCcw, Gauge, MapPin, Trash2, CalendarCheck,
 } from 'lucide-react';
 
 const TYPE_COLORS = {
@@ -35,6 +35,20 @@ const localDate = (d = new Date()) => {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+};
+
+// Classifica um dia ZERADO pela observação (Férias/Atestado/Folga/Feriado) →
+// rótulo + cor, para exibir no card expandido como "o que houve no dia".
+const ABSENCE_STYLES = [
+  { re: /f[ée]rias/i,   label: 'Férias',   color: '#22c55e' },
+  { re: /atestado/i,    label: 'Atestado', color: '#3b82f6' },
+  { re: /feriado/i,     label: 'Feriado',  color: '#a78bfa' },
+  { re: /folga/i,       label: 'Folga',    color: '#ef4444' },
+];
+const absenceInfo = (obs) => {
+  const txt = String(obs || '').trim();
+  const hit = ABSENCE_STYLES.find(s => s.re.test(txt));
+  return hit || { label: txt || 'Ausência', color: '#94a3b8' };
 };
 
 
@@ -53,6 +67,11 @@ export const CameraDashboard = () => {
   const [dateTo, setDateTo] = useState('');
   const [searchTechnician, setSearchTechnician] = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  // Período exibido + ausências (dias zerados c/ obs) por técnico — busca SÓ ao expandir.
+  const [effFrom, setEffFrom] = useState('');
+  const [effTo, setEffTo] = useState('');
+  const [absencesByTech, setAbsencesByTech] = useState({});
+  const [absLoadingTech, setAbsLoadingTech] = useState(null);
   const [textModalReport, setTextModalReport] = useState(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   // Overlay bloqueante de exportação: null = fechado | { progress, title, subtitle }
@@ -140,6 +159,8 @@ export const CameraDashboard = () => {
     const firstOfMonth = `${today.slice(0, 7)}-01`;
     const effectiveFrom = from || firstOfMonth;
     const effectiveTo   = to   || today;
+    setEffFrom(effectiveFrom); setEffTo(effectiveTo);
+    setAbsencesByTech({}); // período mudou → recarrega ausências ao expandir
 
     let f = data;
     f = f.filter(r => r.date >= effectiveFrom && r.date <= effectiveTo);
@@ -222,6 +243,8 @@ export const CameraDashboard = () => {
     totalRescheduled: filteredReports.reduce((acc, r) => acc + (r.rescheduledCount || 0), 0),
     totalKm: Math.round(filteredReports.reduce((acc, r) => acc + (Number(r.kmRodado) || 0), 0) * 10) / 10,
     totalPontosInstalados: filteredReports.reduce((acc, r) => acc + (Number(r.pontosInstalados) || 0), 0),
+    // Soma de dias trabalhados (técnico×dia com O.S > 0) — em memória, 0 leituras extras.
+    diasTrabalhados: filteredReports.reduce((acc, r) => acc + (r._dias || 0), 0),
     mostCommonService: getMostCommonService(),
   };
 
@@ -442,6 +465,27 @@ export const CameraDashboard = () => {
     return () => { cancelled = true; };
   }, [historyTech]);
 
+  // Ao EXPANDIR um card, busca sob demanda os dias de ausência (zerados c/ obs)
+  // do técnico no período exibido — 1 leitura por técnico, cacheada.
+  useEffect(() => {
+    if (!expandedId) return;
+    const rep = filteredReports.find(r => r.id === expandedId);
+    const name = rep?.technicianName;
+    if (!name || absencesByTech[name]) return;
+    let cancelled = false;
+    setAbsLoadingTech(name);
+    getCameraReportsByTechnicianAll(name)
+      .then(arr => {
+        if (cancelled) return;
+        const abs = arr.filter(r => (r.totalOrders || 0) === 0 && String(r.observations || '').trim()
+          && r.date >= effFrom && r.date <= effTo);
+        setAbsencesByTech(prev => ({ ...prev, [name]: abs }));
+      })
+      .catch(() => { if (!cancelled) setAbsencesByTech(prev => ({ ...prev, [name]: [] })); })
+      .finally(() => { if (!cancelled) setAbsLoadingTech(t => (t === name ? null : t)); });
+    return () => { cancelled = true; };
+  }, [expandedId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) return (
     <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}><Spinner /><p style={{ color: S.muted, fontSize: '14px', marginTop: '12px' }}>Carregando...</p></div>
@@ -453,6 +497,7 @@ export const CameraDashboard = () => {
     { icon: ClipboardList, label: 'Total O.S', value: summary.totalOrders, color: S.green, glow: 'rgba(52,211,153,0.12)', onClick: () => setShowPie(true) },
     { icon: MapPin, label: 'Pontos Instalados', value: summary.totalPontosInstalados, color: '#34d399', glow: 'rgba(52,211,153,0.12)' },
     { icon: Gauge, label: 'KM Rodado', value: `${summary.totalKm} km`, color: '#38bdf8', glow: 'rgba(56,189,248,0.12)', small: true },
+    { icon: CalendarCheck, label: 'Dias trabalhados', value: summary.diasTrabalhados, color: S.teal || '#2dd4bf', glow: 'rgba(45,212,191,0.12)' },
     { icon: CalendarClock, label: 'Reagendamentos', value: summary.totalRescheduled, color: S.orange, glow: 'rgba(251,191,36,0.12)' },
     { icon: TrendingUp, label: 'Serviço Top', value: summary.mostCommonService, color: S.purple, glow: 'rgba(167,139,250,0.12)', small: true },
   ];
@@ -754,15 +799,34 @@ export const CameraDashboard = () => {
 
                       {/* Registros por dia — máx 7 visíveis, depois scroll */}
                       <div style={{ maxHeight: '420px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px' }}>
-                      {(report._records || [])
-                        .filter(r => r.totalOrders > 0)
+                      {absLoadingTech === report.technicianName && !absencesByTech[report.technicianName] && (
+                        <div style={{ color: S.muted, fontSize: '12px', padding: '2px 4px' }}>Buscando ausências…</div>
+                      )}
+                      {[...(report._records || []).filter(r => r.totalOrders > 0), ...(absencesByTech[report.technicianName] || [])]
                         .sort((a, b) => a.date.localeCompare(b.date))
                         .map((rec, i) => {
+                          // Dia de AUSÊNCIA (zerado c/ observação) → linha compacta com o motivo
+                          if (!(rec.totalOrders > 0)) {
+                            const info = absenceInfo(rec.observations);
+                            return (
+                              <div key={rec.id || i} style={{ background: S.card, border: `1px solid ${info.color}55`, borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ color: info.color, fontWeight: 700, fontSize: '12px' }}>
+                                    {new Date(rec.date + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                                  </span>
+                                  <span style={{ color: S.muted, fontSize: '11px' }}>sem O.S</span>
+                                </div>
+                                <span style={{ background: info.color + '22', color: info.color, fontSize: '11px', padding: '3px 10px', borderRadius: '999px', fontWeight: 800, border: `1px solid ${info.color}66` }}>
+                                  {info.label}
+                                </span>
+                              </div>
+                            );
+                          }
                           // conta tipos únicos com quantidade
                           const typeCounts = {};
                           (rec.serviceTypes || []).forEach(s => { typeCounts[s] = (typeCounts[s] || 0) + 1; });
                           return (
-                            <div key={i} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '12px 16px' }}>
+                            <div key={rec.id || i} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '12px 16px' }}>
                               {/* Cabeçalho do dia */}
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
