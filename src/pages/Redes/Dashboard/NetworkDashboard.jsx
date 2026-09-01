@@ -159,7 +159,10 @@ export const NetworkDashboard = () => {
     try {
       const start = from || firstOfMonth;
       const end   = to   || today;
-      const data = await getNetworkOrdersByRange(start, end, { force });
+      const raw = await getNetworkOrdersByRange(start, end, { force });
+      // Ausências (folga/atestado/feriado/passageiro/férias) são "relatórios" com
+      // ID 00000 — não são O.S; ficam fora das métricas de SLA do dashboard.
+      const data = raw.filter(o => o.tipo !== 'ausencia' && String(o.idOs).trim() !== '00000');
       setOrders(data);
       filterOrders(data, from, to, tech);
     } catch { toast.error('Erro ao carregar dados'); }
@@ -288,6 +291,7 @@ export const NetworkDashboard = () => {
     let rows;
     try { rows = await getNetworkOrdersByRange(excelFrom, excelTo); }
     catch { toast.error('Erro ao buscar dados do período'); return; }
+    rows = rows.filter(o => o.tipo !== 'ausencia' && String(o.idOs).trim() !== '00000'); // sem ausências
     if (!rows.length) { toast.error('Nenhuma O.S no período'); return; }
 
     setShowExcelModal(false);

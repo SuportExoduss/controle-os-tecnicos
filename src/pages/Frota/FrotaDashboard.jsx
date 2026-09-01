@@ -36,8 +36,8 @@ const syncToSheets = (name, day, ano, mesIndex, cellValue, teams) => {
 
 const TEAM_ICON = { fibra: Router, redes: Network, cameras: Cctv, frota: Truck, demais: IdCard };
 const SEV_ICON = { critica: AlertOctagon, alta: AlertTriangle, normal: Info };
-const ST_COLOR = { feito: '#34d399', atrasado: '#fbbf24', naofez: '#f87171', ausente: '#fb923c' };
-const ST_LABEL = { feito: 'Feito', atrasado: 'Atrasado', naofez: 'Não fez', ausente: 'Ausente' };
+const ST_COLOR = { feito: '#34d399', atrasado: '#fbbf24', naofez: '#f87171', ausente: '#fb923c', passageiro: '#818cf8' };
+const ST_LABEL = { feito: 'Feito', atrasado: 'Atrasado', naofez: 'Não fez', ausente: 'Ausente', passageiro: 'Passageiro' };
 const YEAR = new Date().getFullYear();
 
 export const FrotaDashboard = () => {
@@ -78,9 +78,9 @@ export const FrotaDashboard = () => {
   const st = (name) => statsOf(data, name, d1, d2);
 
   const totals = useMemo(() => {
-    let f = 0, a = 0, n = 0, au = 0, tr = 0;
-    teams.forEach((t) => t.members.forEach((m) => { const s = statsOf(data, m.name, d1, d2); f += s.f; a += s.a; n += s.n; au += s.au; tr += s.tr; }));
-    return { f, a, n, au, tr };
+    let f = 0, a = 0, n = 0, au = 0, pg = 0, tr = 0;
+    teams.forEach((t) => t.members.forEach((m) => { const s = statsOf(data, m.name, d1, d2); f += s.f; a += s.a; n += s.n; au += s.au; pg += s.pg; tr += s.tr; }));
+    return { f, a, n, au, pg, tr };
   }, [teams, doc, month]); // eslint-disable-line
 
   const openAdmin = () => { if (isLogged) navigate('/frota/admin'); else { setRedirectAfterLogin('/frota/admin'); setShowLoginModal(true); } };
@@ -112,10 +112,11 @@ export const FrotaDashboard = () => {
     { k: 'atrasado', I: Clock,          c: '#fbbf24',   v: totals.a,            l: 'Atrasados'      },
     { k: 'naofez',   I: X,              c: '#f87171',   v: totals.n,            l: 'Não feitos'     },
     { k: 'ausente',  I: UserX,          c: '#fb923c',   v: totals.au,           l: 'Ausentes'       },
+    { k: 'passageiro', I: UserX,        c: '#818cf8',   v: totals.pg,           l: 'Passageiros'    },
     { k: 'troca',    I: Road,           c: '#38bdf8',   v: totals.tr,           l: 'Trocas de carro'},
   ];
-  const SEG = [['geral', 'Visão geral', S.accent], ['feito', 'Feitos', '#34d399'], ['atrasado', 'Atrasados', '#fbbf24'], ['naofez', 'Não feitos', '#f87171'], ['ausente', 'Ausentes', '#fb923c'], ['troca', 'Troca de carro', '#38bdf8']];
-  const MODES = [['diario', 'Checklist diário', ClipboardCheck], ['cal', 'Calibragem', Gauge], ['occ', 'Ocorrências', AlertTriangle], ['trocas', 'Trocas de carro', Road], ['rel', 'Relação do mês', TableIcon]];
+  const SEG = [['geral', 'Visão geral', S.accent], ['feito', 'Feitos', '#34d399'], ['atrasado', 'Atrasados', '#fbbf24'], ['naofez', 'Não feitos', '#f87171'], ['ausente', 'Ausentes', '#fb923c'], ['passageiro', 'Passageiros', '#818cf8'], ['troca', 'Troca de carro', '#38bdf8']];
+  const MODES = [['diario', 'Checklist diário', ClipboardCheck], ['cal', 'Calibragem', Gauge], ['occ', 'Ocorrências', AlertTriangle], ['trocas', 'Trocas de carro', Road], ['rel', 'Relação do mês', TableIcon], ['relcal', 'Relação Calibragem', Gauge]];
 
   if (loading && !doc) return (
     <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -171,8 +172,8 @@ export const FrotaDashboard = () => {
           {/* CARDS DE EQUIPE */}
           {teams.map((t) => {
             const Ic = TEAM_ICON[t.key] || IdCard;
-            let tf = 0, ta = 0, tn = 0, tau = 0, ttr = 0;
-            t.members.forEach((m) => { const s = st(m.name); tf += s.f; ta += s.a; tn += s.n; tau += s.au; ttr += s.tr; });
+            let tf = 0, ta = 0, tn = 0, tau = 0, tpg = 0, ttr = 0;
+            t.members.forEach((m) => { const s = st(m.name); tf += s.f; ta += s.a; tn += s.n; tau += s.au; tpg += s.pg; ttr += s.tr; });
             const ob = isObrig(t.key);
             return (
               <div key={t.key} style={{ ...card, marginBottom: '11px', overflow: 'hidden' }}>
@@ -183,7 +184,7 @@ export const FrotaDashboard = () => {
                     <div style={{ fontSize: '11.5px', color: S.muted2 }}>{t.members.length} colaboradores · {ob ? <span style={{ color: '#34d399' }}>obrigatório</span> : 'não obrigatório'}</div>
                   </div>
                   <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '9px' }}>
-                    {[['#34d399', tf], ['#fbbf24', ta], ['#f87171', tn], ['#fb923c', tau], ['#38bdf8', ttr]].map(([c, v], i) => (
+                    {[['#34d399', tf], ['#fbbf24', ta], ['#f87171', tn], ['#fb923c', tau], ['#818cf8', tpg], ['#38bdf8', ttr]].map(([c, v], i) => (
                       <span key={i} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', background: S.card2, borderRadius: '8px', padding: '3px 9px' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c }} />{v}</span>
                     ))}
                     <Chev size={16} color={S.muted2} style={{ transform: exp[t.key] ? 'rotate(90deg)' : 'none', transition: 'transform .2s' }} />
@@ -193,7 +194,7 @@ export const FrotaDashboard = () => {
                   <div style={{ padding: '0 12px 12px' }}>
                     {[...t.members].map((m) => ({ m, s: st(m.name) }))
                       .sort((x, y) => {
-                        const key = { feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', troca: 'tr' }[tab];
+                        const key = { feito: 'f', atrasado: 'a', naofez: 'n', ausente: 'au', passageiro: 'pg', troca: 'tr' }[tab];
                         return key ? y.s[key] - x.s[key] : 0;
                       })
                       .map(({ m, s }) => (
@@ -205,7 +206,7 @@ export const FrotaDashboard = () => {
                           <span style={{ width: '30px', height: '30px', borderRadius: '50%', background: t.accent, color: '#081427', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(m.name)}</span>
                           <span style={{ fontSize: '13px', fontWeight: 600, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
                           <span style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
-                            {[['f', '#34d399'], ['a', '#fbbf24'], ['n', '#f87171'], ['au', '#fb923c'], ['tr', '#38bdf8']].map(([k, c]) => (
+                            {[['f', '#34d399'], ['a', '#fbbf24'], ['n', '#f87171'], ['au', '#fb923c'], ['pg', '#818cf8'], ['tr', '#38bdf8']].map(([k, c]) => (
                               <span key={k} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11.5px', padding: '2px 8px', borderRadius: '7px', background: c + '22', color: c }}>
                                 <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: c }} />{s[k]}
                               </span>
@@ -221,6 +222,7 @@ export const FrotaDashboard = () => {
         </>)}
 
         {doc && modePane === 'cal' && <CalView S={S} teams={teams} cal={doc.cal || {}} onSelect={(name, team) => setSelMember({ name, team })} />}
+        {doc && modePane === 'relcal' && <CalRelView S={S} teams={teams} cal={doc.cal || {}} month={month} year={YEAR} onSelect={(name, team) => setSelMember({ name, team })} />}
         {doc && modePane === 'occ' && <OccView S={S} teams={teams} occ={doc.occ || []} onSelect={(name, team) => setSelMember({ name, team })} />}
         {doc && modePane === 'trocas' && <SwapView S={S} teams={teams} data={data} month={month} lastDay={lastDay} onSelect={(name, team) => setSelMember({ name, team })} />}
         {doc && modePane === 'rel' && <RelView S={S} teams={teams} st={st} lastDay={lastDay} onSelect={(name, team) => setSelMember({ name, team })} />}
@@ -527,6 +529,7 @@ function EditDayModal({ S, name, day, entry, month, year, teams, onClose, onSave
               <option value="atrasado">Atrasado</option>
               <option value="naofez">Não fez</option>
               <option value="ausente">Ausente</option>
+              <option value="passageiro">Passageiro</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
@@ -668,6 +671,75 @@ function CalView({ S, teams, cal, onSelect }) {
   </>);
 }
 
+// ── RELAÇÃO DO MÊS — CALIBRAGEM (contagem semanal: 1x por semana) ────────────
+function CalRelView({ S, teams, cal, month, year, onSelect }) {
+  // Semana = a segunda-feira que a inicia. mondayKey agrupa qualquer dia na sua semana.
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const isCurrent = today.getFullYear() === year && today.getMonth() === month;
+  const maxDay = isCurrent ? Math.min(today.getDate(), lastDay) : lastDay;
+  const mondayKey = (d) => {
+    const dt = new Date(year, month, d);
+    const dow = dt.getDay();                 // 0=Dom … 6=Sáb
+    const diff = dow === 0 ? -6 : 1 - dow;   // dias até a segunda daquela semana
+    return new Date(year, month, d + diff).getTime();
+  };
+  // Semanas do mês (até hoje, se for o mês corrente) = calibragens esperadas
+  const semanasSet = new Set();
+  for (let d = 1; d <= maxDay; d++) semanasSet.add(mondayKey(d));
+  const totalSemanas = semanasSet.size;
+
+  const rows = [];
+  let somaFeito = 0, somaNaoFeito = 0;
+  teams.forEach((t) => t.members.forEach((m) => {
+    const c = cal[m.name] || {};
+    const days = (c.days && c.days.length) ? c.days : (c.day != null ? [c.day] : []);
+    const semanasFeitas = new Set(days.map(mondayKey));
+    const feito = semanasFeitas.size;
+    const naoFeito = Math.max(0, totalSemanas - feito);
+    somaFeito += feito; somaNaoFeito += naoFeito;
+    rows.push({ name: m.name, eq: t, feito, naoFeito, days: days.slice().sort((a, b) => a - b) });
+  }));
+
+  const card = { background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px' };
+  const th = { textAlign: 'center', color: S.muted2, fontWeight: 400, padding: '8px 5px', borderBottom: `1px solid ${S.border}`, fontSize: '11px' };
+  const td = { padding: '8px 5px', borderBottom: `1px solid ${S.border}`, textAlign: 'center' };
+  return (<>
+    <div style={{ marginBottom: '10px' }}>
+      <div style={{ fontSize: '14px', fontWeight: 600 }}>Relação do mês — Calibragem{month != null ? ` (${MESES[month]})` : ''}</div>
+      <div style={{ fontSize: '11.5px', color: S.muted2 }}>Calibragem é semanal (1x/semana). O mês tem <b style={{ color: S.text }}>{totalSemanas} semana{totalSemanas !== 1 ? 's' : ''}</b>. Clique num colaborador para ver o calendário.</div>
+    </div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+      {[['Semanas no mês', totalSemanas, S.text], ['Total feito', somaFeito, '#34d399'], ['Total não feito', somaNaoFeito, '#f87171']].map(([l, v, c]) => (
+        <div key={l} style={{ ...card, padding: '16px' }}><div style={{ fontSize: '23px', fontWeight: 800, color: c }}>{v}</div><div style={{ fontSize: '12px', color: S.muted2 }}>{l}</div></div>
+      ))}
+    </div>
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+        <thead><tr>
+          <th style={{ ...th, textAlign: 'left' }}>Colaborador</th>
+          <th style={th}>Equipe</th><th style={th}>Obrig.</th>
+          <th style={th}>Feito</th><th style={th}>Não feito</th><th style={th}>Dias feitos</th>
+        </tr></thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.name} onClick={() => onSelect?.(r.name, r.eq)} style={{ cursor: 'pointer' }}
+              onMouseEnter={(e) => e.currentTarget.style.background = S.card2}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+              <td style={{ ...td, textAlign: 'left' }}>{r.name}</td>
+              <td style={td}><span style={{ fontSize: '11px', padding: '2px 9px', borderRadius: '999px', fontWeight: 600, background: r.eq.accent + '22', color: r.eq.accent }}>{r.eq.short}</span></td>
+              <td style={td}>{isObrig(r.eq.key) ? <Check size={14} color="#34d399" /> : <span style={{ color: S.muted2 }}>—</span>}</td>
+              <td style={{ ...td, color: '#34d399', fontWeight: 700 }}>{r.feito}</td>
+              <td style={{ ...td, color: r.naoFeito ? '#f87171' : S.muted2, fontWeight: 700 }}>{r.naoFeito}</td>
+              <td style={{ ...td, color: r.days.length ? S.text : S.muted2, fontSize: '11.5px' }}>{r.days.length ? r.days.map((d) => String(d).padStart(2, '0')).join(', ') : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>);
+}
+
 // ── OCORRÊNCIAS ─────────────────────────────────────────────────────────────
 function OccView({ S, teams, occ, onSelect }) {
   const ord = { critica: 0, alta: 1, normal: 2 };
@@ -702,7 +774,7 @@ function OccView({ S, teams, occ, onSelect }) {
 function RelView({ S, teams, st, lastDay, onSelect }) {
   const rows = [];
   teams.forEach((t) => t.members.forEach((m) => {
-    const s = st(m.name); const total = s.f + s.a + s.n + s.au;
+    const s = st(m.name); const total = s.f + s.a + s.n + s.au + s.pg;
     rows.push({ name: m.name, eq: t, s, total, ok: total === s.rec });
   }));
   const th = { textAlign: 'center', color: S.muted2, fontWeight: 400, padding: '8px 5px', borderBottom: `1px solid ${S.border}`, fontSize: '11px' };
@@ -718,7 +790,7 @@ function RelView({ S, teams, st, lastDay, onSelect }) {
           <th style={{ ...th, textAlign: 'left' }}>Colaborador</th>
           <th style={th}>Equipe</th><th style={th}>Obrig.</th>
           <th style={th}>Fez</th><th style={th}>Atras.</th>
-          <th style={th}>Não fez</th><th style={th}>Ausente</th>
+          <th style={th}>Não fez</th><th style={th}>Ausente</th><th style={th}>Passag.</th>
           <th style={th}>Total</th><th style={th}>Confere</th>
         </tr></thead>
         <tbody>
@@ -733,6 +805,7 @@ function RelView({ S, teams, st, lastDay, onSelect }) {
               <td style={{ ...td, color: '#fbbf24' }}>{r.s.a}</td>
               <td style={{ ...td, color: '#f87171' }}>{r.s.n}</td>
               <td style={{ ...td, color: '#fb923c' }}>{r.s.au}</td>
+              <td style={{ ...td, color: '#818cf8' }}>{r.s.pg}</td>
               <td style={td}>{r.total}</td>
               <td style={td}>{r.ok ? <CircleCheck size={15} color="#34d399" /> : <AlertTriangle size={15} color="#fbbf24" />}</td>
             </tr>

@@ -26,7 +26,9 @@ import {
   countNetworkOrdersInSheet, renameNetworkTechnicianInSheet,
 } from '../../../services/integrations/networkSheetSync';
 import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEditModal';
+import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModal';
 import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
+import { syncAbsenceDays } from '../../../services/database/frotaService';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -171,6 +173,9 @@ export const NetworkAdmin = () => {
 
   // Delete collab
   const [deleteCollabConfirm, setDeleteCollabConfirm] = useState(null);
+  // Ausência por período (Atestado/Férias)
+  const [absenceModal, setAbsenceModal] = useState(null); // null | 'Atestado' | 'Férias'
+  const [markingAbsence, setMarkingAbsence] = useState(false);
   // Edit collab (nome + transferência de setor)
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
@@ -214,8 +219,14 @@ export const NetworkAdmin = () => {
   }, []);
 
   // ── Computed ─────────────────────────────────────────────────────────────────
-  const todayOrders  = orders.filter(o => o.data === today);
-  const openOrders   = orders.filter(o => !o.dataFechamento);
+  // Ausências (folga/atestado/feriado/passageiro/férias) são "relatórios" com ID
+  // 00000 — não são O.S de verdade, então ficam fora das métricas de SLA/O.S.
+  const isAbsence = (o) => o.tipo === 'ausencia' || String(o.idOs).trim() === '00000';
+  const reais = orders.filter(o => !isAbsence(o));
+  const ausenciasHoje = orders.filter(o => isAbsence(o) && (o.dataAbertura === today || o.data === today));
+
+  const todayOrders  = reais.filter(o => o.data === today);
+  const openOrders   = reais.filter(o => !o.dataFechamento);
   const closedToday  = todayOrders.filter(o => o.slaHoras !== null && o.slaHoras !== undefined);
   const slaMediaHoje = closedToday.length > 0
     ? Math.round((closedToday.reduce((s, o) => s + Number(o.slaHoras), 0) / closedToday.length) * 10) / 10
@@ -326,6 +337,57 @@ export const NetworkAdmin = () => {
       setDeleteConfirm(null);
       await fetchOrders();
     } catch { toast.error('Erro ao remover'); }
+  };
+
+  // ── Ausências (marcar quem veio / não veio) ───────────────────────────────────
+  // Grava um "relatório" de ausência: O.S com ID 00000 (repetidos permitidos),
+  // observação = motivo. Reconciliação com a Frota: syncAbsenceDays marca o dia
+  // (Passageiro → status próprio; os demais → ausente) e grava no índice.
+  const buildAbsencePayload = (name, date, motivo) => ({
+    data: date,
+    idOs: '00000',
+    tecnico: name,
+    transmissor: '',
+    assunto: '',
+    dataAbertura: date,
+    horaAbertura: null,
+    dataFechamento: null,
+    horaFechamento: null,
+    slaHoras: null,
+    slaStatus: 'aberta',
+    observacao: motivo,
+    lancadoPor: profile?.nickname || user?.email || '',
+    tipo: 'ausencia',
+  });
+
+  // Ausência de UM dia (hoje) — Folga / Atestado / Feriado / Passageiro
+  const marcarAusencia = async (motivo) => {
+    if (!form.tecnico) { toast.error('Selecione o técnico primeiro'); return; }
+    setMarkingAbsence(true);
+    try {
+      const payload = buildAbsencePayload(form.tecnico, today, motivo);
+      await saveNetworkOrder(payload);
+      // NÃO envia à planilha aqui (o ID 00000 seria deduplicado). Sobe no
+      // "Enviar p/ planilha" (replace total mantém os 00000 repetidos).
+      await syncAbsenceDays(form.tecnico, [today], motivo, profile?.nickname || 'admin'); // Frota + índice
+      toast.success(`${motivo} registrado para ${form.tecnico}`);
+      await fetchOrders();
+    } catch { toast.error(`Erro ao registrar ${motivo}`); }
+    finally { setMarkingAbsence(false); }
+  };
+
+  // Ausência POR PERÍODO — Atestado / Férias (todos os dias do intervalo)
+  const handleAbsencePeriod = async (name, start, end, motivo) => {
+    const days = [];
+    const cur = new Date(start + 'T00:00:00');
+    const fim = new Date(end + 'T00:00:00');
+    while (cur <= fim) { days.push(localDate(cur)); cur.setDate(cur.getDate() + 1); }
+    const payloads = days.map(d => buildAbsencePayload(name, d, motivo));
+    for (const p of payloads) { await saveNetworkOrder(p); }
+    // Planilha: sobe no "Enviar p/ planilha" (replace total, mantém os 00000).
+    await syncAbsenceDays(name, days, motivo, profile?.nickname || 'admin'); // Frota + índice
+    await fetchOrders();
+    return { count: days.length };
   };
 
   // ── Colaboradores ────────────────────────────────────────────────────────────
@@ -565,20 +627,44 @@ export const NetworkAdmin = () => {
             <Glass S={S} style={{ overflow: 'hidden' }}>
               {/* Card header */}
               <div style={{ padding: '24px 28px', background: mode === 'light' ? 'linear-gradient(135deg,#dbeafe 0%,#eceef4 100%)' : 'linear-gradient(135deg,#0d1e3d 0%,#0f1117 100%)', borderBottom: `1px solid ${S.border}` }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: editId ? 'rgba(59,130,246,0.15)' : 'rgba(16,185,129,0.12)', border: `1px solid ${editId ? 'rgba(59,130,246,0.3)' : 'rgba(16,185,129,0.25)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {editId ? <Edit2 size={17} color={S.blue} /> : <Plus size={17} color="#10b981" />}
-                  </div>
-                  <div>
-                    <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>
-                      {editId ? 'Editar Ordem de Serviço' : 'Registrar Nova O.S'}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: editId ? 'rgba(59,130,246,0.15)' : 'rgba(16,185,129,0.12)', border: `1px solid ${editId ? 'rgba(59,130,246,0.3)' : 'rgba(16,185,129,0.25)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {editId ? <Edit2 size={17} color={S.blue} /> : <Plus size={17} color="#10b981" />}
                     </div>
-                    <div style={{ color: editId ? S.blue : '#10b981', fontSize: '13px', marginTop: '2px' }}>
-                      Data de registro: {fmtDate(today)}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>
+                        {editId ? 'Editar Ordem de Serviço' : 'Registrar Nova O.S'}
+                      </div>
+                      <div style={{ color: editId ? S.blue : '#10b981', fontSize: '13px', marginTop: '2px' }}>
+                        Data de registro: {fmtDate(today)}
+                      </div>
                     </div>
                   </div>
+                  {/* Atalhos de presença de HOJE (padrão Fibra/Câmeras) — marca o técnico selecionado */}
+                  {!editId && (
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+                      {[
+                        { m: 'Folga',      c: '#ef4444' },
+                        { m: 'Feriado',    c: '#a78bfa' },
+                        { m: 'Atestado',   c: '#3b82f6' },
+                        { m: 'Passageiro', c: '#38bdf8' },
+                      ].map(({ m, c }) => (
+                        <button key={m} type="button" onClick={() => marcarAusencia(m)} disabled={!form.tecnico || markingAbsence}
+                          title={form.tecnico ? `Marcar ${m} para ${form.tecnico} hoje` : 'Selecione o técnico primeiro'}
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (!form.tecnico || markingAbsence) ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
+                            border: `1px solid ${form.tecnico ? c : S.border}`,
+                            background: form.tecnico ? c + '26' : 'transparent',
+                            color: form.tecnico ? c : S.muted,
+                            boxShadow: form.tecnico ? `0 0 14px ${c}59` : 'none',
+                            opacity: (!form.tecnico || markingAbsence) ? 0.55 : 1 }}>
+                          <CalendarDays size={14} />{m}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {editId && (
-                    <button onClick={clearForm} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: S.muted, cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                    <button onClick={clearForm} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer', display: 'flex', padding: '4px' }}>
                       <X size={18} />
                     </button>
                   )}
@@ -742,6 +828,9 @@ export const NetworkAdmin = () => {
                     {saving ? 'Salvando…' : editId ? <><Check size={16} />Atualizar O.S</> : <><Plus size={16} />Registrar O.S</>}
                   </button>
                 </div>
+
+                {/* Nota: os atalhos de presença de hoje (Folga/Feriado/Atestado/Passageiro)
+                    ficam no cabeçalho do card — padrão Fibra/Câmeras. */}
               </div>
             </Glass>
 
@@ -836,6 +925,7 @@ export const NetworkAdmin = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
                   { label: 'O.S Registradas',  value: todayOrders.length,           accent: S.blue },
+                  { label: 'Ausências hoje',   value: ausenciasHoje.length,         accent: ausenciasHoje.length > 0 ? '#fb923c' : '#4ade80' },
                   { label: 'Em Aberto',         value: todayOrders.filter(o => !o.dataFechamento).length, accent: todayOrders.filter(o => !o.dataFechamento).length > 0 ? '#f87171' : '#4ade80' },
                   { label: 'SLA Médio',         value: slaMediaHoje != null ? `${slaMediaHoje}h` : '—', accent: slaMediaHoje != null ? (slaMediaHoje <= 24 ? '#4ade80' : slaMediaHoje <= 48 ? '#fcd34d' : '#f87171') : S.muted2 },
                   { label: 'Top Serviço',       value: topAssuntoEntry ? `${topAssuntoEntry[0]} (${topAssuntoEntry[1]})` : '—', accent: topAssuntoEntry ? (chipStyle(ASSUNTO_COLOR[topAssuntoEntry[0]], mode).color || S.muted2) : S.muted2 },
@@ -925,6 +1015,21 @@ export const NetworkAdmin = () => {
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed'; }}>
                 <Plus size={14} />Adicionar técnico
               </button>
+
+              {/* Ausências por período */}
+              <div style={{ marginTop: '10px', paddingTop: '12px', borderTop: `1px solid ${S.border}` }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px' }}>Ausência por período</div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" onClick={() => setAbsenceModal('Férias')}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #22c55e66', background: 'rgba(34,197,94,0.12)', color: '#22c55e', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                    <CalendarDays size={14} />Férias (período)
+                  </button>
+                  <button type="button" onClick={() => setAbsenceModal('Atestado')}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #3b82f666', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
+                    <CalendarDays size={14} />Atestado (período)
+                  </button>
+                </div>
+              </div>
             </Glass>
           </motion.div>
         </div>
@@ -934,6 +1039,16 @@ export const NetworkAdmin = () => {
       {(showAddCollab || showEditCollab || closeModal || deleteConfirm || deleteCollabConfirm) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
+
+      {/* ── MODAL — AUSÊNCIA POR PERÍODO (Atestado / Férias) ── */}
+      <AnimatePresence>
+        {absenceModal && (
+          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+            onClose={() => setAbsenceModal(null)}
+            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
+        )}
+      </AnimatePresence>
 
       {/* ── MODAL — EDITAR COLABORADOR (nome + transferência de setor) ── */}
       <AnimatePresence>

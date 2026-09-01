@@ -111,7 +111,7 @@ const groupDatesByMonth = (dates) => {
 // atrasado). É a reconciliação relatório → Frota no momento em que a ausência
 // é lançada (funciona mesmo que o checklist tenha subido antes, virando o
 // 'naofez' daquele dia em 'ausente').
-export const markFrotaAbsentDays = async (name, dates, by) => {
+export const markFrotaAbsentDays = async (name, dates, by, status = 'ausente') => {
   if (!name || !dates?.length) return { ok: true };
   for (const m of Object.values(groupDatesByMonth(dates))) {
     const id = monthId(m.ano, m.mesIndex);
@@ -123,7 +123,7 @@ export const markFrotaAbsentDays = async (name, dates, by) => {
     m.days.forEach((d) => {
       const c = base.data[name][d];
       if (c && (c.st === 'feito' || c.st === 'atrasado')) return; // preserva checklist real
-      base.data[name][d] = { st: 'ausente' };
+      base.data[name][d] = { st: status };
     });
     await setDoc(ref, { ...base, updatedAt: new Date().toISOString(), by: by || null });
   }
@@ -169,7 +169,10 @@ export const getAbsenceIndexMonth = async (ano, mesIndex, { force = false } = {}
 // (período) da Fibra e das Câmeras — as duas informações passam a conversar.
 export const syncAbsenceDays = async (name, dates, motivo, by) => {
   if (!name || !dates?.length) return { ok: true };
-  await markFrotaAbsentDays(name, dates, by);
+  // "Passageiro" = presente sem veículo (foi de carona) → status próprio na Frota.
+  // As demais justificativas (Folga/Atestado/Feriado/Férias) → 'ausente'.
+  const status = /passageiro/i.test(motivo || '') ? 'passageiro' : 'ausente';
+  await markFrotaAbsentDays(name, dates, by, status);
   await recordAbsenceIndex(name, dates, motivo);
   return { ok: true };
 };

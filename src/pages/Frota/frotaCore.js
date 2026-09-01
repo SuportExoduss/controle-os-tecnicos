@@ -12,6 +12,7 @@ export const ST = {
   atrasado: { c: '#fbbf24', l: 'Atrasado' },
   naofez: { c: '#f87171', l: 'Não fez' },
   ausente: { c: '#fb923c', l: 'Ausente' },
+  passageiro: { c: '#818cf8', l: 'Passageiro' },
 };
 export const SEV = {
   critica: { c: '#f87171', l: 'Crítica', i: 'AlertOctagon' },
@@ -95,15 +96,19 @@ export const sortTeamsMembers = (teams) =>
 // Conta os estados de um colaborador no período. monthData[name] = { dia: {st,...}|null }
 export const statsOf = (monthData, name, d1, d2) => {
   const r = (monthData && monthData[name]) || {};
-  let f = 0, a = 0, n = 0, au = 0, tr = 0, rec = 0;
+  let f = 0, a = 0, n = 0, au = 0, pg = 0, tr = 0, rec = 0;
   for (let d = d1; d <= d2; d++) {
     const x = r[d];
     if (!x) continue;
     rec++;
-    if (x.st === 'feito') f++; else if (x.st === 'atrasado') a++; else if (x.st === 'naofez') n++; else au++;
+    if (x.st === 'feito') f++;
+    else if (x.st === 'atrasado') a++;
+    else if (x.st === 'naofez') n++;
+    else if (x.st === 'passageiro') pg++;
+    else au++;
     if (x.p2) tr++;
   }
-  return { f, a, n, au, tr, rec };
+  return { f, a, n, au, pg, tr, rec };
 };
 
 // Texto da célula para a planilha da diretoria.
@@ -111,6 +116,7 @@ export const cellFor = (x) => {
   if (!x) return '';
   if (x.st === 'naofez') return 'NAO FEZ';
   if (x.st === 'ausente') return 'AUSENTE';
+  if (x.st === 'passageiro') return 'PASSAGEIRO';
   if (x.p2) return `${x.plate} + ${x.p2} (troca)`;
   return x.plate + (x.st === 'atrasado' ? '-ATRASADO' : '');
 };
@@ -156,7 +162,20 @@ export const mergeFrotaMonth = (ex, payload) => {
     }
     mergedData[person] = base;
   });
-  const mergedCal = { ...(ex.cal || {}), ...(payload.cal || {}) };
+  // cal: une os DIAS de calibragem das duas versões (1x/semana pode ter vários
+  // dias no mês); day/st ficam com a calibragem mais antiga (menor dia).
+  const mergedCal = {};
+  const calNames = new Set([...Object.keys(ex.cal || {}), ...Object.keys(payload.cal || {})]);
+  calNames.forEach((nm) => {
+    const A = (ex.cal || {})[nm], B = (payload.cal || {})[nm];
+    if (!A) { mergedCal[nm] = B; return; }
+    if (!B) { mergedCal[nm] = A; return; }
+    const daysA = A.days || (A.day != null ? [A.day] : []);
+    const daysB = B.days || (B.day != null ? [B.day] : []);
+    const days = Array.from(new Set([...daysA, ...daysB])).sort((x, y) => x - y);
+    const primary = (A.day != null && B.day != null) ? (A.day <= B.day ? A : B) : (B || A);
+    mergedCal[nm] = { day: primary.day, st: primary.st, days };
+  });
   const occMap = {};
   [...(ex.occ || []), ...(payload.occ || [])].forEach((o) => {
     occMap[`${o.name}:${o.day ?? ''}:${o.dt ?? ''}`] = o;
@@ -187,7 +206,10 @@ export const reconcileAbsences = (data, indexData) => {
     if (idx) {
       for (const d in days) {
         const cell = days[d];
-        if (cell && cell.st === 'naofez' && idx[d]) days[d] = { st: 'ausente' };
+        if (cell && cell.st === 'naofez' && idx[d]) {
+          // Justificativa "passageiro" resolve como presente-sem-veículo; as demais como ausente.
+          days[d] = /passageiro/i.test(idx[d]) ? { st: 'passageiro' } : { st: 'ausente' };
+        }
       }
     }
     out[name] = days;
@@ -302,7 +324,8 @@ export const parseProlog = (text, teamsIn, registry = []) => {
     b.count++; totalCount++; b.people.add(name); allPeople.add(name);
     b.minAny = Math.min(b.minAny, day); b.maxAny = Math.max(b.maxAny, day);
     if (isOcorrencia) { b.occ.push({ name, plate, day, dt: pad(day) + '/' + pad(mesIdx + 1) + ' ' + time, obs: (r[ci.obs] || '').trim() || '(sem observação)', nok: +(r[ci.nok] || 0), pa: +(r[ci.pa] || 0), pc: +(r[ci.pc] || 0), km: +(r[ci.km] || 0) }); return; }
-    if (isSemanal) { const wd = new Date(anoRow, mesIdx, day).getDay(); const prev = b.cal[name]; if (!prev || day < prev.day) b.cal[name] = { day, st: wd === 1 ? 'feito' : 'atrasado' }; return; }
+    // Calibragem SEMANAL — acumula TODOS os dias em que foi feita (1x/semana).
+    if (isSemanal) { if (!b.cal[name]) b.cal[name] = { days: [] }; if (b.cal[name].days.indexOf(day) < 0) b.cal[name].days.push(day); return; }
     // Checklist DIÁRIO — só ele define o período de "não fez"
     b.minDaily = Math.min(b.minDaily, day); b.maxDaily = Math.max(b.maxDaily, day);
     if (!b.daily[name]) b.daily[name] = {}; if (!b.daily[name][day]) b.daily[name][day] = []; b.daily[name][day].push({ time, plate, tipo });
@@ -339,7 +362,12 @@ export const parseProlog = (text, teamsIn, registry = []) => {
           out[d] = { st, plate: base.plate || null, p2, time: base.time, ...(swapsList.length ? { swaps: swapsList } : {}) };
         }
         data[m.name] = out;
-        if (b.cal[m.name]) calOut[m.name] = b.cal[m.name]; // só quem calibrou de fato
+        if (b.cal[m.name]) {                              // só quem calibrou de fato
+          const cdays = b.cal[m.name].days.slice().sort((x, y) => x - y);
+          const first = cdays[0];
+          const wd = new Date(b.ano, b.mesIdx, first).getDay();
+          calOut[m.name] = { day: first, st: wd === 1 ? 'feito' : 'atrasado', days: cdays };
+        }
       }));
       const occOut = b.occ.map((o) => ({ ...o, sev: o.pc > 0 ? 'critica' : (o.pa > 0 || o.nok >= 4) ? 'alta' : 'normal' }));
       return {
