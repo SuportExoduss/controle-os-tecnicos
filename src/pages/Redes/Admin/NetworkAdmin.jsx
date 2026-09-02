@@ -178,6 +178,10 @@ export const NetworkAdmin = () => {
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
 
+  // Cards laterais expansíveis (Resumo em cima, Escala no meio, Colaboradores embaixo)
+  const [openCard, setOpenCard] = useState({ resumo: true, escala: false, colab: false });
+  const toggleCard = (k) => setOpenCard((p) => ({ ...p, [k]: !p[k] }));
+
   const today = localDate();
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
@@ -953,18 +957,16 @@ export const NetworkAdmin = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-            {/* Escala do Mês (quadro compacto — só admin) */}
-            <EscalaMes S={S} collaborators={collaborators} orders={orders}
-              onAplicarFrota={handleAplicarFrota} applying={applyingEscala} />
-
-            {/* Resumo do Dia */}
+            {/* ── Resumo do Dia (topo) ── */}
             <Glass S={S} style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
+              <div onClick={() => toggleCard('resumo')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: openCard.resumo ? '18px' : 0, cursor: 'pointer' }}>
                 <BarChart2 size={15} color={S.blue} />
                 <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Resumo do Dia</span>
                 <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{fmtDate(today)}</span>
+                <ChevronDown size={16} color={S.muted2} style={{ marginLeft: 'auto', transform: openCard.resumo ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
               </div>
 
+              {openCard.resumo && (<>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {[
                   { label: 'O.S Registradas',  value: todayOrders.length,           accent: S.blue },
@@ -1007,18 +1009,26 @@ export const NetworkAdmin = () => {
                   Nenhuma O.S registrada hoje ainda.
                 </div>
               )}
+              </>)}
             </Glass>
 
-            {/* Colaboradores / Técnicos */}
+            {/* ── Escala do Mês (meio — quadro compacto, só admin) ── */}
+            <EscalaMes S={S} collaborators={collaborators} orders={orders}
+              onAplicarFrota={handleAplicarFrota} applying={applyingEscala}
+              collapsed={!openCard.escala} onToggleCollapse={() => toggleCard('escala')} />
+
+            {/* ── Colaboradores / Técnicos (base) ── */}
             <Glass S={S} style={{ padding: '20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <div onClick={() => toggleCard('colab')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openCard.colab ? '16px' : 0, cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
                   <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Colaboradores</span>
                   <span style={{ background: S.accentSoft, color: S.accent, fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '999px' }}>{collaborators.length}</span>
                 </div>
+                <ChevronDown size={16} color={S.muted2} style={{ transform: openCard.colab ? 'none' : 'rotate(-90deg)', transition: 'transform 0.2s' }} />
               </div>
 
+              {openCard.colab && (<>
               {collaborators.length === 0 && !loadingCollabs ? (
                 <p style={{ color: S.muted, fontSize: '12px', marginBottom: '12px' }}>Nenhum técnico cadastrado.</p>
               ) : (
@@ -1073,6 +1083,7 @@ export const NetworkAdmin = () => {
                   </button>
                 </div>
               </div>
+              </>)}
             </Glass>
           </motion.div>
         </div>

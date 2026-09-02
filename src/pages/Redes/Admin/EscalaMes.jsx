@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, CalendarDays, UserCheck, Pencil, X, RotateCcw, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, CalendarDays, UserCheck, Pencil, X, RotateCcw, Check } from 'lucide-react';
 import { ESCALA_TEAMS, ESCALA_TEAM_KEYS, resolvedTeamsOnDay, collabWorksResolved, daysInMonth } from '../escalaCore';
 import { getEscalaMonth, setEscalaDayOverride } from '../../../services/database/escalaService';
 
@@ -12,7 +12,7 @@ const iso = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).pad
 //   collaborators: [{ id, name, team, motorista, passageiro }]
 //   orders: network_orders (pontinhos de quem trabalhou fora da escala)
 //   onAplicarFrota(year, monthIndex, overrides): grava folgas/passageiros no índice da Frota.
-export const EscalaMes = ({ S, collaborators = [], orders = [], onAplicarFrota, applying }) => {
+export const EscalaMes = ({ S, collaborators = [], orders = [], onAplicarFrota, applying, collapsed = false, onToggleCollapse }) => {
   const now = new Date();
   const [ano, setAno] = useState(now.getFullYear());
   const [mes, setMes] = useState(now.getMonth());
@@ -80,16 +80,26 @@ export const EscalaMes = ({ S, collaborators = [], orders = [], onAplicarFrota, 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ ...cell, padding: '16px' }}>
       {/* Cabeçalho */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: collapsed ? 0 : '10px' }}>
+        <div onClick={onToggleCollapse} style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, cursor: onToggleCollapse ? 'pointer' : 'default', flex: 1 }}>
           <CalendarDays size={15} color={S.blue} />
           <span style={{ color: S.text, fontWeight: 800, fontSize: '13px' }}>Escala do Mês</span>
         </div>
-        <button onClick={() => setEditMode((v) => !v)} title={editMode ? 'Sair da edição' : 'Alterar a escala'}
-          style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 8px', borderRadius: '8px', background: editMode ? '#7c3aed22' : 'transparent', border: `1px solid ${editMode ? '#7c3aed' : S.border}`, color: editMode ? '#a78bfa' : S.muted2, fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
-          <Pencil size={13} />{editMode ? 'Editando' : 'Editar'}
-        </button>
+        {!collapsed && (
+          <button onClick={() => setEditMode((v) => !v)} title={editMode ? 'Sair da edição' : 'Alterar a escala'}
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '5px 8px', borderRadius: '8px', background: editMode ? '#7c3aed22' : 'transparent', border: `1px solid ${editMode ? '#7c3aed' : S.border}`, color: editMode ? '#a78bfa' : S.muted2, fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}>
+            <Pencil size={13} />{editMode ? 'Editando' : 'Editar'}
+          </button>
+        )}
+        {onToggleCollapse && (
+          <button onClick={onToggleCollapse} title={collapsed ? 'Expandir' : 'Recolher'}
+            style={{ display: 'flex', background: 'none', border: 'none', color: S.muted2, cursor: 'pointer', padding: '2px' }}>
+            <ChevronDown size={16} style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition: 'transform 0.2s' }} />
+          </button>
+        )}
       </div>
+
+      {!collapsed && (<>
 
       {/* Navegação de mês */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -155,6 +165,7 @@ export const EscalaMes = ({ S, collaborators = [], orders = [], onAplicarFrota, 
           </button>
         )}
       </div>
+      </>)}
 
       {/* ── POPUP DO DIA ── */}
       <AnimatePresence>
