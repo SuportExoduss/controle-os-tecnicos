@@ -13,6 +13,7 @@ import {
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
+import { localDate } from '../../../utils/formatDate';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
 import { getUserProfile } from '../../../services/database/userProfileService';
 import { getNetworkOrdersByRange, deleteNetworkOrder } from '../../../services/database/networkService';
@@ -50,13 +51,6 @@ const ASSUNTO_BADGE = {
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────────────
-
-const localDate = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
 
 const fmtDate = (s) => {
   if (!s) return '—';

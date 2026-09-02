@@ -37,6 +37,12 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
+    // Escala da equipe de Redes (overrides por mês): leitura pública, escrita autenticado
+    match /network_escala/{docId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
     // Relatórios diários — Equipe de Câmeras (WIBICAM): leitura pública, escrita só autenticado
     match /camera_reports/{docId} {
       allow read: if true;

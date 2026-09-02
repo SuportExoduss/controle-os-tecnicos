@@ -15,16 +15,34 @@ import { Spinner } from '../common/Spinner';
 const SECTOR_DOT = { fibra: '#2e8bff', redes: '#ffb31f', cameras: '#16d08a' };
 const SECTORS = ['fibra', 'redes', 'cameras'];
 
-export const CollaboratorEditModal = ({ S, collab, currentSector, renameFn, onClose, onDone }) => {
+// Times da escala (só aparece quando `escala` é passado — Equipe de Redes).
+const ESC_TEAMS = [
+  { key: 'azul',     label: 'Azul',     color: '#3b82f6' },
+  { key: 'vermelho', label: 'Vermelho', color: '#ef4444' },
+  { key: 'amarelo',  label: 'Amarelo',  color: '#eab308' },
+];
+
+export const CollaboratorEditModal = ({ S, collab, currentSector, renameFn, onClose, onDone, escala, onEscalaSave }) => {
   const [name, setName] = useState(collab?.name || '');
   const [sector, setSector] = useState(currentSector);
   const [saving, setSaving] = useState(false);
+
+  // Campos de escala (Redes). undefined quando a prop não é passada.
+  const hasEscala = !!escala;
+  const [team, setTeam] = useState(escala?.team || '');
+  const [motorista, setMotorista] = useState(escala?.motorista !== undefined ? !!escala.motorista : true);
+  const [passageiro, setPassageiro] = useState(!!escala?.passageiro);
 
   const oldName = collab?.name || '';
   const newName = formatName(name);
   const nameChanged = newName && newName !== oldName;
   const sectorChanged = sector !== currentSector;
-  const canSave = !!newName && (nameChanged || sectorChanged) && !saving;
+  const escalaChanged = hasEscala && (
+    (team || '') !== (escala?.team || '') ||
+    motorista !== (escala?.motorista !== undefined ? !!escala.motorista : true) ||
+    passageiro !== !!escala?.passageiro
+  );
+  const canSave = !!newName && (nameChanged || sectorChanged || escalaChanged) && !saving;
 
   const handleSave = async () => {
     if (!newName) { toast.error('Informe o nome'); return; }
@@ -39,8 +57,12 @@ export const CollaboratorEditModal = ({ S, collab, currentSector, renameFn, onCl
       if (sectorChanged) {
         await transferTechnicianSector({ fullName: newName, fromSector: currentSector, toSector: sector });
       }
+      // 3. escala (Redes): time + motorista/passageiro
+      if (hasEscala && escalaChanged) {
+        await onEscalaSave?.({ team, motorista, passageiro });
+      }
       if (sectorChanged) toast.success(`${newName} movido para ${SECTOR_LABEL[sector]}`);
-      else toast.success(`Renomeado para "${newName}"`);
+      else toast.success(`Salvo: "${newName}"`);
       onDone?.();
       onClose?.();
     } catch (err) {
@@ -95,6 +117,44 @@ export const CollaboratorEditModal = ({ S, collab, currentSector, renameFn, onCl
             <ArrowRight size={14} color={SECTOR_DOT[sector]} />
             <span style={{ fontWeight: 700, color: SECTOR_DOT[sector] }}>{SECTOR_LABEL[sector]}</span>
             <span>· o histórico permanece; passa a lançar em {SECTOR_LABEL[sector]}.</span>
+          </div>
+        )}
+
+        {/* Escala (só Redes) — time + motorista/passageiro */}
+        {hasEscala && (
+          <div style={{ marginBottom: '20px', paddingTop: '4px' }}>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px' }}>Time da escala</label>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              {ESC_TEAMS.map((t) => {
+                const active = team === t.key;
+                return (
+                  <button key={t.key} type="button" onClick={() => setTeam(active ? '' : t.key)}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '10px', borderRadius: '10px', border: `1px solid ${active ? t.color : S.border}`, background: active ? t.color + '22' : 'transparent', color: active ? S.text : S.muted2, fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.color }} />{t.label}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Papel no carro — escolha exclusiva (2 técnicos por carro) */}
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px' }}>Papel no carro</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { key: 'motorista',  label: 'Motorista',  sel: motorista && !passageiro, color: '#34d399', hint: 'dirige — faz o checklist nos dias de escala' },
+                { key: 'passageiro', label: 'Passageiro', sel: passageiro,               color: '#38bdf8', hint: 'não dirige — sem checklist (mas sobe relatório normal)' },
+              ].map(({ key, label, sel, color, hint }) => (
+                <button key={key} type="button" title={hint}
+                  onClick={() => { if (key === 'motorista') { setMotorista(true); setPassageiro(false); } else { setPassageiro(true); setMotorista(false); } }}
+                  style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '10px', border: `1px solid ${sel ? color : S.border}`, background: sel ? color + '22' : 'transparent', cursor: 'pointer', transition: 'all 0.15s' }}>
+                  <span style={{ width: '16px', height: '16px', borderRadius: '50%', border: `2px solid ${sel ? color : S.muted}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    {sel && <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color }} />}
+                  </span>
+                  <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
+                    <span style={{ color: sel ? S.text : S.muted2, fontSize: '13px', fontWeight: 700 }}>{label}</span>
+                    <span style={{ color: S.muted, fontSize: '10px', textAlign: 'left', lineHeight: 1.2 }}>{key === 'motorista' ? 'dirige · faz checklist' : 'sem checklist'}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

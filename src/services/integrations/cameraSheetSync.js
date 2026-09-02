@@ -10,13 +10,11 @@ const SHEET_TOKEN = import.meta.env.VITE_SHEET_TOKEN || '';
 const post = async (payload) => {
   if (!SHEET_WEBAPP_URL) return;
   try {
-    const res = await fetch(SHEET_WEBAPP_URL, {
+    await fetch(SHEET_WEBAPP_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ token: SHEET_TOKEN, team: 'cameras', ...payload }),
     });
-    const text = await res.text();
-    console.log('[cameraSheetSync] status:', res.status, '| resposta:', text);
   } catch (err) {
     console.warn('[cameraSheetSync] FALHOU:', err.message || err);
   }

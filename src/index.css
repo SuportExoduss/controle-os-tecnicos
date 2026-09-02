@@ -64,9 +64,13 @@ body {
 .r-month-nav { display: flex; gap: 10px; }
 @media (min-width: 1024px) { .r-month-nav { gap: 16px; } }
 
-/* Frota — visão geral (6 KPIs): 3 col no mobile (rótulos numa linha só), 6 col no desktop */
+/* Frota — visão geral (7 KPIs): 3 col (celular) → 4 col (tablet) → 7 col (desktop).
+   No celular, se o último card ficar sozinho na linha (7 = 3·2+1), ele ocupa a
+   linha inteira em vez de uma meia-coluna solta. */
 .r-frota-kp { grid-template-columns: repeat(3, 1fr); }
-@media (min-width: 640px) { .r-frota-kp { grid-template-columns: repeat(6, 1fr); } }
+@media (max-width: 559px) { .r-frota-kp > :last-child:nth-child(3n+1) { grid-column: 1 / -1; } }
+@media (min-width: 560px) { .r-frota-kp { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 900px) { .r-frota-kp { grid-template-columns: repeat(7, 1fr); } }
 
 /* Logo no topo (wordmark IbiúNET Multiplay) */
 .r-logo { height: 24px; }

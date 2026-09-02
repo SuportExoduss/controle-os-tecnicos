@@ -39,6 +39,7 @@ var TYPE_ALIASES = {
   'VISTORIA':             ['vistoria'],
   'FONTE QUEIMADA':       ['fonte queimada'],
   'TROCA DE EQUIPAMENTO': ['troca de equipamento'],
+  'RETIRADA':             ['retirada'],
   'SINAL ALTO':           ['sinal alto'],
   'REINCIDENCIA':         ['reincidencia'],
   'IMPRODUTIVA':          ['improdutiva']
@@ -889,6 +890,7 @@ var ENSURE_COLUMNS = [
   ['Vistoria', 'VISTORIA'],
   ['Fonte Queimada', 'FONTE QUEIMADA'],
   ['Troca de Equipamento', 'TROCA DE EQUIPAMENTO'],
+  ['Retirada', 'RETIRADA'],
   ['Sinal Alto', 'SINAL ALTO'],
   ['Reincidência', 'REINCIDENCIA'],
   ['Improdutiva', 'IMPRODUTIVA'],

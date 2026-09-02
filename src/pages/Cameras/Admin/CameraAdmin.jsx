@@ -19,13 +19,7 @@ import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays,
 import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
 import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
-
-const localDate = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
+import { localDate } from '../../../utils/formatDate';
 
 const SERVICE_TYPES = [
   'INSTALAÇÃO WI-BICAM','REPARO','TROCA ROTEADOR/VISTORIA/REPARO TV',

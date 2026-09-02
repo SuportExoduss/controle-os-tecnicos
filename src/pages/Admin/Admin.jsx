@@ -12,6 +12,7 @@ import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { AuthContext } from '../../context/AuthContext';
 import { getCurrentTime } from '../../utils/formatTime';
+import { localDate } from '../../utils/formatDate';
 import { chipStyle } from '../../utils/chipStyle';
 import { ChevronDown, Plus, UserPlus, CheckCircle2, ListChecks, X, CalendarDays, RotateCcw, ClipboardList, ArrowRight, Check, Trash2, Edit2, Upload, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { ThemeContext } from '../../context/ThemeContext';
@@ -21,17 +22,10 @@ import { formatName } from '../../utils/formatName';
 import { CollaboratorEditModal } from '../../components/modals/CollaboratorEditModal';
 import { registerNewTechnician, deactivateTechnician, getAllTechnicians } from '../../services/database/technicianService';
 
-const localDate = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-
 const SERVICE_TYPES = [
   'INSTALAÇÃO FIBRA','MANUTENÇÃO FIBRA','PADRONIZAÇÃO CABEAMENTO/CTO','MUDANÇA DE ENDEREÇO','MUDANÇA DE PONTO',
   'INSTALAÇÃO WI-BINET','REPARO WI-BINET','INSTALAÇÃO TV','REPARO TV',
-  'OS AMPLIAÇÃO','VISTORIA','FONTE QUEIMADA','TROCA DE EQUIPAMENTO',
+  'OS AMPLIAÇÃO','VISTORIA','FONTE QUEIMADA','TROCA DE EQUIPAMENTO','RETIRADA',
   'SINAL ALTO','REINCIDÊNCIA','IMPRODUTIVA',
 ];
 const SVC_STYLE = {
@@ -48,6 +42,7 @@ const SVC_STYLE = {
   'VISTORIA':             { bg:'#2a1f00', color:'#fbbf24', border:'#78350f' },
   'FONTE QUEIMADA':       { bg:'#2a1000', color:'#fb923c', border:'#7c2d12' },
   'TROCA DE EQUIPAMENTO': { bg:'#1a0f2e', color:'#c084fc', border:'#4c1d95' },
+  'RETIRADA':             { bg:'#161f0d', color:'#a3e635', border:'#3f6212' },
   'SINAL ALTO':           { bg:'#1a2010', color:'#4ade80', border:'#166534' },
   'REINCIDÊNCIA':         { bg:'#2d1010', color:'#fca5a5', border:'#991b1b' },
   'IMPRODUTIVA':          { bg:'#111827', color:'#6b7280', border:'#374151' },

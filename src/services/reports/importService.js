@@ -49,6 +49,7 @@ const TYPE_ALIASES = {
   'VISTORIA':             ['vistoria'],
   'FONTE QUEIMADA':       ['fonte queimada'],
   'TROCA DE EQUIPAMENTO': ['troca de equipamento'],
+  'RETIRADA':             ['retirada'],
   'SINAL ALTO':           ['sinal alto'],
   'REINCIDÊNCIA':         ['reincidencia'],
   'IMPRODUTIVA':          ['improdutiva'],

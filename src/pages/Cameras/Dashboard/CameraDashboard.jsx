@@ -10,7 +10,7 @@ import { Spinner } from '../../../components/common/Spinner';
 import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
-import { formatDate } from '../../../utils/formatDate';
+import { formatDate, localDate } from '../../../utils/formatDate';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
@@ -29,13 +29,7 @@ const TYPE_COLORS = {
   'MUDANÇA DE PONTO': '#7dd3fc', 'VISTORIA TÉCNICA': '#fbbf24', 'RETIRADA': '#fca5a5',
 };
 
-// Usa hora LOCAL para evitar problema de fuso horário
-const localDate = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
+// localDate() agora vem de utils/formatDate (fonte única).
 
 // Classifica um dia ZERADO pela observação (Férias/Atestado/Folga/Feriado) →
 // rótulo + cor, para exibir no card expandido como "o que houve no dia".

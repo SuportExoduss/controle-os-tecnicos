@@ -19,6 +19,15 @@ export const addNetworkCollaborator = (name) =>
 export const updateNetworkCollaborator = (id, newName) =>
   updateDoc(doc(db, COL, id), { name: formatName(newName) });
 
+// Escala: time (azul/vermelho/amarelo) + papel (motorista/passageiro).
+// Passageiro = não dirige → não é obrigado a fazer o CHECKLIST no seu dia.
+export const updateNetworkCollaboratorEscala = (id, { team, motorista, passageiro }) =>
+  updateDoc(doc(db, COL, id), {
+    team: team || null,
+    motorista: motorista !== undefined ? !!motorista : true,
+    passageiro: !!passageiro,
+  });
+
 export const deleteNetworkCollaborator = (id) =>
   deleteDoc(doc(db, COL, id));
 

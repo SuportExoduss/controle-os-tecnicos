@@ -17,6 +17,7 @@ const EXCEL_COLS = [
   { label: 'Vistoria',               key: 'VISTORIA'              },
   { label: 'Fonte Queimada',         key: 'FONTE QUEIMADA'        },
   { label: 'Troca de Equipamento',   key: 'TROCA DE EQUIPAMENTO'  },
+  { label: 'Retirada',               key: 'RETIRADA'              },
   { label: 'Sinal Alto',             key: 'SINAL ALTO'            },
   { label: 'Reincidência',           key: 'REINCIDÊNCIA'          },
   { label: 'Improdutiva',            key: 'IMPRODUTIVA'           },

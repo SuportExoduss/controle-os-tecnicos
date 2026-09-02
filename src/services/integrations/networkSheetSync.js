@@ -16,7 +16,6 @@ const post = async (payload, attempt = 0) => {
       body: JSON.stringify({ token: SHEET_TOKEN, team: 'redes', ...payload }),
     });
     const text = await res.text();
-    console.log('[networkSheetSync] status:', res.status, '| resposta:', text);
     try {
       return JSON.parse(text);
     } catch {

@@ -132,15 +132,6 @@ export const renameReportsByTechnician = async (oldName, newName) => {
   return snap.docs.map(d => ({ ...d.data(), technicianName: newName }));
 };
 
-export const deleteAllReportsByTechnician = async (technicianName) => {
-  const q = query(collection(db, COLLECTION_NAME), where('technicianName', '==', technicianName));
-  const snap = await getDocs(q);
-  const deletes = snap.docs.map(d => deleteDoc(doc(db, COLLECTION_NAME, d.id)));
-  const res = await Promise.all(deletes);
-  clearCache(COLLECTION_NAME);
-  return res;
-};
-
 // Apaga TODOS os relatórios de uma data (todos os técnicos). Requer login.
 export const deleteAllReportsByDate = async (date) => {
   const q = query(collection(db, COLLECTION_NAME), where('date', '==', date));

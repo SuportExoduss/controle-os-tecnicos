@@ -17,7 +17,7 @@ import { Eye, EyeOff, UserCircle, Check, Sun, Moon } from 'lucide-react';
 export const Login = () => {
   const rememberInit = localStorage.getItem(REMEMBER_KEY) !== '0'; // ligado por padrão
   const [email, setEmail] = useState(() => rememberInit ? (localStorage.getItem(EMAIL_KEY) || '') : '');
-  const [password, setPassword] = useState(() => rememberInit ? (localStorage.getItem(PASS_KEY) || '') : '');
+  const [password, setPassword] = useState(''); // NUNCA pré-preenche senha (não guardamos senha no navegador)
   const [remember, setRemember] = useState(rememberInit);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -35,6 +35,10 @@ export const Login = () => {
     if (!authLoading && user && profile?.nickname) navigate(adminDest, { replace: true });
   }, [authLoading, user, profile, adminDest, navigate]);
 
+  // Segurança: apaga qualquer senha em texto que versões antigas do "Lembrar
+  // dispositivo" tenham deixado no navegador. Roda uma vez, ao abrir o login.
+  useEffect(() => { try { localStorage.removeItem(PASS_KEY); } catch { /* ignore */ } }, []);
+
   // Primeiro acesso — escolher apelido
   const [needNickname, setNeedNickname] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
@@ -48,10 +52,11 @@ export const Login = () => {
       // Persistência conforme "Lembrar dispositivo" (antes do login)
       try { await setRememberDevice(remember); } catch { /* segue com o padrão */ }
       const cred = await loginUser(email, password);
-      // Salva preferência + credenciais (ou limpa)
+      // Salva só a preferência + o e-mail (conveniência). A SENHA nunca é gravada:
+      // a sessão persiste pelo Firebase (browserLocalPersistence) via setRememberDevice.
       localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0');
-      if (remember) { localStorage.setItem(EMAIL_KEY, email); localStorage.setItem(PASS_KEY, password); }
-      else { localStorage.removeItem(EMAIL_KEY); localStorage.removeItem(PASS_KEY); }
+      if (remember) localStorage.setItem(EMAIL_KEY, email);
+      else localStorage.removeItem(EMAIL_KEY);
       const profile = await getUserProfile(cred.user.uid);
       if (!profile || !profile.nickname) {
         setPendingUser(cred.user);

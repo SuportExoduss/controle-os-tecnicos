@@ -20,7 +20,10 @@ import {
 import {
   getNetworkCollaborators, addNetworkCollaborator,
   deleteNetworkCollaborator, seedNetworkCollaborators, updateNetworkCollaborator,
+  updateNetworkCollaboratorEscala,
 } from '../../../services/database/networkCollaboratorService';
+import { EscalaMes } from './EscalaMes';
+import { collabWorksResolved, daysInMonth } from '../escalaCore';
 import {
   syncNetworkOrderToSheet, syncNetworkOrdersToSheet, deleteNetworkOrderInSheet,
   countNetworkOrdersInSheet, renameNetworkTechnicianInSheet,
@@ -29,6 +32,7 @@ import { CollaboratorEditModal } from '../../../components/modals/CollaboratorEd
 import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModal';
 import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
 import { syncAbsenceDays } from '../../../services/database/frotaService';
+import { localDate } from '../../../utils/formatDate';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -61,13 +65,6 @@ const SLA_BADGE = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────────
-
-const localDate = (d = new Date()) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
 
 const fmtDate = (s) => {
   if (!s) return '—';
@@ -176,6 +173,7 @@ export const NetworkAdmin = () => {
   // Ausência por período (Atestado/Férias)
   const [absenceModal, setAbsenceModal] = useState(null); // null | 'Atestado' | 'Férias'
   const [markingAbsence, setMarkingAbsence] = useState(false);
+  const [applyingEscala, setApplyingEscala] = useState(false);
   // Edit collab (nome + transferência de setor)
   const [showEditCollab, setShowEditCollab] = useState(false);
   const [editCollab, setEditCollab] = useState(null);
@@ -388,6 +386,47 @@ export const NetworkAdmin = () => {
     await syncAbsenceDays(name, days, motivo, profile?.nickname || 'admin'); // Frota + índice
     await fetchOrders();
     return { count: days.length };
+  };
+
+  // ── Aplicar a Escala do mês à Frota ───────────────────────────────────────────
+  // Para cada técnico com time: dias fora da escala = Folga; dias de escala em que
+  // é Passageiro = Passageiro (sem checklist). Dias em que o técnico TRABALHOU
+  // (tem O.S) são preservados. Escreve na Frota + índice (mata o "não fez" errado).
+  const handleAplicarFrota = async (ano, mes, overrides = {}) => {
+    const comTime = collaborators.filter(c => c.team);
+    if (!comTime.length) { toast.error('Nenhum técnico com time definido'); return; }
+    setApplyingEscala(true);
+    const mesPrefix = `${ano}-${String(mes + 1).padStart(2, '0')}`;
+    const hoje = new Date();
+    const ehMesAtual = hoje.getFullYear() === ano && hoje.getMonth() === mes;
+    const ultimoDia = ehMesAtual ? hoje.getDate() : daysInMonth(ano, mes);
+
+    // O.S reais por técnico+dia (para não folgar quem trabalhou)
+    const trabalhou = new Set();
+    orders.forEach(o => {
+      if (isAbsence(o)) return;
+      [o.data, o.dataAbertura, o.dataFechamento].forEach(d => {
+        if (d && d.startsWith(mesPrefix)) trabalhou.add(`${o.tecnico}|${d}`);
+      });
+    });
+
+    try {
+      let nFolga = 0, nPass = 0;
+      for (const c of comTime) {
+        const folgas = [], passageiros = [];
+        for (let day = 1; day <= ultimoDia; day++) {
+          const ds = `${mesPrefix}-${String(day).padStart(2, '0')}`;
+          if (trabalhou.has(`${c.name}|${ds}`)) continue; // trabalhou → preserva
+          const escalado = collabWorksResolved(c, ano, mes, day, overrides);
+          if (!escalado) folgas.push(ds);
+          else if (c.passageiro) passageiros.push(ds);
+        }
+        if (folgas.length) { await syncAbsenceDays(c.name, folgas, 'Folga (escala)', profile?.nickname || 'admin'); nFolga += folgas.length; }
+        if (passageiros.length) { await syncAbsenceDays(c.name, passageiros, 'Passageiro (escala)', profile?.nickname || 'admin'); nPass += passageiros.length; }
+      }
+      toast.success(`Escala aplicada à Frota: ${nFolga} folga(s), ${nPass} passageiro(s).`);
+    } catch { toast.error('Erro ao aplicar a escala à Frota'); }
+    finally { setApplyingEscala(false); }
   };
 
   // ── Colaboradores ────────────────────────────────────────────────────────────
@@ -610,7 +649,7 @@ export const NetworkAdmin = () => {
           {[
             { label: 'Registradas hoje', value: todayOrders.length,  color: S.blue },
             { label: 'Em aberto',        value: openOrders.length,   color: openOrders.length > 0 ? '#f87171' : '#4ade80' },
-            { label: 'Total geral',      value: orders.length,       color: S.muted2 },
+            { label: 'Total geral',      value: reais.length,        color: S.muted2 },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
               <div style={{ color, fontWeight: 900, fontSize: '28px', lineHeight: 1 }}>{value}</div>
@@ -914,6 +953,10 @@ export const NetworkAdmin = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
             style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+            {/* Escala do Mês (quadro compacto — só admin) */}
+            <EscalaMes S={S} collaborators={collaborators} orders={orders}
+              onAplicarFrota={handleAplicarFrota} applying={applyingEscala} />
+
             {/* Resumo do Dia */}
             <Glass S={S} style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px' }}>
@@ -1055,6 +1098,8 @@ export const NetworkAdmin = () => {
         {showEditCollab && editCollab && (
           <CollaboratorEditModal S={S} collab={editCollab} currentSector="redes"
             renameFn={redesRenameFn}
+            escala={{ team: editCollab.team || '', motorista: editCollab.motorista, passageiro: editCollab.passageiro }}
+            onEscalaSave={(fields) => updateNetworkCollaboratorEscala(editCollab.id, fields)}
             onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
             onDone={fetchCollaborators} />
         )}
