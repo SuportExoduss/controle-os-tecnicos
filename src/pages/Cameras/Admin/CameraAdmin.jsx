@@ -759,12 +759,14 @@ const handleFileUpload = async (e) => {
                       </div>
                       <div style={{ display: 'flex', gap: '4px' }}>
                         <button onClick={() => { setEditCollab(c); setShowEditCollab(true); }}
+                          className="ui-focus" aria-label={`Editar ${c.name}`} title={`Editar ${c.name}`}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
                           onMouseEnter={e => { e.currentTarget.style.color = S.accent; e.currentTarget.style.background = S.accentSoft; }}
                           onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
                           <Edit2 size={13} />
                         </button>
                         <button onClick={() => handleDeleteCollab(c.id, c.name)}
+                          className="ui-focus" aria-label={`Excluir ${c.name}`} title={`Excluir ${c.name}`}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
                           onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = '#2d0f0f'; }}
                           onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
