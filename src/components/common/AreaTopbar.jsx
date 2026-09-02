@@ -90,6 +90,8 @@ export const AreaTopbar = ({
     return (
       <button
         key={action.label}
+        className="ui-focus"
+        aria-label={action.title || action.label}
         onClick={action.onClick}
         disabled={action.disabled}
         title={action.title || action.label}
@@ -137,16 +139,16 @@ export const AreaTopbar = ({
             <span>{variant === 'admin' ? `${meta.label} · Admin` : meta.label}</span>
           </div>
 
-          <button onClick={onTheme} title="Alternar tema" style={iconButton}>
+          <button onClick={onTheme} title="Alternar tema" aria-label="Alternar tema" className="ui-focus" style={iconButton}>
             {mode === 'light' ? <Moon size={15} /> : <Sun size={15} />}
           </button>
 
-          <button onClick={onPrimary} title={variant === 'admin' ? 'Ir para o Dashboard' : 'Ir para o painel ADM'} style={navButton}>
+          <button onClick={onPrimary} className="ui-focus" aria-label={variant === 'admin' ? 'Ir para o Dashboard' : 'Ir para o painel ADM'} title={variant === 'admin' ? 'Ir para o Dashboard' : 'Ir para o painel ADM'} style={navButton}>
             <PrimaryIcon size={14} />
             <span className="r-topbar-label">{primaryLabel}</span>
           </button>
 
-          <button onClick={onAuth} title={isLogged ? 'Sair' : 'Entrar para editar'} style={authButton}>
+          <button onClick={onAuth} className="ui-focus" aria-label={isLogged ? 'Sair' : 'Entrar para editar'} title={isLogged ? 'Sair' : 'Entrar para editar'} style={authButton}>
             {isLogged ? <LogOut size={13} /> : <Lock size={13} />}
             <span className="r-topbar-label">{authLabel}</span>
           </button>

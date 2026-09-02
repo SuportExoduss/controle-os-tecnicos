@@ -123,7 +123,7 @@ export const Home = () => {
         <div style={{ maxWidth: '1100px', margin: '0 auto', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
           <div aria-hidden="true" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-            <button onClick={toggleTheme} title="Alternar tema"
+            <button onClick={toggleTheme} title="Alternar tema" aria-label="Alternar tema" className="ui-focus"
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '10px', background: 'transparent', border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, cursor: 'pointer', flexShrink: 0 }}>
               {mode === 'light' ? <Moon size={16} /> : <Sun size={16} />}
             </button>
@@ -260,7 +260,7 @@ export const Home = () => {
                         onKeyDown={e => { if (e.key === 'Enter') handleLogin(); }}
                         style={{ width: '100%', padding: '13px 46px 13px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box' }}
                         onFocus={e => e.target.style.borderColor = S.accent} onBlur={e => e.target.style.borderColor = S.border} />
-                      <button type="button" onClick={() => setShowPass(!showPass)}
+                      <button type="button" onClick={() => setShowPass(!showPass)} aria-label={showPass ? 'Ocultar senha' : 'Mostrar senha'} className="ui-focus"
                         style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: S.muted, background: 'none', border: 'none', cursor: 'pointer', display: 'flex' }}>
                         {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
