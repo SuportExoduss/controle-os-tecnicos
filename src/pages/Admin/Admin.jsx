@@ -5,7 +5,7 @@ import { logoutUser } from '../../services/auth/authService';
 import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician, saveAbsencePeriod } from '../../services/database/reportService';
 import { syncAbsenceDays } from '../../services/database/frotaService';
 import { AbsencePeriodModal } from '../../components/modals/AbsencePeriodModal';
-import { PillButton } from '../../components/ui';
+import { Button, PillButton } from '../../components/ui';
 import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
@@ -793,14 +793,8 @@ const handleFileUpload = async (e) => {
               </div>
               {/* Ausência POR PERÍODO (mais de 1 dia) */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                <button type="button" onClick={() => setAbsenceModal('Férias')}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #22c55e66', background: 'rgba(34,197,94,0.12)', color: '#22c55e', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
-                  <CalendarDays size={14}/>Férias (período)
-                </button>
-                <button type="button" onClick={() => setAbsenceModal('Atestado')}
-                  style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px', borderRadius: '10px', border: '1px solid #3b82f666', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer' }}>
-                  <CalendarDays size={14}/>Atestado (período)
-                </button>
+                <Button S={S} tone="#22c55e" icon={CalendarDays} onClick={() => setAbsenceModal('Férias')} style={{ flex: 1, fontSize: '12.5px' }}>Férias (período)</Button>
+                <Button S={S} tone="#3b82f6" icon={CalendarDays} onClick={() => setAbsenceModal('Atestado')} style={{ flex: 1, fontSize: '12.5px' }}>Atestado (período)</Button>
               </div>
 
               {collaborators.length === 0 ? (
