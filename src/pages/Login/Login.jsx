@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loginUser, logoutUser, setRememberDevice } from '../../services/auth/authService';
+import { Button, FieldLabel, TextInput } from '../../components/ui';
 
 // Chaves do "Lembrar dispositivo"
 const REMEMBER_KEY = 'ibiunet_remember';
@@ -98,7 +99,7 @@ export const Login = () => {
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', background: S.bg, position: 'relative' }}>
       {/* Toggle tema */}
-      <button onClick={toggleTheme} title="Alternar tema"
+      <button onClick={toggleTheme} title="Alternar tema" aria-label="Alternar tema" className="ui-focus"
         style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 5, width: '40px', height: '40px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}`, color: mode === 'light' ? S.purple : S.orange, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
         {mode === 'light' ? <Moon size={18} /> : <Sun size={18} />}
       </button>
@@ -163,21 +164,15 @@ export const Login = () => {
 
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: S.muted2, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</label>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required
-                style={{ width: '100%', padding: '14px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                onFocus={e => e.target.style.borderColor = S.accent}
-                onBlur={e => e.target.style.borderColor = S.border} />
+              <FieldLabel S={S}>Email</FieldLabel>
+              <TextInput S={S} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" required autoComplete="username" />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: S.muted2, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Senha</label>
+              <FieldLabel S={S}>Senha</FieldLabel>
               <div style={{ position: 'relative' }}>
-                <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required
-                  style={{ width: '100%', padding: '14px 48px 14px 16px', borderRadius: '12px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-                  onFocus={e => e.target.style.borderColor = S.accent}
-                  onBlur={e => e.target.style.borderColor = S.border} />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                <TextInput S={S} type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required autoComplete="current-password" style={{ padding: '14px 48px 14px 16px' }} />
+                <button type="button" className="ui-focus" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                   style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: S.muted, background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}>
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -196,10 +191,9 @@ export const Login = () => {
               </span>
             </label>
 
-            <button type="submit" disabled={loading}
-              style={{ width: '100%', padding: '14px', borderRadius: '12px', background: loading ? S.border : S.gradient, border: 'none', color: S.onAccent, fontSize: '15px', fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: loading ? 'none' : `0 0 30px ${S.glow}`, transition: 'all 0.2s' }}>
-              {loading ? <Spinner /> : 'Entrar na plataforma'}
-            </button>
+            <Button S={S} type="submit" variant="primary" fullWidth size="lg" loading={loading} style={{ padding: '14px', fontSize: '15px' }}>
+              {loading ? '' : 'Entrar na plataforma'}
+            </Button>
           </form>
         </motion.div>
       </div>
