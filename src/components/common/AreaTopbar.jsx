@@ -18,7 +18,7 @@ import {
 const AREA_META = {
   fibra: { label: 'Fibra', Icon: Cable },
   redes: { label: 'Redes', Icon: Wifi },
-  cameras: { label: 'WIBICAM', Icon: Video },
+  cameras: { label: 'IbiuCam', Icon: Video },
   frota: { label: 'Frota', Icon: Truck },
 };
 

@@ -33,6 +33,7 @@ import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModa
 import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
 import { syncAbsenceDays } from '../../../services/database/frotaService';
 import { localDate } from '../../../utils/formatDate';
+import { PillButton } from '../../../components/ui';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -693,16 +694,12 @@ export const NetworkAdmin = () => {
                         { m: 'Atestado',   c: '#3b82f6' },
                         { m: 'Passageiro', c: '#38bdf8' },
                       ].map(({ m, c }) => (
-                        <button key={m} type="button" onClick={() => marcarAusencia(m)} disabled={!form.tecnico || markingAbsence}
-                          title={form.tecnico ? `Marcar ${m} para ${form.tecnico} hoje` : 'Selecione o técnico primeiro'}
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (!form.tecnico || markingAbsence) ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                            border: `1px solid ${form.tecnico ? c : S.border}`,
-                            background: form.tecnico ? c + '26' : 'transparent',
-                            color: form.tecnico ? c : S.muted,
-                            boxShadow: form.tecnico ? `0 0 14px ${c}59` : 'none',
-                            opacity: (!form.tecnico || markingAbsence) ? 0.55 : 1 }}>
-                          <CalendarDays size={14} />{m}
-                        </button>
+                        <PillButton key={m} S={S} tone={c} icon={CalendarDays}
+                          active={!!form.tecnico} disabled={!form.tecnico || markingAbsence}
+                          onClick={() => marcarAusencia(m)}
+                          title={form.tecnico ? `Marcar ${m} para ${form.tecnico} hoje` : 'Selecione o técnico primeiro'}>
+                          {m}
+                        </PillButton>
                       ))}
                     </div>
                   )}

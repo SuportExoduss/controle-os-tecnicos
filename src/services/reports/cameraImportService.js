@@ -1,4 +1,4 @@
-// Importação da aba "Lancamentos Equipe Cameras" (WIBICAM).
+// Importação da aba "Lancamentos Equipe Cameras" (IbiuCam).
 // xlsx é carregado sob demanda (dynamic import) para não pesar o bundle inicial.
 
 // Converte serial date do Excel para YYYY-MM-DD

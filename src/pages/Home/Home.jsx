@@ -19,7 +19,7 @@ const TEAMS = [
     icon: Cable, dashboard: '/fibra/dashboard', admin: '/fibra/admin' },
   { key: 'redes', name: 'Redes', desc: 'Ordens de serviço e SLA da rede',
     icon: Wifi, dashboard: '/redes/dashboard', admin: '/redes/admin' },
-  { key: 'cameras', name: 'WIBICAM', desc: 'Equipe de câmeras de monitoramento',
+  { key: 'cameras', name: 'IbiuCam', desc: 'Equipe de câmeras de monitoramento',
     icon: Video, dashboard: '/cameras/dashboard', admin: '/cameras/admin' },
   { key: 'frota', name: 'Frota', desc: 'Checklist diário dos veículos',
     icon: Truck, dashboard: '/frota/dashboard', admin: '/frota/admin' },

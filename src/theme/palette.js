@@ -76,9 +76,9 @@ export const BRANDS = {
     },
   },
 
-  // ── CÂMERAS (WIBICAM) — Verde (checks/“Contratar Plano”) ───────────────
+  // ── CÂMERAS (IbiuCam) — Verde (checks/“Contratar Plano”) ───────────────
   cameras: {
-    key: 'cameras', name: 'WIBICAM',
+    key: 'cameras', name: 'IbiuCam',
     dark: {
       ...txtDark,
       bg: '#07120e', card: '#0b1a14', card2: '#0f211a', border: '#163a2c',

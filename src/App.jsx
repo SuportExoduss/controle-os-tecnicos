@@ -75,7 +75,7 @@ function App() {
             />
             <Route path="/redes/dashboard" element={<NetworkDashboard />} />
 
-            {/* Câmeras (WIBICAM) */}
+            {/* Câmeras (IbiuCam) */}
             <Route path="/cameras/login" element={<Login />} />
             <Route
               path="/cameras/admin"

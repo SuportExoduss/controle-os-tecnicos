@@ -1,4 +1,4 @@
-// Envio dos relatórios da equipe de câmeras (WIBICAM) para a planilha do Google
+// Envio dos relatórios da equipe de câmeras (IbiuCam) para a planilha do Google
 // (via Apps Script Web App). É "best-effort": se falhar, NÃO atrapalha o
 // salvamento no Firestore. Usa o MESMO Web App e token, com team:'cameras',
 // gravando na aba "Lancamentos Equipe Cameras".

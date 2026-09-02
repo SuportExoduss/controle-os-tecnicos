@@ -19,24 +19,23 @@ export const StatusPill = ({ tone = '#94a3b8', children, icon: Icon, size = 'sm'
 export const PillButton = ({
   tone = '#3b82f6', active = true, children, icon: Icon,
   disabled = false, onClick, title, S, style, ...rest
-}) => {
-  const on = active && !disabled;
-  return (
-    <button
-      type="button" className="ui-focus" onClick={onClick} disabled={disabled} title={title}
-      style={{
-        display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px',
-        borderRadius: R.sm + 1, fontSize: FS.sm, fontWeight: 700, whiteSpace: 'nowrap',
-        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all .2s', fontFamily: 'inherit',
-        border: `1px solid ${on ? tone : (S ? S.border : '#33415577')}`,
-        background: on ? tone + '26' : 'transparent',
-        color: on ? tone : (S ? S.muted : '#94a3b8'),
-        boxShadow: on ? `0 0 14px ${tone}59` : 'none',
-        opacity: disabled ? 0.55 : 1, ...style,
-      }}
-      {...rest}
-    >
-      {Icon && <Icon size={14} />}{children}
-    </button>
-  );
-};
+}) => (
+  <button
+    type="button" className="ui-focus" onClick={onClick} disabled={disabled} title={title}
+    aria-label={typeof children === 'string' ? children : undefined}
+    style={{
+      display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px',
+      borderRadius: R.sm + 1, fontSize: FS.sm, fontWeight: 700, whiteSpace: 'nowrap',
+      cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all .2s', fontFamily: 'inherit',
+      // cor = estado "ativo" (ex.: técnico selecionado); opacidade dim quando inativo.
+      border: `1px solid ${active ? tone : (S ? S.border : '#33415577')}`,
+      background: active ? tone + '26' : 'transparent',
+      color: active ? tone : (S ? S.muted : '#94a3b8'),
+      boxShadow: active ? `0 0 14px ${tone}59` : 'none',
+      opacity: active ? 1 : 0.6, ...style,
+    }}
+    {...rest}
+  >
+    {Icon && <Icon size={14} />}{children}
+  </button>
+);

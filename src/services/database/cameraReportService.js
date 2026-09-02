@@ -3,7 +3,7 @@ import { db } from '../firebase/firebaseConfig';
 import { readCache, writeCache, clearCache } from './queryCache';
 import { eachDayISO } from './reportService';
 
-// Relatórios diários da equipe de câmeras (WIBICAM).
+// Relatórios diários da equipe de câmeras (IbiuCam).
 const COLLECTION_NAME = 'camera_reports';
 
 // ID determinístico: 1 documento por técnico+dia por construção (mesmo padrão

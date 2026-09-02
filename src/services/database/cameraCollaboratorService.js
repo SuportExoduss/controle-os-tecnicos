@@ -2,7 +2,7 @@ import { collection, addDoc, getDocs, orderBy, query, deleteDoc, doc, updateDoc 
 import { db } from '../firebase/firebaseConfig';
 import { formatName } from '../../utils/formatName';
 
-// Colaboradores da equipe de câmeras (WIBICAM).
+// Colaboradores da equipe de câmeras (IbiuCam).
 const COLLECTION = 'camera_collaborators';
 
 // Nomes exatos da planilha "Lancamentos Equipe Cameras"

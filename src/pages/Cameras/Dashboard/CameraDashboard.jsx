@@ -414,7 +414,7 @@ export const CameraDashboard = () => {
   const buildGeneralText = () => {
     const lines = [];
     lines.push('╔══════════════════════════════════════════╗');
-    lines.push('║   RELATÓRIO GERAL DE O.S — WIBICAM (CÂMERAS)   ║');
+    lines.push('║   RELATÓRIO GERAL DE O.S — IbiuCam (CÂMERAS)   ║');
     lines.push('╚══════════════════════════════════════════╝');
     const _today = localDate();
     const _first = `${_today.slice(0, 7)}-01`;

@@ -5,6 +5,7 @@ import { logoutUser } from '../../services/auth/authService';
 import { getReportsByTechnician, deleteAllReportsByDate, upsertDailyReport, getReportsByDateRaw, renameReportsByTechnician, saveAbsencePeriod } from '../../services/database/reportService';
 import { syncAbsenceDays } from '../../services/database/frotaService';
 import { AbsencePeriodModal } from '../../components/modals/AbsencePeriodModal';
+import { PillButton } from '../../components/ui';
 import { getCollaborators, addCollaborator, updateCollaborator, deleteCollaborator } from '../../services/database/collaboratorService';
 import { Spinner } from '../../components/common/Spinner';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
@@ -538,38 +539,19 @@ const handleFileUpload = async (e) => {
                       <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Preencha os dados da produção diária</div>
                     </div>
                   </div>
-                  {/* Atalhos Folga + Atestado + Férias */}
-                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                    <button type="button" onClick={handleFolga} disabled={!formData.technicianName || loading}
-                      title="Marcar o técnico selecionado como folga (zerado + observação Folga)"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                        border: `1px solid ${formData.technicianName ? S.red : S.border}`,
-                        background: formData.technicianName ? 'rgba(239,68,68,0.15)' : 'transparent',
-                        color: formData.technicianName ? S.red : S.muted,
-                        boxShadow: formData.technicianName ? '0 0 14px rgba(239,68,68,0.35)' : 'none',
-                        opacity: formData.technicianName ? 1 : 0.6 }}>
-                      <CalendarDays size={14}/>Folga
-                    </button>
-                    <button type="button" onClick={handleAtestado} disabled={!formData.technicianName || loading}
-                      title="Marcar o técnico selecionado como atestado médico (zerado + observação Atestado)"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                        border: `1px solid ${formData.technicianName ? '#3b82f6' : S.border}`,
-                        background: formData.technicianName ? 'rgba(59,130,246,0.15)' : 'transparent',
-                        color: formData.technicianName ? '#3b82f6' : S.muted,
-                        boxShadow: formData.technicianName ? '0 0 14px rgba(59,130,246,0.35)' : 'none',
-                        opacity: formData.technicianName ? 1 : 0.6 }}>
-                      <CalendarDays size={14}/>Atestado
-                    </button>
-                    <button type="button" onClick={handleFeriado} disabled={!formData.technicianName || loading}
-                      title="Marcar o técnico selecionado como feriado neste dia (zerado + observação Feriado)"
-                      style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                        border: `1px solid ${formData.technicianName ? '#a78bfa' : S.border}`,
-                        background: formData.technicianName ? 'rgba(167,139,250,0.15)' : 'transparent',
-                        color: formData.technicianName ? '#a78bfa' : S.muted,
-                        boxShadow: formData.technicianName ? '0 0 14px rgba(167,139,250,0.35)' : 'none',
-                        opacity: formData.technicianName ? 1 : 0.6 }}>
-                      <CalendarDays size={14}/>Feriado
-                    </button>
+                  {/* Atalhos de presença de HOJE — PillButton do design system */}
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
+                    {[
+                      { m: 'Folga',    c: '#ef4444', fn: handleFolga },
+                      { m: 'Atestado', c: '#3b82f6', fn: handleAtestado },
+                      { m: 'Feriado',  c: '#a78bfa', fn: handleFeriado },
+                    ].map(({ m, c, fn }) => (
+                      <PillButton key={m} S={S} tone={c} icon={CalendarDays}
+                        active={!!formData.technicianName} disabled={!formData.technicianName || loading}
+                        onClick={fn} title={`Marcar o técnico selecionado como ${m.toLowerCase()} (zerado + observação ${m})`}>
+                        {m}
+                      </PillButton>
+                    ))}
                   </div>
                 </div>
               </div>

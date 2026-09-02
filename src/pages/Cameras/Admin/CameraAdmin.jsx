@@ -20,6 +20,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
 import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
 import { localDate } from '../../../utils/formatDate';
+import { PillButton } from '../../../components/ui';
 
 const SERVICE_TYPES = [
   'INSTALAÇÃO WI-BICAM','REPARO','TROCA ROTEADOR/VISTORIA/REPARO TV',
@@ -453,27 +454,23 @@ const handleFileUpload = async (e) => {
                       <ClipboardList size={18} color={S.blue} />
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia — WIBICAM</div>
+                      <div style={{ color: S.text, fontWeight: 800, fontSize: '18px' }}>Registrar O.S do Dia — IbiuCam</div>
                       <div style={{ color: S.blue, fontSize: '13px', marginTop: '2px' }}>Lançamento da produção diária da equipe de câmeras</div>
                     </div>
                   </div>
-                  {/* Atalhos de UM dia: Folga, Feriado, Atestado */}
-                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  {/* Atalhos de UM dia (PillButton do design system) */}
+                  <div style={{ display: 'flex', gap: '6px', flexShrink: 0, flexWrap: 'wrap' }}>
                     {[
                       { m: 'Folga', c: '#ef4444' },
                       { m: 'Feriado', c: '#a78bfa' },
                       { m: 'Atestado', c: '#3b82f6' },
                     ].map(({ m, c }) => (
-                      <button key={m} type="button" onClick={() => markCameraAbsence(m)} disabled={!formData.technicianName || loading}
-                        title={`Marcar o técnico selecionado como ${m.toLowerCase()} neste dia (zerado + observação ${m})`}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '9px', fontSize: '12px', fontWeight: 700, cursor: (formData.technicianName && !loading) ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap', transition: 'all 0.2s',
-                          border: `1px solid ${formData.technicianName ? c : S.border}`,
-                          background: formData.technicianName ? c + '26' : 'transparent',
-                          color: formData.technicianName ? c : S.muted,
-                          boxShadow: formData.technicianName ? `0 0 14px ${c}59` : 'none',
-                          opacity: formData.technicianName ? 1 : 0.6 }}>
-                        <CalendarDays size={14}/>{m}
-                      </button>
+                      <PillButton key={m} S={S} tone={c} icon={CalendarDays}
+                        active={!!formData.technicianName} disabled={!formData.technicianName || loading}
+                        onClick={() => markCameraAbsence(m)}
+                        title={`Marcar o técnico selecionado como ${m.toLowerCase()} neste dia (zerado + observação ${m})`}>
+                        {m}
+                      </PillButton>
                     ))}
                   </div>
                 </div>

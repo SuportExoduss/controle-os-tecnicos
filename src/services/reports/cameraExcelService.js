@@ -1,4 +1,4 @@
-// Excel da equipe de câmeras (WIBICAM). xlsx é carregado sob demanda.
+// Excel da equipe de câmeras (IbiuCam). xlsx é carregado sob demanda.
 
 // Colunas — espelham a aba "Lancamentos Equipe Cameras"
 const EXCEL_COLS = [
@@ -26,7 +26,7 @@ const countType = (serviceTypes = [], typeName) =>
 // Cede a thread para o navegador repintar o overlay de progresso.
 const yieldToBrowser = () => new Promise(resolve => setTimeout(resolve, 0));
 
-export const generateCameraExcel = async (reports, filename = 'relatorio-wibicam', onProgress) => {
+export const generateCameraExcel = async (reports, filename = 'relatorio-ibiucam', onProgress) => {
   const XLSX = await import('xlsx');
   const header = EXCEL_COLS.map(c => c.label);
 
