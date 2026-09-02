@@ -11,6 +11,7 @@ import { ProgressOverlay } from '../../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { formatDate, localDate } from '../../../utils/formatDate';
+import { SkeletonKpiGrid, SkeletonRows, EmptyState } from '../../../components/ui';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
@@ -481,8 +482,11 @@ export const CameraDashboard = () => {
   }, [expandedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}><Spinner /><p style={{ color: S.muted, fontSize: '14px', marginTop: '12px' }}>Carregando...</p></div>
+    <div style={{ minHeight: '100vh', background: S.bg }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 16px 40px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <SkeletonKpiGrid S={S} count={7} />
+        <SkeletonRows S={S} rows={6} />
+      </div>
     </div>
   );
 
@@ -736,19 +740,10 @@ export const CameraDashboard = () => {
         {/* REPORT CARDS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {filteredReports.length === 0 ? (
-            <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '60px 20px', textAlign: 'center' }}>
-              <SearchX size={40} color={S.border} style={{ margin: '0 auto 16px' }} />
-              <p style={{ color: S.muted2, fontWeight: 700, fontSize: '16px' }}>
-                Nenhum registro em {currentMonthLabel()}
-              </p>
-              <p style={{ color: S.muted, fontSize: '13px', marginTop: '6px', marginBottom: '20px' }}>
-                Não há O.S registradas neste período.
-              </p>
-              <button onClick={goToPrevMonth}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                ← Ver mês anterior
-              </button>
-            </div>
+            <EmptyState S={S} icon={SearchX}
+              title={`Nenhum registro em ${currentMonthLabel()}`}
+              description={searchTechnician ? `Nenhuma O.S de "${searchTechnician}" neste período.` : 'Não há O.S registradas neste período.'}
+              actionLabel="← Ver mês anterior" onAction={goToPrevMonth} />
           ) : filteredReports.map((report, idx) => (
             <motion.div key={report.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }}
               style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', overflow: 'hidden' }}>

@@ -15,6 +15,7 @@ import { loginUser, logoutUser } from '../../services/auth/authService';
 import { getUserProfile } from '../../services/database/userProfileService';
 import { getFrotaCadastro, getFrotaMonth, saveFrotaManualEntry, deleteFrotaDayEntry } from '../../services/database/frotaService';
 import { Spinner } from '../../components/common/Spinner';
+import { SkeletonKpiGrid, SkeletonRows } from '../../components/ui';
 import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { MESES, SEV, isObrig, statsOf, initials, cellFor, DEFAULT_TEAMS, sortTeamsMembers } from './frotaCore';
@@ -119,8 +120,11 @@ export const FrotaDashboard = () => {
   const MODES = [['diario', 'Checklist diário', ClipboardCheck], ['cal', 'Calibragem', Gauge], ['occ', 'Ocorrências', AlertTriangle], ['trocas', 'Trocas de carro', Road], ['rel', 'Relação do mês', TableIcon], ['relcal', 'Relação Calibragem', Gauge]];
 
   if (loading && !doc) return (
-    <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}><Spinner /><p style={{ color: S.muted2, fontSize: '14px', marginTop: '12px' }}>Carregando…</p></div>
+    <div style={{ minHeight: '100vh', background: S.bg }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '88px 16px 40px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <SkeletonKpiGrid S={S} count={7} className="r-frota-kp" />
+        <SkeletonRows S={S} rows={5} height={64} />
+      </div>
     </div>
   );
 

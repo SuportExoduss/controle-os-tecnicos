@@ -14,6 +14,7 @@ import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
 import { localDate } from '../../../utils/formatDate';
+import { SkeletonKpiGrid, SkeletonRows, EmptyState } from '../../../components/ui';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
 import { getUserProfile } from '../../../services/database/userProfileService';
 import { getNetworkOrdersByRange, deleteNetworkOrder } from '../../../services/database/networkService';
@@ -396,10 +397,10 @@ export const NetworkDashboard = () => {
   };
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ textAlign: 'center' }}>
-        <Spinner />
-        <p style={{ color: S.muted, fontSize: '14px', marginTop: '12px' }}>Carregando...</p>
+    <div style={{ minHeight: '100vh', background: S.bg }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '88px 16px 40px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <SkeletonKpiGrid S={S} count={3} className="r-metrics3" />
+        <SkeletonRows S={S} rows={6} />
       </div>
     </div>
   );
@@ -704,17 +705,10 @@ export const NetworkDashboard = () => {
             </div>
 
             {techRows.length === 0 ? (
-              <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', padding: '60px 20px', textAlign: 'center' }}>
-                <Gauge size={40} color={S.border} style={{ margin: '0 auto 16px' }} />
-                <p style={{ color: S.muted2, fontWeight: 700, fontSize: '16px' }}>Nenhuma O.S em {monthLabel()}</p>
-                <p style={{ color: S.muted, fontSize: '13px', marginTop: '6px', marginBottom: '20px' }}>
-                  {selectedAssunto ? 'Nenhum registro deste assunto no período.' : 'Não há registros neste período.'}
-                </p>
-                <button onClick={goToPrevMonth}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', borderRadius: '10px', background: S.gradient, border: 'none', color: S.onAccent, fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
-                  ← Ver mês anterior
-                </button>
-              </div>
+              <EmptyState S={S} icon={Gauge}
+                title={`Nenhuma O.S em ${monthLabel()}`}
+                description={selectedAssunto ? 'Nenhum registro deste assunto no período.' : 'Não há registros neste período.'}
+                actionLabel="← Ver mês anterior" onAction={goToPrevMonth} />
             ) : techRows.map((r, idx) => {
               const s = r.stats;
               const sit = sitFromMedia(s.media, s.metaRef);

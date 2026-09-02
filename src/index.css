@@ -16,6 +16,37 @@ html {
 input, select, textarea {
   font-size: 16px;
 }
+
+/* ── Design system (componentes src/components/ui) ─────────────────────────── */
+/* Foco visível por teclado (acessibilidade) — só no foco por teclado, não no clique. */
+.ui-focus:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+/* Card clicável: leve elevação no hover. */
+.ui-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(0,0,0,0.16);
+}
+/* Skeleton: brilho passando. Respeita quem prefere menos movimento. */
+.ui-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.ui-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  animation: ui-shimmer 1.3s infinite;
+}
+@keyframes ui-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+  .ui-skeleton::after { animation: none; }
+  .ui-card-hover:hover { transform: none; }
+}
 @media (min-width: 640px) {
   input, select, textarea {
     font-size: 14px;
