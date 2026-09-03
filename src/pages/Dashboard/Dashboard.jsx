@@ -11,7 +11,7 @@ import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { formatDate, localDate } from '../../utils/formatDate';
-import { SkeletonKpiGrid, SkeletonRows, EmptyState } from '../../components/ui';
+import { SkeletonKpiGrid, SkeletonRows, EmptyState, ErrorState } from '../../components/ui';
 import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import { loginUser, logoutUser } from '../../services/auth/authService';
@@ -62,6 +62,7 @@ export const Dashboard = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [searchTechnician, setSearchTechnician] = useState('');
@@ -137,14 +138,14 @@ export const Dashboard = () => {
   // nas gravações economizam a cota de leituras do Firestore.
   const loadRange = async (from, to, tech, { force = false } = {}) => {
     try {
-      setLoading(true);
+      setLoading(true); setLoadError(false);
       const today = localDate();
       const start = from || `${today.slice(0, 7)}-01`;
       const end   = to   || today;
       const arr = await getReportsByDateRange(start, end, { force });
       setReports(arr);
       filterReports(arr, from, to, tech);
-    } catch (err) { toast.error('Erro ao carregar relatórios'); console.error(err); }
+    } catch (err) { setLoadError(true); toast.error('Erro ao carregar relatórios'); console.error(err); }
     finally { setLoading(false); }
   };
 
@@ -737,7 +738,12 @@ export const Dashboard = () => {
 
         {/* REPORT CARDS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {filteredReports.length === 0 ? (
+          {loadError ? (
+            <ErrorState S={S} icon={RotateCcw}
+              title="Não foi possível carregar os relatórios"
+              message="Falha ao buscar os dados do período. Verifique a conexão e tente novamente."
+              onRetry={() => loadRange(dateFrom, dateTo, searchTechnician, { force: true })} />
+          ) : filteredReports.length === 0 ? (
             <EmptyState S={S} icon={SearchX}
               title={`Nenhum registro em ${currentMonthLabel()}`}
               description={searchTechnician ? `Nenhuma O.S de "${searchTechnician}" neste período.` : 'Não há O.S registradas neste período.'}
