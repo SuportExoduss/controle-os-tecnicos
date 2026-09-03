@@ -18,8 +18,14 @@ input, select, textarea {
 }
 
 /* ── Design system (componentes src/components/ui) ─────────────────────────── */
-/* Foco visível por teclado (acessibilidade) — só no foco por teclado, não no clique. */
-.ui-focus:focus-visible {
+/* Foco visível por teclado (acessibilidade) — só no foco por teclado, não no clique.
+   GLOBAL: cobre TODO botão/link/controle do app de uma vez (não só os .ui-focus),
+   sem afetar quem usa mouse. */
+.ui-focus:focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible {
   outline: 2px solid currentColor;
   outline-offset: 2px;
   border-radius: 8px;
