@@ -1072,8 +1072,8 @@ export const NetworkAdmin = () => {
               <div style={{ marginTop: '10px', paddingTop: '12px', borderTop: `1px solid ${S.border}` }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '8px' }}>Ausência por período</div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button S={S} tone="#22c55e" icon={CalendarDays} onClick={() => setAbsenceModal('Férias')} style={{ flex: 1, fontSize: '12.5px' }}>Férias (período)</Button>
-                  <Button S={S} tone="#3b82f6" icon={CalendarDays} onClick={() => setAbsenceModal('Atestado')} style={{ flex: 1, fontSize: '12.5px' }}>Atestado (período)</Button>
+                  <Button S={S} tone="#22c55e" icon={CalendarDays} onClick={() => setAbsenceModal('Férias')} style={{ flex: 1, fontSize: '12.5px', whiteSpace: 'normal', lineHeight: 1.15 }}>Férias (período)</Button>
+                  <Button S={S} tone="#3b82f6" icon={CalendarDays} onClick={() => setAbsenceModal('Atestado')} style={{ flex: 1, fontSize: '12.5px', whiteSpace: 'normal', lineHeight: 1.15 }}>Atestado (período)</Button>
                 </div>
               </div>
               </>)}

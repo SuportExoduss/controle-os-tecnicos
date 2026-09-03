@@ -24,6 +24,7 @@ export const Button = ({
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
     padding: PAD[size], borderRadius: R.md, fontSize: FSZ[size], fontWeight: 700,
     fontFamily: 'inherit', lineHeight: 1.1, whiteSpace: 'nowrap', cursor: off ? 'not-allowed' : 'pointer',
+    minWidth: 0, // permite encolher em flex (evita transbordar o container)
     width: fullWidth ? '100%' : 'auto', opacity: off ? 0.55 : 1, transition: 'filter .15s, background .15s, border-color .15s',
     border: '1px solid transparent', boxSizing: 'border-box',
   };

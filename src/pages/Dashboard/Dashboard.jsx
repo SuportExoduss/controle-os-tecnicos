@@ -238,8 +238,9 @@ export const Dashboard = () => {
     totalTechnicians: new Set(filteredReports.map(r => r.technicianName)).size,
     totalOrders: filteredReports.reduce((acc, r) => acc + (r.totalOrders || 0), 0),
     totalRescheduled: filteredReports.reduce((acc, r) => acc + (r.rescheduledCount || 0), 0),
-    // Soma de dias trabalhados (técnico×dia com O.S > 0) — em memória, 0 leituras extras.
-    diasTrabalhados: filteredReports.reduce((acc, r) => acc + (r._dias || 0), 0),
+    // Dias trabalhados = dias DISTINTOS do calendário com produção no período
+    // (NÃO a soma por técnico). Em memória, 0 leituras extras.
+    diasTrabalhados: new Set(filteredReports.flatMap(r => (r._records || []).map(x => x.date))).size,
     mostCommonService: getMostCommonService(),
   };
 

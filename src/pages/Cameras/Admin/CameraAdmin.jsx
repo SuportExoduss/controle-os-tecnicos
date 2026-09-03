@@ -743,8 +743,8 @@ const handleFileUpload = async (e) => {
               </div>
               {/* Ausência POR PERÍODO (mais de 1 dia) */}
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                <Button S={S} tone="#22c55e" icon={CalendarDays} onClick={() => setAbsenceModal('Férias')} style={{ flex: 1, fontSize: '12.5px' }}>Férias (período)</Button>
-                <Button S={S} tone="#3b82f6" icon={CalendarDays} onClick={() => setAbsenceModal('Atestado')} style={{ flex: 1, fontSize: '12.5px' }}>Atestado (período)</Button>
+                <Button S={S} tone="#22c55e" icon={CalendarDays} onClick={() => setAbsenceModal('Férias')} style={{ flex: 1, fontSize: '12.5px', whiteSpace: 'normal', lineHeight: 1.15 }}>Férias (período)</Button>
+                <Button S={S} tone="#3b82f6" icon={CalendarDays} onClick={() => setAbsenceModal('Atestado')} style={{ flex: 1, fontSize: '12.5px', whiteSpace: 'normal', lineHeight: 1.15 }}>Atestado (período)</Button>
               </div>
 
               {collaborators.length === 0 ? (
