@@ -882,14 +882,12 @@ const handleFileUpload = async (e) => {
       </AnimatePresence>
 
       {/* MODAL — EDITAR COLABORADOR (nome + transferência de setor) */}
-      <AnimatePresence>
-        {showEditCollab && editCollab && (
-          <CollaboratorEditModal S={S} collab={editCollab} currentSector="fibra"
-            renameFn={fibraRenameFn}
-            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
-            onDone={fetchCollaborators} />
-        )}
-      </AnimatePresence>
+      {showEditCollab && editCollab && (
+        <CollaboratorEditModal S={S} collab={editCollab} currentSector="fibra"
+          renameFn={fibraRenameFn}
+          onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+          onDone={fetchCollaborators} />
+      )}
 
       {/* WIZARD MODAL */}
       <AnimatePresence>
@@ -1152,14 +1150,12 @@ const handleFileUpload = async (e) => {
       </AnimatePresence>
 
       {/* MODAL — AUSÊNCIA POR PERÍODO (Férias / Atestado) */}
-      <AnimatePresence>
-        {absenceModal && (
-          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
-            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
-            onClose={() => setAbsenceModal(null)}
-            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
-        )}
-      </AnimatePresence>
+      {absenceModal && (
+        <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+          accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+          onClose={() => setAbsenceModal(null)}
+          onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
+      )}
 
       {/* OVERLAY DE PROGRESSO — Importação (bloqueia o site até concluir) */}
       <ProgressOverlay

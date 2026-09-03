@@ -11,7 +11,7 @@ import { ProgressOverlay } from '../../components/common/ProgressOverlay';
 import { AreaTopbar } from '../../components/common/AreaTopbar';
 import { toast } from 'react-hot-toast';
 import { formatDate, localDate } from '../../utils/formatDate';
-import { SkeletonKpiGrid, SkeletonRows, EmptyState, ErrorState } from '../../components/ui';
+import { SkeletonKpiGrid, SkeletonRows, EmptyState, ErrorState, Modal } from '../../components/ui';
 import { AuthContext } from '../../context/AuthContext';
 import { ThemeContext } from '../../context/ThemeContext';
 import { loginUser, logoutUser } from '../../services/auth/authService';
@@ -1283,30 +1283,11 @@ export const Dashboard = () => {
       </AnimatePresence>
 
       {/* MODAL GRÁFICO PIZZA */}
-      <AnimatePresence>
         {showPie && (
-          <>
-            <div onClick={() => setShowPie(false)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
-            <motion.div initial={{ opacity: 0, scale: 0.92, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.92 }}
-              style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: '16px' }}>
-              <div style={{ width: '100%', maxWidth: '560px', background: S.surface, border: '1px solid #4c1d95', borderRadius: '20px', boxShadow: '0 0 50px rgba(124,58,237,0.25)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Header */}
-                <div style={{ padding: '20px 24px', borderBottom: `1px solid ${S.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#2e1065', border: '1px solid #7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <PieIcon size={20} color="#a78bfa" />
-                    </div>
-                    <div>
-                      <div style={{ color: S.text, fontWeight: 800, fontSize: '16px' }}>Tipos de Serviço</div>
-                      <div style={{ color: S.muted, fontSize: '12px' }}>{typeData.reduce((a, b) => a + b.value, 0)} O.S no período</div>
-                    </div>
-                  </div>
-                  <button onClick={() => setShowPie(false)} style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer' }}><X size={18} /></button>
-                </div>
-
-                {/* Conteúdo */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+          <Modal S={S} icon={PieIcon} accent="#a78bfa" width={560}
+            title="Tipos de Serviço" subtitle={`${typeData.reduce((a, b) => a + b.value, 0)} O.S no período`}
+            onClose={() => setShowPie(false)}>
+                <div>
                   {typeData.length === 0 ? (
                     <p style={{ color: S.muted, textAlign: 'center', padding: '40px 0' }}>Nenhum serviço no período</p>
                   ) : (
@@ -1346,11 +1327,8 @@ export const Dashboard = () => {
                     </>
                   )}
                 </div>
-              </div>
-            </motion.div>
-          </>
+          </Modal>
         )}
-      </AnimatePresence>
 
       {/* MODAL TOP 3 */}
       <AnimatePresence>

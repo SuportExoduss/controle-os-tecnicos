@@ -795,24 +795,20 @@ const handleFileUpload = async (e) => {
       )}
 
       {/* MODAL — AUSÊNCIA POR PERÍODO (Férias / Atestado) */}
-      <AnimatePresence>
-        {absenceModal && (
-          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
-            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
-            onClose={() => setAbsenceModal(null)}
-            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
-        )}
-      </AnimatePresence>
+      {absenceModal && (
+        <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+          accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+          onClose={() => setAbsenceModal(null)}
+          onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
+      )}
 
       {/* MODAL — EDITAR COLABORADOR (nome + transferência de setor) */}
-      <AnimatePresence>
-        {showEditCollab && editCollab && (
-          <CollaboratorEditModal S={S} collab={editCollab} currentSector="cameras"
-            renameFn={cameraRenameFn}
-            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
-            onDone={fetchCollaborators} />
-        )}
-      </AnimatePresence>
+      {showEditCollab && editCollab && (
+        <CollaboratorEditModal S={S} collab={editCollab} currentSector="cameras"
+          renameFn={cameraRenameFn}
+          onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+          onDone={fetchCollaborators} />
+      )}
 
       {/* MODAL — ADICIONAR COLABORADOR */}
       <AnimatePresence>

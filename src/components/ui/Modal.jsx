@@ -18,21 +18,23 @@ export const Modal = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
+  // UM único motion.div (overlay = backdrop) — funciona dentro e fora de
+  // <AnimatePresence> (fragmento quebrava o rastreamento de saída e prendia o modal).
   return (
-    <>
-      <div
-        onClick={() => closeOnBackdrop && onClose?.()}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)', zIndex: zIndex - 1 }}
-      />
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+      onClick={() => closeOnBackdrop && onClose?.()}
+      style={{ position: 'fixed', inset: 0, zIndex, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: SP.lg, background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(6px)' }}
+    >
       <motion.div
         role="dialog" aria-modal="true" aria-label={title || 'Janela'}
-        initial={{ opacity: 0, scale: 0.94, y: 16 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.94 }}
-        style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex, padding: SP.lg }}
-      >
-        <div style={{
+        onClick={(e) => e.stopPropagation()}
+        initial={{ scale: 0.94, y: 16 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0 }} transition={{ duration: 0.18 }}
+        style={{
           width: '100%', maxWidth: width, maxHeight: '88vh', display: 'flex', flexDirection: 'column',
           background: S.surface, border: `1px solid ${S.border}`, borderRadius: R.lg, boxShadow: SH[3], overflow: 'hidden',
-        }}>
+        }}
+      >
           {/* Cabeçalho */}
           <div style={{ display: 'flex', alignItems: 'center', gap: SP.md, padding: `${SP.lg}px ${SP.xl}px`, borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
             {Icon && (
@@ -59,8 +61,7 @@ export const Modal = ({
               {footer}
             </div>
           )}
-        </div>
       </motion.div>
-    </>
+    </motion.div>
   );
 };

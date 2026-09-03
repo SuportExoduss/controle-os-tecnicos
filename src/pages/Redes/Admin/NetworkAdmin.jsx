@@ -1088,26 +1088,22 @@ export const NetworkAdmin = () => {
       )}
 
       {/* ── MODAL — AUSÊNCIA POR PERÍODO (Atestado / Férias) ── */}
-      <AnimatePresence>
-        {absenceModal && (
-          <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
-            accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
-            onClose={() => setAbsenceModal(null)}
-            onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
-        )}
-      </AnimatePresence>
+      {absenceModal && (
+        <AbsencePeriodModal S={S} collaborators={collaborators} motivo={absenceModal}
+          accent={absenceModal === 'Férias' ? '#22c55e' : '#3b82f6'}
+          onClose={() => setAbsenceModal(null)}
+          onConfirm={(name, start, end) => handleAbsencePeriod(name, start, end, absenceModal)} />
+      )}
 
       {/* ── MODAL — EDITAR COLABORADOR (nome + transferência de setor) ── */}
-      <AnimatePresence>
-        {showEditCollab && editCollab && (
-          <CollaboratorEditModal S={S} collab={editCollab} currentSector="redes"
-            renameFn={redesRenameFn}
-            escala={{ team: editCollab.team || '', motorista: editCollab.motorista, passageiro: editCollab.passageiro }}
-            onEscalaSave={(fields) => updateNetworkCollaboratorEscala(editCollab.id, fields)}
-            onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
-            onDone={fetchCollaborators} />
-        )}
-      </AnimatePresence>
+      {showEditCollab && editCollab && (
+        <CollaboratorEditModal S={S} collab={editCollab} currentSector="redes"
+          renameFn={redesRenameFn}
+          escala={{ team: editCollab.team || '', motorista: editCollab.motorista, passageiro: editCollab.passageiro }}
+          onEscalaSave={(fields) => updateNetworkCollaboratorEscala(editCollab.id, fields)}
+          onClose={() => { setShowEditCollab(false); setEditCollab(null); }}
+          onDone={fetchCollaborators} />
+      )}
 
       {/* ── MODAL DE VERIFICAÇÃO PLANILHA x FIREBASE ── */}
       <AnimatePresence>
