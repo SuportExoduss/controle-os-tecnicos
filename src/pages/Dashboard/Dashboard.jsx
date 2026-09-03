@@ -1311,7 +1311,7 @@ export const Dashboard = () => {
                         {typeData.map(d => (
                           <div key={d.name}
                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}`, transition: 'all 0.15s', cursor: 'default' }}
-                            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = '#11182a'; }}
+                            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.02)'; e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = S.card2; }}
                             onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = S.border; e.currentTarget.style.background = S.card; }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: d.color, flexShrink: 0 }} />

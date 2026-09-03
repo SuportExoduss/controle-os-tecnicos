@@ -758,7 +758,7 @@ export const NetworkAdmin = () => {
                                   <button key={c.id} type="button"
                                     onClick={() => { set('tecnico', c.name); setDropdownOpen(false); setTechSearch(''); }}
                                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', background: form.tecnico === c.name ? '#0d1d3a' : 'none', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#0d1d3a'}
+                                    onMouseEnter={e => e.currentTarget.style.background = S.card2}
                                     onMouseLeave={e => e.currentTarget.style.background = form.tecnico === c.name ? '#0d1d3a' : 'none'}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: st.color, flexShrink: 0, boxShadow: `0 0 6px ${st.color}` }} title={st.label} />
@@ -775,7 +775,7 @@ export const NetworkAdmin = () => {
                             <div style={{ borderTop: `1px solid ${S.border}` }}>
                               <button type="button" onClick={() => { setDropdownOpen(false); setShowAddCollab(true); }}
                                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'none', border: 'none', color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#0d1d3a'}
+                                onMouseEnter={e => e.currentTarget.style.background = S.card2}
                                 onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                                 <Plus size={14} />Adicionar técnico
                               </button>
@@ -936,7 +936,7 @@ export const NetworkAdmin = () => {
                             </button>
                             <button onClick={() => setDeleteConfirm(o.id)}
                               style={{ padding: '7px 10px', borderRadius: '8px', background: 'transparent', border: `1px solid ${S.border}`, color: S.muted, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = '#2d0f0f'; e.currentTarget.style.color = '#f87171'; }}
+                              onMouseEnter={e => { e.currentTarget.style.background = S.red + '18'; e.currentTarget.style.color = '#f87171'; }}
                               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = S.muted; }}>
                               <Trash2 size={13} />
                             </button>
@@ -1050,7 +1050,7 @@ export const NetworkAdmin = () => {
                           <button onClick={() => setDeleteCollabConfirm(c)}
                             className="ui-focus" aria-label={`Excluir ${c.name}`} title={`Excluir ${c.name}`}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', padding: '4px', borderRadius: '6px', display: 'flex', transition: 'all 0.15s' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = '#2d0f0f'; }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = S.red + '18'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = 'none'; }}>
                             <Trash2 size={13} />
                           </button>
@@ -1063,7 +1063,7 @@ export const NetworkAdmin = () => {
 
               <button onClick={() => setShowAddCollab(true)}
                 style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'transparent', border: `1px dashed ${S.accent}`, color: S.blue, fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#0d1d3a'; e.currentTarget.style.borderStyle = 'solid'; }}
+                onMouseEnter={e => { e.currentTarget.style.background = S.card2; e.currentTarget.style.borderStyle = 'solid'; }}
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed'; }}>
                 <Plus size={14} />Adicionar técnico
               </button>

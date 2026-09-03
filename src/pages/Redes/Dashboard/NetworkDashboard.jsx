@@ -997,7 +997,7 @@ export const NetworkDashboard = () => {
                         return (
                           <button key={d.name} onClick={() => { setSelectedAssunto(d.name); setShowPie(false); }}
                             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}`, transition: 'all 0.15s', cursor: 'pointer', gap: '10px', textAlign: 'left' }}
-                            onMouseEnter={e => { e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = '#11182a'; }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = S.card2; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.background = S.card; }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                               <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: d.color, flexShrink: 0 }} />
@@ -1068,7 +1068,7 @@ export const NetworkDashboard = () => {
                       {techPieData.map((d, i) => (
                         <button key={d.name} onClick={() => { handleSearch(dateFrom, dateTo, searchTech === d.tecnico ? '' : d.tecnico); setShowTechPie(false); }}
                           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: '10px', background: S.card, border: `1px solid ${S.border}`, cursor: 'pointer', transition: 'all 0.15s', gap: '10px', textAlign: 'left' }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = '#11182a'; }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = d.color; e.currentTarget.style.background = S.card2; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = S.border; e.currentTarget.style.background = S.card; }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                             <span style={{ fontSize: '11px', fontWeight: 800, color: S.muted, minWidth: '18px' }}>{i + 1}º</span>
@@ -1141,7 +1141,7 @@ export const NetworkDashboard = () => {
                             {isLogged && (
                               <button onClick={() => handleDeleteOrder(o)} title="Excluir O.S"
                                 style={{ background: 'none', border: 'none', color: S.muted, cursor: 'pointer', padding: '2px', display: 'flex', borderRadius: '6px' }}
-                                onMouseEnter={e => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = '#2d0f0f'; }}
+                                onMouseEnter={e => { e.currentTarget.style.color = S.red; e.currentTarget.style.background = S.red + '18'; }}
                                 onMouseLeave={e => { e.currentTarget.style.color = S.muted; e.currentTarget.style.background = 'none'; }}>
                                 <Trash2 size={14} />
                               </button>
