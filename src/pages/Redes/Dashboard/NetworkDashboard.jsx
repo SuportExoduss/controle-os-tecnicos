@@ -8,13 +8,13 @@ import {
   ChevronDown, ChevronUp, CheckCircle2,
   LogIn, X,
   Copy, CheckCheck, PieChart as PieIcon, Info, Users,
-  Gauge, Target, ListFilter, TrendingUp, TrendingDown, Layers, Trash2,
+  Gauge, Target, ListFilter, TrendingUp, TrendingDown, Layers, Trash2, RotateCcw,
 } from 'lucide-react';
 import { AuthContext } from '../../../context/AuthContext';
 import { ThemeContext } from '../../../context/ThemeContext';
 import { chipStyle } from '../../../utils/chipStyle';
 import { localDate } from '../../../utils/formatDate';
-import { SkeletonKpiGrid, SkeletonRows, EmptyState } from '../../../components/ui';
+import { SkeletonKpiGrid, SkeletonRows, EmptyState, ErrorState } from '../../../components/ui';
 import { loginUser, logoutUser } from '../../../services/auth/authService';
 import { getUserProfile } from '../../../services/database/userProfileService';
 import { getNetworkOrdersByRange, deleteNetworkOrder } from '../../../services/database/networkService';
@@ -113,6 +113,7 @@ export const NetworkDashboard = () => {
   const [orders, setOrders]     = useState([]);
   const [filtered, setFiltered] = useState([]); // agrupado por técnico
   const [loading, setLoading]   = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [exportTask, setExportTask] = useState(null);
 
   // Filtros
@@ -152,6 +153,7 @@ export const NetworkDashboard = () => {
   // da coleção inteira. Cache por período (5 min) torna navegação/refresh grátis.
   const loadRange = async (from, to, tech, { force = false } = {}) => {
     try {
+      setLoading(true); setLoadError(false);
       const start = from || firstOfMonth;
       const end   = to   || today;
       const raw = await getNetworkOrdersByRange(start, end, { force });
@@ -160,7 +162,7 @@ export const NetworkDashboard = () => {
       const data = raw.filter(o => o.tipo !== 'ausencia' && String(o.idOs).trim() !== '00000');
       setOrders(data);
       filterOrders(data, from, to, tech);
-    } catch { toast.error('Erro ao carregar dados'); }
+    } catch { setLoadError(true); toast.error('Erro ao carregar dados'); }
     finally { setLoading(false); }
   };
 
@@ -704,7 +706,12 @@ export const NetworkDashboard = () => {
               )}
             </div>
 
-            {techRows.length === 0 ? (
+            {loadError ? (
+              <ErrorState S={S} icon={RotateCcw}
+                title="Não foi possível carregar as O.S"
+                message="Falha ao buscar os dados do período. Verifique a conexão e tente novamente."
+                onRetry={() => loadRange(dateFrom, dateTo, searchTech, { force: true })} />
+            ) : techRows.length === 0 ? (
               <EmptyState S={S} icon={Gauge}
                 title={`Nenhuma O.S em ${monthLabel()}`}
                 description={selectedAssunto ? 'Nenhum registro deste assunto no período.' : 'Não há registros neste período.'}
