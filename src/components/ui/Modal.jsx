@@ -8,9 +8,10 @@ import { R, SP, SH, FS } from './tokens';
 //   estoura a tela). Título/ícone anunciam o contexto (acessibilidade).
 //   width: largura máxima (default 460). Ações vão no `footer`.
 export const Modal = ({
-  S, title, subtitle, icon: Icon, onClose, children, footer,
+  S, title, subtitle, icon: Icon, accent, onClose, children, footer,
   width = 460, closeOnBackdrop = true, zIndex = 60,
 }) => {
+  const acc = accent || S.accent;
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
     window.addEventListener('keydown', onKey);
@@ -35,8 +36,8 @@ export const Modal = ({
           {/* Cabeçalho */}
           <div style={{ display: 'flex', alignItems: 'center', gap: SP.md, padding: `${SP.lg}px ${SP.xl}px`, borderBottom: `1px solid ${S.border}`, flexShrink: 0 }}>
             {Icon && (
-              <div style={{ width: 40, height: 40, borderRadius: R.md, background: S.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={20} color={S.accent} />
+              <div style={{ width: 40, height: 40, borderRadius: R.md, background: acc + '22', border: `1px solid ${acc}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon size={20} color={acc} />
               </div>
             )}
             <div style={{ minWidth: 0, flex: 1 }}>
