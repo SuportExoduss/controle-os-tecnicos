@@ -736,7 +736,7 @@ function CalRelView({ S, teams, cal, month, year, onSelect }) {
       ))}
     </div>
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+      <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
         <thead><tr>
           <th style={{ ...th, textAlign: 'left' }}>Colaborador</th>
           <th style={th}>Equipe</th><th style={th}>Obrig.</th>
@@ -806,7 +806,7 @@ function RelView({ S, teams, st, lastDay, onSelect }) {
       <div style={{ fontSize: '11.5px', color: S.muted2 }}>Números para a diretoria observar. "Confere" valida a soma. Clique em um colaborador para ver o calendário.</div>
     </div>
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+      <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', fontSize: '12.5px' }}>
         <thead><tr>
           <th style={{ ...th, textAlign: 'left' }}>Colaborador</th>
           <th style={th}>Equipe</th><th style={th}>Obrig.</th>
