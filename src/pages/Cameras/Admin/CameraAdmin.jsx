@@ -790,7 +790,7 @@ const handleFileUpload = async (e) => {
       </main>
 
       {/* OVERLAY helper */}
-      {(showAddCollab || showEditCollab || showWizard || showConfirmation) && (
+      {(showAddCollab || showWizard || showConfirmation) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 49 }} />
       )}
 
