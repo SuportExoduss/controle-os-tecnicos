@@ -20,7 +20,7 @@ import { ThemeContext } from '../../../context/ThemeContext';
 import { parseCameraExcelFile } from '../../../services/reports/cameraImportService';
 import { syncCameraReportToSheet, syncCameraReportsToSheet, zeroCameraDayInSheet, renameCameraTechnicianInSheet } from '../../../services/integrations/cameraSheetSync';
 import { localDate } from '../../../utils/formatDate';
-import { Button, PillButton } from '../../../components/ui';
+import { Button, PillButton, Card, FieldLabel } from '../../../components/ui';
 
 const SERVICE_TYPES = [
   'INSTALAÇÃO WI-BICAM','REPARO','TROCA ROTEADOR/VISTORIA/REPARO TV',
@@ -36,16 +36,6 @@ const SVC_STYLE = {
   'RETIRADA':                          { bg:'#2d1010', color:'#fca5a5', border:'#991b1b' },
 };
 
-const Glass = ({ S, children, style = {}, ...props }) => (
-  <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', ...style }} {...props}>
-    {children}
-  </div>
-);
-const FieldLabel = ({ S, children }) => (
-  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '8px' }}>
-    {children}
-  </label>
-);
 const DarkInput = ({ S, style = {}, ...props }) => (
   <input style={{ width: '100%', padding: '12px 16px', borderRadius: '10px', background: S.input, border: `1px solid ${S.border}`, color: S.text, fontSize: '14px', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s', ...style }}
     onFocus={e => e.target.style.borderColor = S.blue}
@@ -415,7 +405,7 @@ const handleFileUpload = async (e) => {
           const isToday = formData.date === localDate();
           const barColor = pct === 100 ? '#22c55e' : pct >= 60 ? '#3b82f6' : pct >= 30 ? '#f59e0b' : '#ef4444';
           return (
-            <Glass S={S} style={{ padding: '14px 18px', marginBottom: '16px' }}>
+            <Card S={S} pad={0} elevated={false} style={{ padding: '14px 18px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: `${barColor}22`, border: `1px solid ${barColor}55`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -438,14 +428,14 @@ const handleFileUpload = async (e) => {
                   <span style={{ color: barColor, fontWeight: 800, fontSize: '14px', minWidth: '38px', textAlign: 'right' }}>{pct}%</span>
                 </div>
               </div>
-            </Glass>
+            </Card>
           );
         })()}
         <div className="r-admin-grid">
 
           {/* FORM */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Glass S={S} style={{ overflow: 'hidden' }}>
+            <Card S={S} pad={0} elevated={false} style={{ overflow: 'hidden' }}>
               {/* Card header */}
               <div style={{ padding: '24px 28px', background: mode === 'light' ? 'linear-gradient(135deg, #dbeafe 0%, #eceef4 100%)' : 'linear-gradient(135deg, #0d1e3d 0%, #0f1117 100%)', borderBottom: `1px solid ${S.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
@@ -693,14 +683,14 @@ const handleFileUpload = async (e) => {
                       : <><ListChecks size={17}/>Configurar Tipos de Serviço <ArrowRight size={14}/></>}
                 </button>
               </div>
-            </Glass>
+            </Card>
           </motion.div>
 
           {/* SIDE */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* Resumo */}
-            <Glass S={S} style={{ padding: '20px' }}>
+            <Card S={S} pad={0} elevated={false} style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <ListChecks size={15} color={S.blue} />
                 <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Resumo do Registro</span>
@@ -730,10 +720,10 @@ const handleFileUpload = async (e) => {
                   </div>
                 </div>
               )}
-            </Glass>
+            </Card>
 
             {/* Colaboradores */}
-            <Glass S={S} style={{ padding: '20px' }}>
+            <Card S={S} pad={0} elevated={false} style={{ padding: '20px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
@@ -784,7 +774,7 @@ const handleFileUpload = async (e) => {
                 onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderStyle = 'dashed'; }}>
                 <Plus size={14} />Adicionar colaborador
               </button>
-            </Glass>
+            </Card>
           </motion.div>
         </div>
       </main>

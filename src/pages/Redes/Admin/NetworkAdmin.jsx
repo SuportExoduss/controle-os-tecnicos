@@ -33,7 +33,7 @@ import { AbsencePeriodModal } from '../../../components/modals/AbsencePeriodModa
 import { registerNewTechnician, deactivateTechnician } from '../../../services/database/technicianService';
 import { syncAbsenceDays } from '../../../services/database/frotaService';
 import { localDate } from '../../../utils/formatDate';
-import { Button, PillButton } from '../../../components/ui';
+import { Button, PillButton, Card, FieldLabel } from '../../../components/ui';
 
 // ─── Constantes ─────────────────────────────────────────────────────────────────
 
@@ -98,17 +98,6 @@ const BLANK_FORM = {
 
 // ─── Sub-componentes ─────────────────────────────────────────────────────────────
 
-const Glass = ({ S, children, style = {}, ...props }) => (
-  <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: '16px', ...style }} {...props}>
-    {children}
-  </div>
-);
-
-const FieldLabel = ({ S, children }) => (
-  <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: S.muted, letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: '8px' }}>
-    {children}
-  </label>
-);
 
 const DarkSelect = ({ S, value, onChange, children, placeholder }) => (
   <select value={value} onChange={onChange}
@@ -668,7 +657,7 @@ export const NetworkAdmin = () => {
 
           {/* ── FORMULÁRIO (esquerda) ── */}
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <Glass S={S} style={{ overflow: 'hidden' }}>
+            <Card S={S} pad={0} elevated={false} style={{ overflow: 'hidden' }}>
               {/* Card header */}
               <div style={{ padding: '24px 28px', background: mode === 'light' ? 'linear-gradient(135deg,#dbeafe 0%,#eceef4 100%)' : 'linear-gradient(135deg,#0d1e3d 0%,#0f1117 100%)', borderBottom: `1px solid ${S.border}` }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
@@ -872,7 +861,7 @@ export const NetworkAdmin = () => {
                 {/* Nota: os atalhos de presença de hoje (Folga/Feriado/Atestado/Passageiro)
                     ficam no cabeçalho do card — padrão Fibra/Câmeras. */}
               </div>
-            </Glass>
+            </Card>
 
             {/* ── OS EM ABERTO (abaixo do form) ── */}
             {openOrders.length > 0 && (
@@ -909,7 +898,7 @@ export const NetworkAdmin = () => {
             {todayOrders.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{ marginTop: '16px' }}>
-                <Glass S={S} style={{ padding: '18px 20px' }}>
+                <Card S={S} pad={0} elevated={false} style={{ padding: '18px 20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
                     <CalendarDays size={15} color={S.blue} />
                     <span style={{ color: S.text, fontWeight: 800, fontSize: '14px' }}>Registradas hoje ({todayOrders.length})</span>
@@ -945,7 +934,7 @@ export const NetworkAdmin = () => {
                       );
                     })}
                   </div>
-                </Glass>
+                </Card>
               </motion.div>
             )}
           </motion.div>
@@ -955,7 +944,7 @@ export const NetworkAdmin = () => {
             style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
             {/* ── Resumo do Dia (topo) ── */}
-            <Glass S={S} style={{ padding: '20px' }}>
+            <Card S={S} pad={0} elevated={false} style={{ padding: '20px' }}>
               <div onClick={() => toggleCard('resumo')} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: openCard.resumo ? '18px' : 0, cursor: 'pointer' }}>
                 <BarChart2 size={15} color={S.blue} />
                 <span style={{ color: S.text, fontWeight: 700, fontSize: '13px' }}>Resumo do Dia</span>
@@ -1007,7 +996,7 @@ export const NetworkAdmin = () => {
                 </div>
               )}
               </>)}
-            </Glass>
+            </Card>
 
             {/* ── Escala do Mês (meio — quadro compacto, só admin) ── */}
             <EscalaMes S={S} collaborators={collaborators} orders={orders}
@@ -1015,7 +1004,7 @@ export const NetworkAdmin = () => {
               collapsed={!openCard.escala} onToggleCollapse={() => toggleCard('escala')} />
 
             {/* ── Colaboradores / Técnicos (base) ── */}
-            <Glass S={S} style={{ padding: '20px' }}>
+            <Card S={S} pad={0} elevated={false} style={{ padding: '20px' }}>
               <div onClick={() => toggleCard('colab')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: openCard.colab ? '16px' : 0, cursor: 'pointer' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={15} color={S.blue} />
@@ -1077,7 +1066,7 @@ export const NetworkAdmin = () => {
                 </div>
               </div>
               </>)}
-            </Glass>
+            </Card>
           </motion.div>
         </div>
       </main>

@@ -3,14 +3,14 @@ import { R, SP, SH } from './tokens';
 // Card — superfície padrão (substitui os vários "Glass"/divs de card inline).
 //   pad: padding interno (default LG) · hover: destaca no mouseover (para cards clicáveis)
 //   accent: barra/realce de cor à esquerda (opcional)
-export const Card = ({ S, children, pad = SP.lg, hover = false, accent, onClick, style, ...rest }) => (
+export const Card = ({ S, children, pad = SP.lg, hover = false, accent, elevated = true, onClick, style, ...rest }) => (
   <div
     onClick={onClick}
     className={hover || onClick ? 'ui-card-hover' : undefined}
     style={{
       background: S.card, border: `1px solid ${S.border}`,
       borderLeft: accent ? `3px solid ${accent}` : `1px solid ${S.border}`,
-      borderRadius: R.lg, padding: pad, boxShadow: SH[1],
+      borderRadius: R.lg, padding: pad, boxShadow: elevated ? SH[1] : 'none',
       cursor: onClick ? 'pointer' : 'default', transition: 'transform .15s, border-color .15s, box-shadow .15s',
       ...style,
     }}
